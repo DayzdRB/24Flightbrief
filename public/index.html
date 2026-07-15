@@ -253,6 +253,17 @@
   input::placeholder, textarea::placeholder{color:#a9b6b3;}
   select{appearance:none;-webkit-appearance:none;cursor:pointer;}
   .rules-select{font-weight:700;}
+  .airport-field input{text-transform:uppercase;}
+  .airport-resolved{
+    display:block;
+    min-height:13px;
+    margin-top:3px;
+    font-family:'Inter',sans-serif;
+    font-size:9.5px;
+    line-height:1.3;
+    color:var(--teal-dark);
+  }
+  .airport-resolved.is-error{color:var(--red);}
 
   /* sub-section title (inside a panel, for dynamic lists) */
   .sub-title{
@@ -327,6 +338,98 @@
     border:none;
   }
   .unit-toggle button.active{background:var(--ink);color:#fff;}
+
+  .route-type-toggle{display:inline-flex;border:1.5px solid var(--ink);border-radius:6px;overflow:hidden;margin-bottom:10px;}
+  .route-type-toggle button{
+    padding:7px 14px;
+    font-size:11.5px;
+    border-radius:0;
+    background:transparent;
+    color:var(--ink-soft);
+    border:none;
+    border-right:1px solid var(--rule);
+  }
+  .route-type-toggle button:last-child{border-right:none;}
+  .route-type-toggle button.active{background:var(--teal);color:#f2fbf9;}
+
+  .route-map-wrap{
+    border:1.5px solid var(--ink);
+    border-radius:6px;
+    overflow:hidden;
+    background:#315874;
+    max-width:620px;
+    aspect-ratio:1 / 1;
+  }
+  .route-map-wrap svg{display:block;width:100%;height:100%;}
+  .map-base-image,.map-airport-overlay{pointer-events:none;}
+  .map-airport-dot{
+    fill:rgba(238,244,242,.72);
+    stroke:rgba(22,35,43,.88);
+    stroke-width:2.5;
+    vector-effect:non-scaling-stroke;
+  }
+  .map-airport-label{
+    display:none;
+    font-family:'JetBrains Mono',monospace;
+    font-size:18px;
+    font-weight:700;
+    fill:#f4f8f7;
+    paint-order:stroke;
+    stroke:#16232b;
+    stroke-width:5px;
+    stroke-linejoin:round;
+  }
+  .map-airport-dot.is-dep{fill:#1b7f72;stroke:#f4f8f7;}
+  .map-airport-dot.is-arr{fill:#a5382c;stroke:#f4f8f7;}
+  .map-airport-label.is-dep,.map-airport-label.is-arr{display:block;font-size:23px;}
+  .map-route-casing{
+    fill:none;
+    stroke:rgba(244,248,247,.88);
+    stroke-width:9;
+    stroke-linecap:round;
+    vector-effect:non-scaling-stroke;
+  }
+  .map-route-line{
+    fill:none;
+    stroke-width:5;
+    stroke-linecap:round;
+    vector-effect:non-scaling-stroke;
+  }
+  .map-route-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:22px;
+    font-weight:700;
+    fill:#f4f8f7;
+    paint-order:stroke;
+    stroke:#16232b;
+    stroke-width:6px;
+    stroke-linejoin:round;
+  }
+  .airport-chart-reference{
+    margin-top:10px;
+    border:1px solid var(--rule);
+    border-radius:5px;
+    background:rgba(255,255,255,.28);
+  }
+  .airport-chart-reference summary{
+    cursor:pointer;
+    padding:9px 11px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .airport-chart-reference[open] summary{border-bottom:1px solid var(--rule);}
+  .airport-chart-body{padding:10px;}
+  .airport-chart-body img{display:block;width:100%;height:auto;border:1px solid var(--ink);background:#d8eef5;}
+  .airport-chart-link{
+    display:inline-block;
+    margin-bottom:8px;
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--teal-dark);
+  }
 
   .add-row-btn{
     display:inline-flex;
@@ -604,8 +707,6 @@
           <div class="field"><label>Roblox Username (Pilot) <span class="req-mark">*</span></label><input type="text" id="fdPilotUsername" data-required="1" placeholder="For /createflightplan"></div>
 
           <div class="field"><label>Aircraft Type <span class="req-mark">*</span></label><input type="text" id="fdAircraft" data-required="1" placeholder="e.g. B738"></div>
-          <div class="field"><label>Tail Number / Registration</label><input type="text" placeholder="e.g. N24ATC"></div>
-          <div class="field"><label>Operator / Airline</label><input type="text" placeholder="e.g. Blue Ridge Air"></div>
           <div class="field"><label>Date</label><input type="date" id="flightDate"></div>
 
           <div class="field"><label>Departure Time (UTC)</label><input type="time"></div>
@@ -621,25 +722,63 @@
           <div class="line"></div>
         </div>
         <div class="grid">
-          <div class="field"><label>Departure Airport <span class="req-mark">*</span></label><input type="text" id="depAirport" data-required="1" placeholder="ICAO, e.g. LFPI"></div>
+          <div class="field airport-field"><label>Departure Airport <span class="req-mark">*</span></label><input type="text" id="depAirport" data-required="1" list="airportOptions" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IRFD"><span class="airport-resolved" id="depAirportResolved"></span></div>
           <div class="field"><label>Departure Procedure (SID)</label><input type="text" placeholder="If applicable"></div>
-          <div class="field"><label>Arrival Airport <span class="req-mark">*</span></label><input type="text" id="arrAirport" data-required="1" placeholder="ICAO, e.g. TIST"></div>
+          <div class="field airport-field"><label>Arrival Airport <span class="req-mark">*</span></label><input type="text" id="arrAirport" data-required="1" list="airportOptions" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IPPH"><span class="airport-resolved" id="arrAirportResolved"></span></div>
           <div class="field"><label>Arrival Procedure (STAR)</label><input type="text" placeholder="If applicable"></div>
         </div>
+        <datalist id="airportOptions"></datalist>
 
-        <div class="sub-title"><h4>Waypoints</h4><div class="line-thin"></div></div>
-        <table>
-          <thead>
-            <tr><th style="width:28px;">#</th><th class="col-w-desc">Waypoint / Fix</th><th style="width:220px;">Altitude / Restriction (optional)</th><th class="rm no-export"></th></tr>
-          </thead>
-          <tbody id="waypointBody"></tbody>
-        </table>
-        <button class="btn-add btn-small add-row-btn no-export" id="addWaypointBtn">+ Add waypoint</button>
+        <div class="cruise-row">
+          <div class="cruise-field">
+            <label>Cruising Altitude</label>
+            <input type="text" id="cruiseAlt" placeholder="e.g. FL030">
+          </div>
+          <span class="suggested-pill" id="suggestedCruise">Suggested: —</span>
+          <button class="btn-ghost btn-small no-export" id="useSuggestedBtn">Use suggested</button>
+        </div>
+
+        <div class="sub-title"><h4>Route Type</h4><div class="line-thin"></div></div>
+        <div class="route-type-toggle" id="routeTypeToggle">
+          <button type="button" class="active" data-route-type="waypoints">Waypoints</button>
+          <button type="button" data-route-type="direct">GPS Direct</button>
+          <button type="button" data-route-type="rdv">Radar Vectors (RDV)</button>
+        </div>
+        <div class="perf-note" id="routeTypeNote">List named fixes below to build the route.</div>
+
+        <div id="waypointsSection">
+          <div class="sub-title"><h4>Waypoints</h4><div class="line-thin"></div></div>
+          <table>
+            <thead>
+              <tr><th style="width:28px;">#</th><th class="col-w-desc">Waypoint / Fix</th><th style="width:220px;">Altitude / Restriction (optional)</th><th class="rm no-export"></th></tr>
+            </thead>
+            <tbody id="waypointBody"></tbody>
+          </table>
+          <button class="btn-add btn-small add-row-btn no-export" id="addWaypointBtn">+ Add waypoint</button>
+        </div>
 
         <div class="sub-title"><h4>Route Diagram</h4><div class="line-thin"></div></div>
         <div class="route-diagram-wrap">
           <svg id="routeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
+
+        <div class="sub-title"><h4>Route Map</h4><div class="line-thin"></div></div>
+        <div class="route-map-wrap">
+          <svg id="routeMapSvg" viewBox="-601.04071 -594.17071 1200 1200" role="img" aria-label="ATC24 route map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <image class="map-base-image" href="MapOverview.png" xlink:href="MapOverview.png" x="-601.04071" y="-594.17071" width="1200" height="1200" preserveAspectRatio="none"></image>
+            <image class="map-airport-overlay" href="AirportOverlay.png" xlink:href="AirportOverlay.png" x="-601.04071" y="-594.17071" width="1200" height="1200" preserveAspectRatio="none"></image>
+            <g id="mapRoute"></g>
+            <g id="mapAirports"></g>
+          </svg>
+        </div>
+        <div class="perf-note">ATC24 in-game map with a straight-line route overlay. Named-fix routing may differ from the displayed reference line.</div>
+        <details class="airport-chart-reference no-export">
+          <summary>Open ATC24 airport and airway reference chart</summary>
+          <div class="airport-chart-body">
+            <a class="airport-chart-link" href="ATC24-Airport-Chart.png" target="_blank" rel="noopener">Open chart at full size</a>
+            <img src="ATC24-Airport-Chart.png" alt="ATC24 airport and airway reference chart">
+          </div>
+        </details>
 
         <div class="sub-title"><h4>ATIS</h4><div class="line-thin"></div></div>
         <div class="atis-box">
@@ -728,8 +867,7 @@
           <h3>Performance</h3>
           <div class="line"></div>
         </div>
-        <div class="perf-grid" style="grid-template-columns:1.3fr 1fr 1fr;">
-          <div class="field"><label>Aircraft Type</label><input type="text" id="perfAircraft" placeholder="e.g. Cessna 172"></div>
+        <div class="perf-grid" style="grid-template-columns:1fr 1fr;">
           <div class="field"><label>Stall Speed Vs (kt)</label><input type="number" id="perfVstall" placeholder="From PTFS wiki"></div>
           <div class="field"><label>Aircraft Baseline Weight (kg)</label><input type="number" id="perfBaseWeight" placeholder="Optional — enables load adjustment"></div>
         </div>
@@ -751,15 +889,6 @@
           <div class="field"><label>Vapp</label><input type="text" id="outVapp" readonly value="—"></div>
         </div>
         <div class="perf-note" id="loadWarning"></div>
-
-        <div class="cruise-row">
-          <div class="cruise-field">
-            <label>Cruising Altitude</label>
-            <input type="text" id="cruiseAlt" placeholder="e.g. FL030">
-          </div>
-          <span class="suggested-pill" id="suggestedCruise">Suggested: —</span>
-          <button class="btn-ghost btn-small no-export" id="useSuggestedBtn">Use suggested</button>
-        </div>
       </div>
 
       <!-- 07 REMARKS -->
@@ -927,21 +1056,216 @@
   });
   refreshSuggestion();
 
+  // ===== Airport names and ICAO conversion =====
+  // The route planner displays ICAO codes. The Discord command uses the airport names
+  // required by /createflightplan. Inputs accept either form, case-insensitively.
+  const AIRPORT_DIRECTORY = [
+    { name:'Greater Rockford', code:'IRFD' },
+    { name:'Perth', code:'IPPH' },
+    { name:'Izolirani', code:'IZOL' },
+    { name:'Tokyo', code:'ITKO' },
+    { name:'Bird Island Airfield', code:'IBRD' },
+    { name:'Larnaca', code:'ILAR' },
+    { name:'McConnell AFB', code:'IIAB' },
+    { name:'Keflavik', code:'IKFL' },
+    { name:'Pingeyri', code:'ITEY' },
+    { name:'Paphos', code:'IPAP' },
+    { name:'Sauthemptona', code:'ISAU' },
+    { name:'Mellor', code:'IMLR' },
+    { name:'Saint Barthelemy', code:'IBTH' },
+    { name:'Saba', code:'IDCS' },
+    { name:'Training Centre', code:'ITRC' },
+    { name:'Lukla', code:'ILKL' },
+    { name:'Al Najaf', code:'IJAF' },
+    { name:'Airbase Garry', code:'IGAR' },
+    { name:'RAF Scampton', code:'ISCM' },
+    { name:'Henstridge Airfield', code:'IHEN' },
+    { name:'Boltic Airfield', code:'IBLT' },
+    { name:'Barra', code:'IBAR' }
+  ];
+
+  function airportLookupKey(value){
+    return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+
+  const AIRPORT_BY_CODE = new Map(AIRPORT_DIRECTORY.map(a=>[a.code, a]));
+  const AIRPORT_LOOKUP = new Map();
+  AIRPORT_DIRECTORY.forEach(airport=>{
+    AIRPORT_LOOKUP.set(airportLookupKey(airport.code), airport);
+    AIRPORT_LOOKUP.set(airportLookupKey(airport.name), airport);
+  });
+
+  function resolveAirport(value){
+    const raw = String(value || '').trim();
+    if(!raw) return null;
+    const embeddedCode = raw.toUpperCase().match(/(?:^|\b)(I[A-Z0-9]{3})(?:\b|$)/);
+    if(embeddedCode && AIRPORT_BY_CODE.has(embeddedCode[1])) return AIRPORT_BY_CODE.get(embeddedCode[1]);
+    const listed = AIRPORT_LOOKUP.get(airportLookupKey(raw));
+    if(listed) return listed;
+    const code = raw.toUpperCase();
+    if(Object.prototype.hasOwnProperty.call(AIRPORTS, code)){
+      return { name:code, code, codeOnly:true };
+    }
+    return null;
+  }
+
+  function airportCode(value){
+    const airport = resolveAirport(value);
+    return airport ? airport.code : String(value || '').trim().toUpperCase();
+  }
+
+  function airportCommandName(value){
+    const airport = resolveAirport(value);
+    return airport ? airport.name : String(value || '').trim();
+  }
+
+  // ===== Route Map (geographic overlay, built from the reference SVG artwork) =====
+  // Coordinates below were derived from the reference/ layer files (each airport's
+  // GROUND.svg sits on the same 1200x1200 unit map plane as coast.svg/boundaries.svg,
+  // so this reuses their real positions rather than approximating anything).
+  const AIRPORTS = {
+    IBLT: {x:-112.5, y:175.13},
+    IBRD: {x:-14.47, y:-389.11},
+    IBTH: {x:57.56, y:-45.02},
+    IDCS: {x:-49.1, y:-449.73},
+    IGAR: {x:-163.41, y:237.17},
+    IHEN: {x:171.13, y:411.92},
+    IIAB: {x:232.16, y:405.09},
+    IJAF: {x:461.53, y:2.42},
+    IKFL: {x:-432.86, y:-15.55},
+    ILAR: {x:212.59, y:324.19},
+    ILKL: {x:225.9, y:-165.15},
+    IMLR: {x:-194.5, y:148.16},
+    IPAP: {x:317.21, y:343.12},
+    IPPH: {x:185.27, y:-205.81},
+    IRFD: {x:-27.94, y:201.39},
+    ISAU: {x:-461.07, y:275.23},
+    ISCM: {x:360.79, y:-50.09},
+    ISKP: {x:254.44, y:131.57},
+    ITEY: {x:-415.61, y:-92.71},
+    ITKO: {x:-84.34, y:-344.96},
+    ITRC: {x:-21.13, y:303.55},
+    IUFO: {x:88.39, y:-44.25},
+    IZOL: {x:447.58, y:32.8}
+  };
+
+  const mapAirportsG = document.getElementById('mapAirports');
+  const mapRouteG = document.getElementById('mapRoute');
+
+  function renderRouteMap(){
+    const dep = airportCode(depAirport.value);
+    const arr = airportCode(arrAirport.value);
+
+    let airportsSvg = '';
+    Object.entries(AIRPORTS).forEach(([code, pos])=>{
+      const isDep = code === dep, isArr = code === arr;
+      const r = (isDep || isArr) ? 11 : 6;
+      const dotClass = 'map-airport-dot' + (isDep ? ' is-dep' : isArr ? ' is-arr' : '');
+      const labelClass = 'map-airport-label' + (isDep ? ' is-dep' : isArr ? ' is-arr' : '');
+      airportsSvg += `<circle class="${dotClass}" cx="${pos.x}" cy="${pos.y}" r="${r}"/>`;
+      airportsSvg += `<text class="${labelClass}" x="${pos.x}" y="${pos.y - 16}" text-anchor="middle">${code}</text>`;
+    });
+    mapAirportsG.innerHTML = airportsSvg;
+
+    let routeSvgContent = '';
+    const depPos = AIRPORTS[dep], arrPos = AIRPORTS[arr];
+    if(depPos && arrPos){
+      const midX = (depPos.x + arrPos.x) / 2, midY = (depPos.y + arrPos.y) / 2;
+      let dash, stroke, label = '';
+      if(routeType === 'direct'){ dash = 'none'; stroke = '#1b7f72'; label = 'DCT'; }
+      else if(routeType === 'rdv'){ dash = '3 9'; stroke = '#c8842a'; label = 'RDV'; }
+      else { dash = '14 8'; stroke = '#5c6f6a'; label = ''; }
+      const dashAttr = dash !== 'none' ? ` stroke-dasharray="${dash}"` : '';
+      routeSvgContent += `<line class="map-route-casing" x1="${depPos.x}" y1="${depPos.y}" x2="${arrPos.x}" y2="${arrPos.y}"${dashAttr}/>`;
+      routeSvgContent += `<line class="map-route-line" x1="${depPos.x}" y1="${depPos.y}" x2="${arrPos.x}" y2="${arrPos.y}" stroke="${stroke}"${dashAttr}/>`;
+      if(label){
+        routeSvgContent += `<text class="map-route-label" x="${midX}" y="${midY - 18}" text-anchor="middle">${label}</text>`;
+      }
+    }
+    mapRouteG.innerHTML = routeSvgContent;
+  }
+
+  // ===== Route Type (Waypoints / GPS Direct / Radar Vectors) =====
+  let routeType = 'waypoints';
+  const routeTypeNote = document.getElementById('routeTypeNote');
+  const waypointsSection = document.getElementById('waypointsSection');
+  const routeTypeNotes = {
+    waypoints: "List named fixes below to build the route.",
+    direct: "Filed as GPS Direct (DCT) — no fixes needed, straight line from departure to arrival.",
+    rdv: "Filed as Radar Vectors (RDV) — routing is at the controller's discretion, no fixes needed."
+  };
+  function setRouteType(type){
+    routeType = type;
+    document.querySelectorAll('#routeTypeToggle button').forEach(b=>{
+      b.classList.toggle('active', b.dataset.routeType === type);
+    });
+    waypointsSection.style.display = (type === 'waypoints') ? '' : 'none';
+    routeTypeNote.textContent = routeTypeNotes[type] || '';
+    renderRouteDiagram();
+    renderRouteMap();
+  }
+  document.querySelectorAll('#routeTypeToggle button').forEach(btn=>{
+    btn.addEventListener('click', ()=> setRouteType(btn.dataset.routeType));
+  });
+
   // ===== Route diagram =====
   const depAirport = document.getElementById('depAirport');
   const arrAirport = document.getElementById('arrAirport');
+  const depAirportResolved = document.getElementById('depAirportResolved');
+  const arrAirportResolved = document.getElementById('arrAirportResolved');
+  const airportOptions = document.getElementById('airportOptions');
   const waypointBody = document.getElementById('waypointBody');
+
+  AIRPORT_DIRECTORY.forEach(airport=>{
+    const codeOption = document.createElement('option');
+    codeOption.value = airport.code;
+    codeOption.label = airport.name;
+    airportOptions.appendChild(codeOption);
+
+    const nameOption = document.createElement('option');
+    nameOption.value = airport.name;
+    nameOption.label = airport.code;
+    airportOptions.appendChild(nameOption);
+  });
+
+  function refreshAirportField(input, hint, commitCode=false){
+    const raw = input.value.trim();
+    const airport = resolveAirport(raw);
+    hint.classList.remove('is-error');
+    if(!raw){
+      hint.textContent = '';
+    } else if(airport){
+      if(commitCode) input.value = airport.code;
+      const mapNote = AIRPORTS[airport.code] ? '' : '; SVG map position unavailable';
+      hint.textContent = airport.codeOnly
+        ? `${airport.code} — map code recognized; no command-name mapping supplied`
+        : `${airport.name} — /createflightplan uses this name${mapNote}`;
+      input.closest('.field').classList.remove('field-error');
+    } else {
+      hint.textContent = 'Unknown airport — choose a listed airport name or ICAO code';
+      hint.classList.add('is-error');
+    }
+    renderRouteDiagram();
+    renderRouteMap();
+  }
+
+  function refreshBothAirportFields(commitCode=false){
+    refreshAirportField(depAirport, depAirportResolved, commitCode);
+    refreshAirportField(arrAirport, arrAirportResolved, commitCode);
+  }
   const routeSvg = document.getElementById('routeSvg');
   let wpIdx = 0;
 
   function renderRouteDiagram(){
     const nodes = [];
-    if(depAirport.value.trim()) nodes.push({label: depAirport.value.trim().toUpperCase(), kind:'dep'});
-    waypointBody.querySelectorAll('tr').forEach(tr=>{
-      const v = tr.querySelector('.wp-input').value.trim();
-      if(v) nodes.push({label: v.toUpperCase(), kind:'wp'});
-    });
-    if(arrAirport.value.trim()) nodes.push({label: arrAirport.value.trim().toUpperCase(), kind:'arr'});
+    if(depAirport.value.trim()) nodes.push({label: airportCode(depAirport.value), kind:'dep'});
+    if(routeType === 'waypoints'){
+      waypointBody.querySelectorAll('tr').forEach(tr=>{
+        const v = tr.querySelector('.wp-input').value.trim();
+        if(v) nodes.push({label: v.toUpperCase(), kind:'wp'});
+      });
+    }
+    if(arrAirport.value.trim()) nodes.push({label: airportCode(arrAirport.value), kind:'arr'});
 
     const spacing = 140;
     const pad = 50;
@@ -954,9 +1278,13 @@
     if(nodes.length === 0){
       svg = `<text x="20" y="${cy+5}" font-family="Inter,sans-serif" font-size="12" fill="#6b7c78">Add a departure, waypoints, and an arrival to see the route.</text>`;
     } else {
+      const segLabel = routeType === 'direct' ? 'DCT' : routeType === 'rdv' ? 'RDV' : '';
       for(let i=0;i<nodes.length-1;i++){
         const x1 = pad + i*spacing, x2 = pad + (i+1)*spacing;
         svg += `<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="#5c6f6a" stroke-width="1.5" stroke-dasharray="5,4"/>`;
+        if(segLabel){
+          svg += `<text x="${(x1+x2)/2}" y="${cy-6}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10.5" font-weight="700" fill="var(--teal-dark)">${segLabel}</text>`;
+        }
       }
       nodes.forEach((n,i)=>{
         const x = pad + i*spacing;
@@ -989,8 +1317,12 @@
     wpIdx = waypointBody.children.length;
   }
   document.getElementById('addWaypointBtn').addEventListener('click', makeWaypointRow);
-  depAirport.addEventListener('input', renderRouteDiagram);
-  arrAirport.addEventListener('input', renderRouteDiagram);
+  depAirport.addEventListener('input', ()=>refreshAirportField(depAirport, depAirportResolved));
+  arrAirport.addEventListener('input', ()=>refreshAirportField(arrAirport, arrAirportResolved));
+  depAirport.addEventListener('change', ()=>refreshAirportField(depAirport, depAirportResolved, true));
+  arrAirport.addEventListener('change', ()=>refreshAirportField(arrAirport, arrAirportResolved, true));
+  depAirport.addEventListener('blur', ()=>refreshAirportField(depAirport, depAirportResolved, true));
+  arrAirport.addEventListener('blur', ()=>refreshAirportField(arrAirport, arrAirportResolved, true));
 
   // ===== ATIS =====
   document.getElementById('parseAtisBtn').addEventListener('click', ()=>{
@@ -1026,7 +1358,7 @@
   document.getElementById('fetchAtisBtn').addEventListener('click', async ()=>{
     const btn = document.getElementById('fetchAtisBtn');
     const orig = btn.textContent;
-    const airport = (depAirport.value || arrAirport.value || '').trim();
+    const airport = airportCode(depAirport.value || arrAirport.value || '');
     if(!airport){
       btn.textContent = 'Enter an airport first';
       setTimeout(()=>{ btn.textContent = orig; }, 1800);
@@ -1124,6 +1456,7 @@
   for(let i=0;i<3;i++) makeCargoRow();
   updateTotals();
   renderRouteDiagram();
+  renderRouteMap();
 
   // default date
   document.getElementById('flightDate').value = new Date().toISOString().slice(0,10);
@@ -1203,11 +1536,18 @@
     const pilotUsername = document.getElementById('fdPilotUsername').value.trim() || 'N/A';
     const aircraft = document.getElementById('fdAircraft').value.trim() || 'N/A';
     const rules = flightRulesSel.value || 'N/A';
-    const dep = depAirport.value.trim().toUpperCase() || 'N/A';
-    const arr = arrAirport.value.trim().toUpperCase() || 'N/A';
+    const dep = airportCommandName(depAirport.value) || 'N/A';
+    const arr = airportCommandName(arrAirport.value) || 'N/A';
     const fl = cruiseAltInput.value.trim().replace(/^FL/i,'') || 'N/A';
-    const wps = [...waypointBody.querySelectorAll('.wp-input')].map(i=>i.value.trim().toUpperCase()).filter(Boolean);
-    const route = wps.length ? wps.join(' ') : 'N/A';
+    let route;
+    if(routeType === 'direct'){
+      route = 'DCT';
+    } else if(routeType === 'rdv'){
+      route = 'RDV';
+    } else {
+      const wps = [...waypointBody.querySelectorAll('.wp-input')].map(i=>i.value.trim().toUpperCase()).filter(Boolean);
+      route = wps.length ? wps.join(' ') : 'N/A';
+    }
 
     const text = `/createflightplan ingamecallsign:${ingameCallsign} callsign:${callsign} aircraft:${aircraft} flightrules:${rules} departing:${dep} arriving:${arr} flightlevel:${fl} ingamename:${pilotUsername} route:${route}`;
     try{
@@ -1295,15 +1635,17 @@
     crewBody.innerHTML=''; crewIdx=0; makeCrewRow('Pilot in Command'); makeCrewRow('First Officer');
     cargoBody.innerHTML=''; cargoIdx=0; for(let i=0;i<3;i++) makeCargoRow();
     waypointBody.innerHTML=''; wpIdx=0; makeWaypointRow(); makeWaypointRow();
+    setRouteType('waypoints');
     soulsAvgWeight.value = 84;
     updateSoulsWeight();
     updateTotals();
     refreshSuggestion();
-    renderRouteDiagram();
+    refreshBothAirportFields();
     document.getElementById('atisChips').innerHTML = '';
     document.querySelectorAll('.sigpad').forEach(c=>{ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); });
     document.body.classList.remove('filed');
     document.getElementById('editBtn').style.display = 'none';
+    document.getElementById('createPlanBtn').style.display = 'inline-flex';
   });
 
   document.getElementById('genStamp').textContent = 'Generated ' + new Date().toLocaleDateString();
@@ -1313,12 +1655,20 @@
   // ===============================================================
   function validateRequired(){
     let firstBad = null;
+    const depCode = airportCode(depAirport.value);
+    const arrCode = airportCode(arrAirport.value);
     manifestEl.querySelectorAll('[data-required="1"]').forEach(el=>{
       const wrap = el.closest('.field');
-      const bad = !el.value.trim();
+      let bad = !el.value.trim();
+      if((el === depAirport || el === arrAirport) && el.value.trim() && !resolveAirport(el.value)) bad = true;
+      if(el === arrAirport && depCode && arrCode && depCode === arrCode) bad = true;
       wrap.classList.toggle('field-error', bad);
       if(bad && !firstBad) firstBad = el;
     });
+    if(depCode && arrCode && depCode === arrCode){
+      arrAirportResolved.textContent = 'Arrival must be different from departure';
+      arrAirportResolved.classList.add('is-error');
+    }
     if(firstBad){
       firstBad.scrollIntoView({behavior:'smooth', block:'center'});
       firstBad.focus();
@@ -1345,7 +1695,7 @@
   // Serialize / load the whole form, used for saving to an account
   // ===============================================================
   function serializeForm(){
-    const data = { fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, unit };
+    const data = { fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, unit, routeType };
     manifestEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{
       if(el.readOnly) return;
       data.fields[el.id] = el.value;
@@ -1404,6 +1754,7 @@
       if(el) el.value = val;
     });
     setUnit(data.unit || 'KG');
+    setRouteType(data.routeType || 'waypoints');
     Object.entries(data.sigs||{}).forEach(([key,sig])=>{
       const block = document.querySelector(`.sig-block[data-sig="${key}"]`);
       if(!block) return;
@@ -1422,7 +1773,7 @@
     updateTotals();
     updateSoulsWeight();
     refreshSuggestion();
-    renderRouteDiagram();
+    refreshBothAirportFields(true);
     updatePerformance();
     document.body.classList.remove('filed');
     document.getElementById('editBtn').style.display = 'none';
