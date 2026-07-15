@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>24FlightBrief — ATC24 Cargo Manifest</title>
+<title>24FlightBrief — Flight Planning for ATC24</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@600;800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -37,7 +37,7 @@
   /* ===== Toolbar ===== */
   .toolbar{
     width:100%;
-    max-width:900px;
+    max-width:980px;
     display:flex;
     flex-wrap:wrap;
     gap:10px;
@@ -83,14 +83,15 @@
   .btn-ghost:hover{background:rgba(255,255,255,.08);}
   .btn-amber{background:var(--amber);color:#241505;}
   .btn-amber:hover{filter:brightness(1.08);}
-  .btn-small{padding:5px 9px;font-size:11px;border-radius:6px;}
+  .btn-small{padding:6px 11px;font-size:11.5px;}
+  .btn-add{background:var(--teal);color:#f2fbf9;border-radius:6px;}
+  .btn-add:hover{filter:brightness(1.1);}
   .btn-danger-outline{background:transparent;color:#e2a49b;border:1px solid rgba(165,56,44,.6);}
-  .btn-danger-outline:hover{background:rgba(165,56,44,.12);}
 
   /* ===== Sheet ===== */
   .sheet-shell{
     width:100%;
-    max-width:900px;
+    max-width:980px;
     background:#0c1418;
     border-radius:10px;
     padding:0;
@@ -99,7 +100,6 @@
   .sprocket{
     height:22px;
     background:#0c1418;
-    background-image: radial-gradient(circle, #0c1418 3px, transparent 3.2px);
     position:relative;
   }
   .sprocket::before{
@@ -135,7 +135,7 @@
     text-align:center;
     padding:6px 10px;
     border-radius:4px;
-    opacity:.55;
+    opacity:.5;
     pointer-events:none;
     line-height:1.3;
   }
@@ -146,7 +146,7 @@
     align-items:flex-end;
     border-bottom:3px solid var(--ink);
     padding-bottom:12px;
-    margin-bottom:14px;
+    margin-bottom:22px;
     gap:16px;
   }
   .head h2{
@@ -175,6 +175,45 @@
   .head-right label{display:block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--rule-strong);margin-bottom:2px;}
   .head-right input{width:100%;text-align:right;}
 
+  /* ===== Panels (sections) ===== */
+  .panel{
+    margin-bottom:26px;
+    padding-bottom:22px;
+    border-bottom:2px dashed var(--rule);
+  }
+  .panel:last-of-type{border-bottom:none;margin-bottom:0;}
+  .panel-head{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .panel-eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+    background:var(--teal);
+    border-radius:4px;
+    padding:2px 8px;
+    letter-spacing:.05em;
+  }
+  .panel-head h3{
+    font-family:'Big Shoulders Stencil',sans-serif;
+    font-size:22px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:var(--ink);
+    margin:0;
+  }
+  .panel-head .line{flex:1;height:2px;background:var(--ink);opacity:.7;}
+  .panel-sub{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin:-8px 0 14px;
+    line-height:1.5;
+  }
+
   /* form field grid */
   .grid{
     display:grid;
@@ -182,9 +221,7 @@
     border:1.5px solid var(--ink);
     border-radius:3px;
     overflow:hidden;
-    margin-bottom:14px;
   }
-  .grid.crew-grid{grid-template-columns:repeat(4,1fr);}
   .field{
     border-right:1px solid var(--rule);
     border-bottom:1px solid var(--rule);
@@ -217,28 +254,27 @@
   select{appearance:none;-webkit-appearance:none;cursor:pointer;}
   .rules-select{font-weight:700;}
 
-  /* section titles */
-  .section-title{
+  /* sub-section title (inside a panel, for dynamic lists) */
+  .sub-title{
     display:flex;
     align-items:center;
     gap:10px;
-    margin:18px 0 8px;
+    margin:16px 0 8px;
   }
-  .section-title h3{
-    font-family:'Big Shoulders Stencil',sans-serif;
-    font-size:16px;
-    letter-spacing:.06em;
+  .sub-title h4{
+    font-family:'Inter',sans-serif;
+    font-size:11.5px;
+    letter-spacing:.08em;
     text-transform:uppercase;
-    color:var(--ink);
+    color:var(--ink-soft);
     margin:0;
     white-space:nowrap;
+    font-weight:700;
   }
-  .section-title .line{flex:1;height:2px;background:var(--ink);opacity:.75;}
-  .section-title .add-btn{margin-left:auto;}
+  .sub-title .line-thin{flex:1;height:1px;background:var(--rule);}
 
   /* tables */
   table{width:100%;border-collapse:collapse;margin-bottom:6px;}
-  table.crew-table{margin-bottom:14px;}
   th{
     font-size:9px;
     letter-spacing:.08em;
@@ -258,10 +294,10 @@
     background:rgba(255,255,255,.28);
   }
   tr:nth-child(even) td{background:rgba(255,255,255,.5);}
-  td.num{width:34px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--rule-strong);background:transparent!important;}
+  td.num{width:30px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--rule-strong);background:transparent!important;}
   td.wt{width:90px;}
-  td.pcs{width:60px;}
-  td.rm{width:34px;text-align:center;}
+  td.pcs{width:56px;}
+  td.rm{width:32px;text-align:center;}
   .col-w-desc{width:auto;}
   .row-remove{
     background:transparent;
@@ -292,6 +328,13 @@
   }
   .unit-toggle button.active{background:var(--ink);color:#fff;}
 
+  .add-row-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-top:6px;
+  }
+
   textarea.remarks{
     width:100%;
     min-height:64px;
@@ -305,12 +348,84 @@
     line-height:1.5;
   }
 
+  /* ===== Route diagram ===== */
+  .route-diagram-wrap{
+    border:1.5px solid var(--ink);
+    border-radius:4px;
+    background:rgba(255,255,255,.4);
+    overflow-x:auto;
+    padding:6px 0;
+    margin-top:6px;
+  }
+  #routeSvg{display:block;height:120px;}
+
+  /* ===== ATIS panel ===== */
+  .atis-box{
+    border:1.5px solid var(--ink);
+    border-radius:4px;
+    background:rgba(255,255,255,.35);
+    padding:12px;
+  }
+  .atis-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;}
+  .atis-row textarea{
+    width:100%;
+    min-height:56px;
+    font-size:12px;
+    border:1px dashed var(--rule);
+    border-radius:3px;
+    padding:6px 8px;
+    background:rgba(255,255,255,.5);
+  }
+  .atis-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    background:var(--ink);
+    color:#fff;
+    padding:3px 9px;
+    border-radius:20px;
+  }
+  .atis-note{font-size:10.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
+
+  /* ===== Performance ===== */
+  .perf-grid{
+    display:grid;
+    grid-template-columns:1.4fr repeat(4,1fr);
+    border:1.5px solid var(--ink);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .perf-grid .field{border-bottom:none;}
+  .perf-note{font-size:10.5px;color:var(--ink-soft);margin-top:8px;line-height:1.5;}
+  .cruise-row{
+    display:flex;
+    align-items:flex-end;
+    gap:14px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .cruise-field{
+    border:1.5px solid var(--ink);
+    border-radius:3px;
+    padding:7px 10px;
+    min-width:140px;
+  }
+  .cruise-field label{display:block;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--rule-strong);margin-bottom:3px;font-weight:600;}
+  .suggested-pill{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--teal-dark);
+    background:rgba(27,127,114,.12);
+    border:1px dashed var(--teal-dark);
+    border-radius:20px;
+    padding:5px 12px;
+  }
+
   /* signatures */
   .sig-wrap{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:22px;
-    margin-top:20px;
   }
   .sig-block{
     border:1.5px solid var(--ink);
@@ -380,7 +495,7 @@
   body.exporting .sheet-shell{box-shadow:none;}
 
   @media(max-width:720px){
-    .grid{grid-template-columns:repeat(2,1fr);}
+    .grid, .perf-grid{grid-template-columns:repeat(2,1fr);}
     .field.wide{grid-column:span 2;}
     .sig-wrap{grid-template-columns:1fr;}
     #manifest{padding:22px 16px 20px;}
@@ -393,7 +508,7 @@
   <div class="toolbar no-export">
     <div>
       <h1>24FlightBrief</h1>
-      <div class="sub">Fill it in, sign it, export it for your flight</div>
+      <div class="sub">Flight planning for ATC24</div>
     </div>
     <div class="btn-row">
       <button class="btn-ghost" id="resetBtn">Reset form</button>
@@ -407,127 +522,218 @@
     <div class="sprocket"></div>
 
     <div id="manifest">
-      <div class="stamp">ATC24<br>CARGO OPS</div>
+      <div class="stamp">24FLIGHT<br>BRIEF</div>
 
       <div class="head">
         <div>
           <div class="agency">ATC24 Virtual Air Traffic Network</div>
-          <h2>Cargo Manifest</h2>
+          <h2>Flight Brief</h2>
         </div>
         <div class="head-right">
-          <label>Manifest No.</label>
-          <input type="text" id="manifestNo" placeholder="CM-0001">
-          <label style="margin-top:6px;">Page</label>
-          <input type="text" value="1 OF 1">
+          <label>Brief No.</label>
+          <input type="text" id="manifestNo" placeholder="FB-0001">
         </div>
       </div>
 
-      <!-- Flight info -->
-      <div class="grid">
-        <div class="field"><label>Callsign</label><input type="text" placeholder="e.g. SBI412"></div>
-        <div class="field"><label>Flight Rules</label>
-          <select class="rules-select">
-            <option value="">—</option>
-            <option value="IFR">IFR</option>
-            <option value="VFR">VFR</option>
-          </select>
+      <!-- 01 FLIGHT DETAILS -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-eyebrow">01</span>
+          <h3>Flight Details</h3>
+          <div class="line"></div>
         </div>
-        <div class="field"><label>Aircraft Type</label><input type="text" placeholder="e.g. B738"></div>
-        <div class="field"><label>Registration</label><input type="text" placeholder="e.g. N24ATC"></div>
+        <div class="grid">
+          <div class="field"><label>Callsign</label><input type="text" placeholder="e.g. SBI412"></div>
+          <div class="field"><label>Flight Rules</label>
+            <select class="rules-select" id="flightRules">
+              <option value="">—</option>
+              <option value="IFR">IFR</option>
+              <option value="VFR">VFR</option>
+            </select>
+          </div>
+          <div class="field"><label>Aircraft Type</label><input type="text" placeholder="e.g. B738"></div>
+          <div class="field"><label>Tail Number / Registration</label><input type="text" placeholder="e.g. N24ATC"></div>
 
-        <div class="field"><label>Operator / Airline</label><input type="text" placeholder="e.g. Blue Ridge Air"></div>
-        <div class="field wide"><label>Route</label><input type="text" placeholder="e.g. LAXA VECTOR SEXI DCT"></div>
-        <div class="field"><label>Date</label><input type="date" id="flightDate"></div>
-
-        <div class="field"><label>Departure Airport</label><input type="text" placeholder="ICAO, e.g. LFPI"></div>
-        <div class="field"><label>Departure Time (UTC)</label><input type="time"></div>
-        <div class="field"><label>Arrival Airport</label><input type="text" placeholder="ICAO, e.g. TIST"></div>
-        <div class="field"><label>Arrival Time (UTC)</label><input type="time"></div>
+          <div class="field"><label>Operator / Airline</label><input type="text" placeholder="e.g. Blue Ridge Air"></div>
+          <div class="field"><label>Date</label><input type="date" id="flightDate"></div>
+          <div class="field"><label>Departure Time (UTC)</label><input type="time"></div>
+          <div class="field"><label>Arrival Time (UTC)</label><input type="time"></div>
+        </div>
       </div>
 
-      <!-- Crew -->
-      <div class="section-title">
-        <h3>Flight Crew</h3>
-        <div class="line"></div>
-        <button class="btn-ghost btn-small add-btn no-export" id="addCrewBtn">+ Add crew</button>
+      <!-- 02 ROUTE & WAYPOINTS -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-eyebrow">02</span>
+          <h3>Route &amp; Waypoints</h3>
+          <div class="line"></div>
+        </div>
+        <div class="grid">
+          <div class="field"><label>Departure Airport</label><input type="text" id="depAirport" placeholder="ICAO, e.g. LFPI"></div>
+          <div class="field"><label>Departure Procedure (SID)</label><input type="text" placeholder="If applicable"></div>
+          <div class="field"><label>Arrival Airport</label><input type="text" id="arrAirport" placeholder="ICAO, e.g. TIST"></div>
+          <div class="field"><label>Arrival Procedure (STAR)</label><input type="text" placeholder="If applicable"></div>
+        </div>
+
+        <div class="sub-title"><h4>Waypoints</h4><div class="line-thin"></div></div>
+        <table>
+          <thead>
+            <tr><th style="width:28px;">#</th><th class="col-w-desc">Waypoint / Fix</th><th style="width:220px;">Altitude / Restriction (optional)</th><th class="rm no-export"></th></tr>
+          </thead>
+          <tbody id="waypointBody"></tbody>
+        </table>
+        <button class="btn-add btn-small add-row-btn no-export" id="addWaypointBtn">+ Add waypoint</button>
+
+        <div class="sub-title"><h4>Route Diagram</h4><div class="line-thin"></div></div>
+        <div class="route-diagram-wrap">
+          <svg id="routeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+
+        <div class="sub-title"><h4>ATIS</h4><div class="line-thin"></div></div>
+        <div class="atis-box">
+          <div class="atis-row no-export">
+            <button class="btn-ghost btn-small" id="fetchAtisBtn" style="border-color:var(--rule-strong);color:var(--ink-soft);">Fetch live ATIS</button>
+            <span style="font-size:10.5px;color:var(--ink-soft);">or paste the current ATIS text below</span>
+          </div>
+          <div class="atis-row">
+            <textarea id="atisPaste" placeholder="Paste raw ATIS text here, e.g. LFPI ATIS INFO ROMEO... WIND 270/08... ACTIVE RWY 27..."></textarea>
+          </div>
+          <button class="btn-ghost btn-small no-export" id="parseAtisBtn">Parse ATIS</button>
+          <div class="atis-chips" id="atisChips"></div>
+          <div class="atis-note">Live ATIS fetching isn't wired up yet — there's no public documented API for ATC24's ATIS feed. If you have access to one, drop the endpoint into <code>ATIS_API_ENDPOINT</code> near the top of the script and the Fetch button will use it automatically.</div>
+        </div>
       </div>
-      <table class="crew-table">
-        <thead>
-          <tr><th style="width:34px;">#</th><th>Role</th><th class="col-w-desc">Name</th><th style="width:120px;">Roblox Username</th><th class="rm no-export"></th></tr>
-        </thead>
-        <tbody id="crewBody"></tbody>
-      </table>
 
-      <!-- Cargo -->
-      <div class="section-title">
-        <h3>Cargo Items</h3>
-        <div class="line"></div>
-        <button class="btn-ghost btn-small add-btn no-export" id="addCargoBtn">+ Add cargo item</button>
+      <!-- 03 PERFORMANCE -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-eyebrow">03</span>
+          <h3>Performance</h3>
+          <div class="line"></div>
+        </div>
+        <div class="perf-grid">
+          <div class="field"><label>Aircraft Type</label>
+            <select id="perfAircraft"></select>
+          </div>
+          <div class="field"><label>V1 (kt)</label><input type="number" id="perfV1"></div>
+          <div class="field"><label>VR (kt)</label><input type="number" id="perfVR"></div>
+          <div class="field"><label>V2 (kt)</label><input type="number" id="perfV2"></div>
+          <div class="field"><label>Vref (kt)</label><input type="number" id="perfVref"></div>
+        </div>
+        <div class="perf-note">Figures are rough estimates for roleplay reference, not real-world performance data. Pick an aircraft to auto-fill, then edit any value freely.</div>
+
+        <div class="cruise-row">
+          <div class="cruise-field">
+            <label>Cruising Altitude</label>
+            <input type="text" id="cruiseAlt" placeholder="e.g. FL030">
+          </div>
+          <span class="suggested-pill" id="suggestedCruise">Suggested: —</span>
+          <button class="btn-ghost btn-small no-export" id="useSuggestedBtn">Use suggested</button>
+        </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th style="width:28px;">#</th>
-            <th class="col-w-desc">Nature of Goods</th>
-            <th style="width:150px;">Shipper</th>
-            <th style="width:150px;">Consignee</th>
-            <th class="pcs">Pcs</th>
-            <th class="wt">Weight <span class="unit-toggle no-export"><button id="unitKg" class="active">KG</button><button id="unitLb">LB</button></span></th>
-            <th class="rm no-export"></th>
-          </tr>
-        </thead>
-        <tbody id="cargoBody"></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="4" style="text-align:right;">TOTALS</td>
-            <td id="totalPcs">0</td>
-            <td id="totalWt">0</td>
-            <td class="no-export"></td>
-          </tr>
-        </tfoot>
-      </table>
 
-      <!-- Remarks -->
-      <div class="section-title"><h3>Cargo / Flight Remarks</h3><div class="line"></div></div>
-      <textarea class="remarks" placeholder="Special handling, hazmat notes, load balance, ATC restrictions, roleplay notes..."></textarea>
+      <!-- 04 CREW & PASSENGERS -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-eyebrow">04</span>
+          <h3>Crew &amp; Passengers</h3>
+          <div class="line"></div>
+        </div>
+        <table>
+          <thead>
+            <tr><th style="width:32px;">#</th><th style="width:220px;">Role</th><th class="col-w-desc">Name</th><th class="rm no-export"></th></tr>
+          </thead>
+          <tbody id="crewBody"></tbody>
+        </table>
+        <button class="btn-add btn-small add-row-btn no-export" id="addCrewBtn">+ Add person</button>
+      </div>
 
-      <!-- Signatures -->
-      <div class="sig-wrap">
-        <div class="sig-block" data-sig="dispatch">
-          <div class="sig-block-head">
-            <span>Loadmaster / Dispatcher Signature</span>
-            <div class="sig-mode-toggle no-export">
-              <button class="mode-draw active" data-mode="draw">Draw</button>
-              <button class="mode-type" data-mode="type">Type</button>
+      <!-- 05 CARGO -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-eyebrow">05</span>
+          <h3>Cargo</h3>
+          <div class="line"></div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:26px;">#</th>
+              <th class="col-w-desc">Nature of Goods</th>
+              <th style="width:150px;">Shipper</th>
+              <th style="width:150px;">Consignee</th>
+              <th class="pcs">Pcs</th>
+              <th class="wt">Weight <span class="unit-toggle no-export"><button id="unitKg" class="active">KG</button><button id="unitLb">LB</button></span></th>
+              <th class="rm no-export"></th>
+            </tr>
+          </thead>
+          <tbody id="cargoBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="text-align:right;">TOTALS</td>
+              <td id="totalPcs">0</td>
+              <td id="totalWt">0</td>
+              <td class="no-export"></td>
+            </tr>
+          </tfoot>
+        </table>
+        <button class="btn-add btn-small add-row-btn no-export" id="addCargoBtn">+ Add cargo item</button>
+      </div>
+
+      <!-- 06 REMARKS -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-eyebrow">06</span>
+          <h3>Remarks</h3>
+          <div class="line"></div>
+        </div>
+        <textarea class="remarks" placeholder="Special handling, hazmat notes, load balance, ATC restrictions, roleplay notes..."></textarea>
+      </div>
+
+      <!-- 07 SIGNATURES -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-eyebrow">07</span>
+          <h3>Signatures</h3>
+          <div class="line"></div>
+        </div>
+        <div class="sig-wrap">
+          <div class="sig-block" data-sig="dispatch">
+            <div class="sig-block-head">
+              <span>Loadmaster / Dispatcher Signature</span>
+              <div class="sig-mode-toggle no-export">
+                <button class="mode-draw active" data-mode="draw">Draw</button>
+                <button class="mode-type" data-mode="type">Type</button>
+              </div>
+            </div>
+            <canvas class="sigpad"></canvas>
+            <input class="sig-type" style="display:none;" placeholder="Type signature">
+            <div class="sig-under">
+              <span class="sig-name-line"><input type="text" placeholder="Printed name" style="width:150px;"></span>
+              <button class="sig-clear no-export">Clear</button>
             </div>
           </div>
-          <canvas class="sigpad"></canvas>
-          <input class="sig-type" style="display:none;" placeholder="Type signature">
-          <div class="sig-under">
-            <span class="sig-name-line"><input type="text" placeholder="Printed name" style="width:150px;"></span>
-            <button class="sig-clear no-export">Clear</button>
-          </div>
-        </div>
 
-        <div class="sig-block" data-sig="pic">
-          <div class="sig-block-head">
-            <span>Pilot in Command Signature</span>
-            <div class="sig-mode-toggle no-export">
-              <button class="mode-draw active" data-mode="draw">Draw</button>
-              <button class="mode-type" data-mode="type">Type</button>
+          <div class="sig-block" data-sig="pic">
+            <div class="sig-block-head">
+              <span>Pilot in Command Signature</span>
+              <div class="sig-mode-toggle no-export">
+                <button class="mode-draw active" data-mode="draw">Draw</button>
+                <button class="mode-type" data-mode="type">Type</button>
+              </div>
             </div>
-          </div>
-          <canvas class="sigpad"></canvas>
-          <input class="sig-type" style="display:none;" placeholder="Type signature">
-          <div class="sig-under">
-            <span class="sig-name-line"><input type="text" placeholder="Printed name" style="width:150px;"></span>
-            <button class="sig-clear no-export">Clear</button>
+            <canvas class="sigpad"></canvas>
+            <input class="sig-type" style="display:none;" placeholder="Type signature">
+            <div class="sig-under">
+              <span class="sig-name-line"><input type="text" placeholder="Printed name" style="width:150px;"></span>
+              <button class="sig-clear no-export">Clear</button>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="foot">
-        <span>ATC24 Form CM-01 · Fan-made · For roleplay use on the ATC24 Roblox network only</span>
+        <span>24FlightBrief · Fan-made · For roleplay use on the ATC24 Roblox network only</span>
         <span id="genStamp"></span>
       </div>
     </div>
@@ -539,11 +745,207 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
-  const cargoBody = document.getElementById('cargoBody');
-  const crewBody = document.getElementById('crewBody');
-  let cargoIdx = 0, crewIdx = 0;
-  let unit = 'KG';
 
+  // ---------------------------------------------------------------
+  // If you get access to a real ATC24 ATIS API/feed, put its URL
+  // here. Expected to return JSON; adapt parseAtisResponse() below
+  // to match whatever shape it actually returns.
+  // ---------------------------------------------------------------
+  const ATIS_API_ENDPOINT = "";
+
+  // ===== Aircraft performance reference (rough roleplay estimates) =====
+  const AIRCRAFT_DB = {
+    "C172":  { name:"Cessna 172",        v1:null, vr:55,  v2:null, vref:60  },
+    "PA28":  { name:"Piper PA-28",       v1:null, vr:60,  v2:null, vref:65  },
+    "DA40":  { name:"Diamond DA40",      v1:null, vr:59,  v2:null, vref:63  },
+    "B350":  { name:"King Air 350",      v1:92,   vr:100, v2:108,  vref:105 },
+    "Q400":  { name:"Dash 8 Q400",       v1:108,  vr:113, v2:120,  vref:118 },
+    "E175":  { name:"Embraer E175",      v1:118,  vr:122, v2:128,  vref:132 },
+    "CRJ7":  { name:"CRJ-700",           v1:120,  vr:128, v2:135,  vref:130 },
+    "A319":  { name:"Airbus A319",       v1:130,  vr:138, v2:143,  vref:127 },
+    "A320":  { name:"Airbus A320",       v1:135,  vr:142, v2:148,  vref:130 },
+    "A321":  { name:"Airbus A321",       v1:139,  vr:146, v2:152,  vref:136 },
+    "A350":  { name:"Airbus A350",       v1:150,  vr:160, v2:168,  vref:140 },
+    "B738":  { name:"Boeing 737-800",    v1:138,  vr:144, v2:150,  vref:135 },
+    "B77W":  { name:"Boeing 777-300ER",  v1:160,  vr:170, v2:178,  vref:150 },
+    "B744":  { name:"Boeing 747-400",    v1:165,  vr:175, v2:183,  vref:155 },
+  };
+
+  const perfSelect = document.getElementById('perfAircraft');
+  const custOpt = document.createElement('option');
+  custOpt.value = ""; custOpt.textContent = "— Custom / manual entry —";
+  perfSelect.appendChild(custOpt);
+  Object.keys(AIRCRAFT_DB).forEach(code=>{
+    const o = document.createElement('option');
+    o.value = code;
+    o.textContent = `${code} — ${AIRCRAFT_DB[code].name}`;
+    perfSelect.appendChild(o);
+  });
+  perfSelect.addEventListener('change', ()=>{
+    const d = AIRCRAFT_DB[perfSelect.value];
+    document.getElementById('perfV1').value   = d ? (d.v1  ?? '') : '';
+    document.getElementById('perfVR').value   = d ? (d.vr  ?? '') : '';
+    document.getElementById('perfV2').value   = d ? (d.v2  ?? '') : '';
+    document.getElementById('perfVref').value = d ? (d.vref?? '') : '';
+  });
+
+  // ===== Suggested cruising altitude =====
+  const flightRulesSel = document.getElementById('flightRules');
+  const suggestedPill = document.getElementById('suggestedCruise');
+  const cruiseAltInput = document.getElementById('cruiseAlt');
+  function currentSuggestion(){
+    return flightRulesSel.value === 'IFR' ? 'FL030' : null;
+  }
+  function refreshSuggestion(){
+    const s = currentSuggestion();
+    suggestedPill.textContent = 'Suggested: ' + (s || '— (VFR, pilot\'s discretion)');
+  }
+  flightRulesSel.addEventListener('change', refreshSuggestion);
+  document.getElementById('useSuggestedBtn').addEventListener('click', ()=>{
+    const s = currentSuggestion();
+    if(s) cruiseAltInput.value = s;
+  });
+  refreshSuggestion();
+
+  // ===== Route diagram =====
+  const depAirport = document.getElementById('depAirport');
+  const arrAirport = document.getElementById('arrAirport');
+  const waypointBody = document.getElementById('waypointBody');
+  const routeSvg = document.getElementById('routeSvg');
+  let wpIdx = 0;
+
+  function renderRouteDiagram(){
+    const nodes = [];
+    if(depAirport.value.trim()) nodes.push({label: depAirport.value.trim().toUpperCase(), kind:'dep'});
+    waypointBody.querySelectorAll('tr').forEach(tr=>{
+      const v = tr.querySelector('.wp-input').value.trim();
+      if(v) nodes.push({label: v.toUpperCase(), kind:'wp'});
+    });
+    if(arrAirport.value.trim()) nodes.push({label: arrAirport.value.trim().toUpperCase(), kind:'arr'});
+
+    const spacing = 140;
+    const pad = 50;
+    const width = Math.max(nodes.length * spacing, spacing) + pad*2;
+    const cy = 60;
+    routeSvg.setAttribute('viewBox', `0 0 ${width} 120`);
+    routeSvg.setAttribute('width', width);
+
+    let svg = '';
+    if(nodes.length === 0){
+      svg = `<text x="20" y="${cy+5}" font-family="Inter,sans-serif" font-size="12" fill="#6b7c78">Add a departure, waypoints, and an arrival to see the route.</text>`;
+    } else {
+      for(let i=0;i<nodes.length-1;i++){
+        const x1 = pad + i*spacing, x2 = pad + (i+1)*spacing;
+        svg += `<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="#5c6f6a" stroke-width="1.5" stroke-dasharray="5,4"/>`;
+      }
+      nodes.forEach((n,i)=>{
+        const x = pad + i*spacing;
+        let fill = '#1b7f72', r = 7;
+        if(n.kind==='dep'){ fill='#1b7f72'; r=9; }
+        if(n.kind==='arr'){ fill='#a5382c'; r=9; }
+        svg += `<circle cx="${x}" cy="${cy}" r="${r}" fill="${fill}" stroke="#16232b" stroke-width="1.5"/>`;
+        svg += `<text x="${x}" y="${cy-16}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="#16232b">${n.label}</text>`;
+        svg += `<text x="${x}" y="${cy+26}" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" letter-spacing="1" fill="#6b7c78">${n.kind==='dep'?'DEP':n.kind==='arr'?'ARR':'FIX'}</text>`;
+      });
+    }
+    routeSvg.innerHTML = svg;
+  }
+
+  function makeWaypointRow(){
+    wpIdx++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="num">${wpIdx}</td>
+      <td><input type="text" class="wp-input" placeholder="e.g. SEXI" style="text-transform:uppercase;"></td>
+      <td><input type="text" placeholder="e.g. AT OR ABOVE FL030"></td>
+      <td class="rm no-export"><button class="row-remove" title="Remove waypoint">&times;</button></td>
+    `;
+    tr.querySelector('.row-remove').addEventListener('click', ()=>{ tr.remove(); renumberWaypoints(); renderRouteDiagram(); });
+    tr.querySelector('.wp-input').addEventListener('input', renderRouteDiagram);
+    waypointBody.appendChild(tr);
+  }
+  function renumberWaypoints(){
+    [...waypointBody.children].forEach((tr,i)=>{ tr.querySelector('.num').textContent = i+1; });
+    wpIdx = waypointBody.children.length;
+  }
+  document.getElementById('addWaypointBtn').addEventListener('click', makeWaypointRow);
+  depAirport.addEventListener('input', renderRouteDiagram);
+  arrAirport.addEventListener('input', renderRouteDiagram);
+
+  // ===== ATIS =====
+  document.getElementById('parseAtisBtn').addEventListener('click', ()=>{
+    const text = document.getElementById('atisPaste').value.toUpperCase();
+    const chips = document.getElementById('atisChips');
+    chips.innerHTML = '';
+    const patterns = {
+      'INFO':    /INFO(?:RMATION)?\s+([A-Z])/,
+      'RWY':     /(?:ACTIVE\s+)?RWY\s+(\d{1,2}[LRC]?)/,
+      'WIND':    /WIND\s+(\d{2,3}\/\d{1,3}|\d{3}\d{2}(?:G\d{2})?KT)/,
+      'ALTIM':   /(?:ALTIM(?:ETER)?|QNH)\s+([\d.]+)/,
+    };
+    let found = 0;
+    Object.entries(patterns).forEach(([label, re])=>{
+      const m = text.match(re);
+      if(m){
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = `${label}: ${m[1]}`;
+        chips.appendChild(chip);
+        found++;
+      }
+    });
+    if(found === 0){
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.style.background = '#a5382c';
+      chip.textContent = 'No recognizable fields found — check the pasted text';
+      chips.appendChild(chip);
+    }
+  });
+
+  document.getElementById('fetchAtisBtn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('fetchAtisBtn');
+    if(!ATIS_API_ENDPOINT){
+      const orig = btn.textContent;
+      btn.textContent = 'No endpoint configured';
+      setTimeout(()=>{ btn.textContent = orig; }, 1800);
+      return;
+    }
+    try{
+      const res = await fetch(ATIS_API_ENDPOINT);
+      const data = await res.json();
+      document.getElementById('atisPaste').value = JSON.stringify(data, null, 2);
+    }catch(e){
+      const orig = btn.textContent;
+      btn.textContent = 'Fetch failed';
+      setTimeout(()=>{ btn.textContent = orig; }, 1800);
+    }
+  });
+
+  // ===== Crew & passengers (unlimited, freeform role) =====
+  const crewBody = document.getElementById('crewBody');
+  let crewIdx = 0;
+  function makeCrewRow(role){
+    crewIdx++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="num">${crewIdx}</td>
+      <td><input type="text" value="${role||''}" placeholder="e.g. Pilot in Command, Ground Crew, Passenger"></td>
+      <td><input type="text" placeholder="Name"></td>
+      <td class="rm no-export"><button class="row-remove" title="Remove">&times;</button></td>
+    `;
+    tr.querySelector('.row-remove').addEventListener('click', ()=>{ tr.remove(); renumberCrew(); });
+    crewBody.appendChild(tr);
+  }
+  function renumberCrew(){
+    [...crewBody.children].forEach((tr,i)=>{ tr.querySelector('.num').textContent = i+1; });
+    crewIdx = crewBody.children.length;
+  }
+  document.getElementById('addCrewBtn').addEventListener('click', ()=>makeCrewRow(''));
+
+  // ===== Cargo (unlimited) =====
+  const cargoBody = document.getElementById('cargoBody');
+  let cargoIdx = 0, unit = 'KG';
   function makeCargoRow(){
     cargoIdx++;
     const tr = document.createElement('tr');
@@ -556,17 +958,15 @@
       <td class="wt"><input type="number" min="0" step="0.1" class="wt-input" placeholder="0"></td>
       <td class="rm no-export"><button class="row-remove" title="Remove item">&times;</button></td>
     `;
-    tr.querySelector('.row-remove').addEventListener('click', ()=>{ tr.remove(); renumber(); updateTotals(); });
+    tr.querySelector('.row-remove').addEventListener('click', ()=>{ tr.remove(); renumberCargo(); updateTotals(); });
     tr.querySelector('.pcs-input').addEventListener('input', updateTotals);
     tr.querySelector('.wt-input').addEventListener('input', updateTotals);
     cargoBody.appendChild(tr);
   }
-
-  function renumber(){
+  function renumberCargo(){
     [...cargoBody.children].forEach((tr,i)=>{ tr.querySelector('.num').textContent = i+1; });
     cargoIdx = cargoBody.children.length;
   }
-
   function updateTotals(){
     let pcs = 0, wt = 0;
     cargoBody.querySelectorAll('tr').forEach(tr=>{
@@ -576,8 +976,7 @@
     document.getElementById('totalPcs').textContent = pcs;
     document.getElementById('totalWt').textContent = wt.toFixed(1) + ' ' + unit;
   }
-
-  document.getElementById('addCargoBtn').addEventListener('click', ()=>{ makeCargoRow(); });
+  document.getElementById('addCargoBtn').addEventListener('click', makeCargoRow);
   document.getElementById('unitKg').addEventListener('click', ()=>setUnit('KG'));
   document.getElementById('unitLb').addEventListener('click', ()=>setUnit('LB'));
   function setUnit(u){
@@ -587,30 +986,14 @@
     updateTotals();
   }
 
-  function makeCrewRow(role){
-    crewIdx++;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="num">${crewIdx}</td>
-      <td><input type="text" value="${role||''}" placeholder="e.g. First Officer"></td>
-      <td><input type="text" placeholder="Full name"></td>
-      <td><input type="text" placeholder="@username"></td>
-      <td class="rm no-export"><button class="row-remove" title="Remove">&times;</button></td>
-    `;
-    tr.querySelector('.row-remove').addEventListener('click', ()=>{ tr.remove(); renumberCrew(); });
-    crewBody.appendChild(tr);
-  }
-  function renumberCrew(){
-    [...crewBody.children].forEach((tr,i)=>{ tr.querySelector('.num').textContent = i+1; });
-    crewIdx = crewBody.children.length;
-  }
-  document.getElementById('addCrewBtn').addEventListener('click', ()=>makeCrewRow(''));
-
   // seed initial rows
   makeCrewRow('Pilot in Command');
   makeCrewRow('First Officer');
+  makeWaypointRow();
+  makeWaypointRow();
   for(let i=0;i<3;i++) makeCargoRow();
   updateTotals();
+  renderRouteDiagram();
 
   // default date
   document.getElementById('flightDate').value = new Date().toISOString().slice(0,10);
@@ -625,7 +1008,6 @@
     function resize(){
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      const data = canvas.toDataURL();
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
@@ -695,7 +1077,7 @@
   document.getElementById('exportImgBtn').addEventListener('click', async ()=>{
     const canvas = await renderCanvas();
     const link = document.createElement('a');
-    link.download = '24flightbrief-manifest.png';
+    link.download = '24flightbrief.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
   });
@@ -709,7 +1091,7 @@
           flashBtn('copyImgBtn', 'Copied!');
         }catch(err){
           const link = document.createElement('a');
-          link.download = '24flightbrief-manifest.png';
+          link.download = '24flightbrief.png';
           link.href = URL.createObjectURL(blob);
           link.click();
           flashBtn('copyImgBtn', 'Downloaded');
@@ -725,7 +1107,7 @@
     const w = canvas.width, h = canvas.height;
     const pdf = new jsPDF({ orientation: w > h ? 'landscape':'portrait', unit:'px', format:[w,h] });
     pdf.addImage(imgData, 'PNG', 0, 0, w, h);
-    pdf.save('24flightbrief-manifest.pdf');
+    pdf.save('24flightbrief.pdf');
   });
 
   function flashBtn(id, text){
@@ -736,13 +1118,17 @@
   }
 
   document.getElementById('resetBtn').addEventListener('click', ()=>{
-    if(!confirm('Reset the entire manifest? This clears all fields.')) return;
+    if(!confirm('Reset the entire flight brief? This clears all fields.')) return;
     manifestEl.querySelectorAll('input[type=text], input[type=number], input[type=time], textarea').forEach(el=>el.value='');
     manifestEl.querySelectorAll('select').forEach(el=>el.value='');
     document.getElementById('flightDate').value = new Date().toISOString().slice(0,10);
     crewBody.innerHTML=''; crewIdx=0; makeCrewRow('Pilot in Command'); makeCrewRow('First Officer');
     cargoBody.innerHTML=''; cargoIdx=0; for(let i=0;i<3;i++) makeCargoRow();
+    waypointBody.innerHTML=''; wpIdx=0; makeWaypointRow(); makeWaypointRow();
     updateTotals();
+    refreshSuggestion();
+    renderRouteDiagram();
+    document.getElementById('atisChips').innerHTML = '';
     document.querySelectorAll('.sigpad').forEach(c=>{ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); });
   });
 
