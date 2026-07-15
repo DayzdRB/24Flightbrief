@@ -1,14 +1,21 @@
 # 24Flightbrief
 A flight planning tool for ATC24
 
+7/15/26
+{
+Complete Discour Oauth2 integration
+}
 
-Next steps:
-After waiting for Claude to let me talk again I will:
-add in Discord Oauth2 sync;
-Create flight plans with the help of current ATIS information via the API
-Save users previous and current flight plans using the Discord Oauth2 identify information
-Add Performance calculations based on cargo and passenger weight information as well as ATIS
-Make Cargo, crew, and Passenger information seperate so flights with a full cabin of passengers can calculate an estimated weight based on the numbers
-Make Flight plan commands be exported when they are all put together using ATC24 /createflightplan command
-Give the site access to 24RC map information so Flight plans can be visualized
-Add an estimated ETA based on aircraft type(crusing speed) and traffic within the ATC24 server
+Next Steps:
+Integrate 24Data API into 24FlightBrief
+Use ATIS info to give suggested routes
+Get rid of Redundant input fields:Tail Number, Operator / Airline, Aircraft Type in Performance
+Move Dep and Arr time to an input field after create flight plan
+Overlay Route to the SVG PTFS Map with waypoints
+Move Performance Cruising Altitude to the be next to the rest of discord required Flight plan details
+Performance data is based off of PTFS wiki data instead of where ever it got it from
+Make route copied for the discord command line up with route information
+Add in a dynamic ETA based on real time air traffic data from the 24Data API
+
+
+
