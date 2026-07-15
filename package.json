@@ -1,0 +1,9 @@
+{
+  "name": "24flightbrief",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flight planning tool for the Roblox ATC24 network.",
+  "engines": {
+    "node": ">=18"
+  }
+}
