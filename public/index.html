@@ -604,8 +604,6 @@
           <div class="field"><label>Roblox Username (Pilot) <span class="req-mark">*</span></label><input type="text" id="fdPilotUsername" data-required="1" placeholder="For /createflightplan"></div>
 
           <div class="field"><label>Aircraft Type <span class="req-mark">*</span></label><input type="text" id="fdAircraft" data-required="1" placeholder="e.g. B738"></div>
-          <div class="field"><label>Tail Number / Registration</label><input type="text" placeholder="e.g. N24ATC"></div>
-          <div class="field"><label>Operator / Airline</label><input type="text" placeholder="e.g. Blue Ridge Air"></div>
           <div class="field"><label>Date</label><input type="date" id="flightDate"></div>
 
           <div class="field"><label>Departure Time (UTC)</label><input type="time"></div>
@@ -625,6 +623,15 @@
           <div class="field"><label>Departure Procedure (SID)</label><input type="text" placeholder="If applicable"></div>
           <div class="field"><label>Arrival Airport <span class="req-mark">*</span></label><input type="text" id="arrAirport" data-required="1" placeholder="ICAO, e.g. TIST"></div>
           <div class="field"><label>Arrival Procedure (STAR)</label><input type="text" placeholder="If applicable"></div>
+        </div>
+
+        <div class="cruise-row">
+          <div class="cruise-field">
+            <label>Cruising Altitude</label>
+            <input type="text" id="cruiseAlt" placeholder="e.g. FL030">
+          </div>
+          <span class="suggested-pill" id="suggestedCruise">Suggested: —</span>
+          <button class="btn-ghost btn-small no-export" id="useSuggestedBtn">Use suggested</button>
         </div>
 
         <div class="sub-title"><h4>Waypoints</h4><div class="line-thin"></div></div>
@@ -728,8 +735,7 @@
           <h3>Performance</h3>
           <div class="line"></div>
         </div>
-        <div class="perf-grid" style="grid-template-columns:1.3fr 1fr 1fr;">
-          <div class="field"><label>Aircraft Type</label><input type="text" id="perfAircraft" placeholder="e.g. Cessna 172"></div>
+        <div class="perf-grid" style="grid-template-columns:1fr 1fr;">
           <div class="field"><label>Stall Speed Vs (kt)</label><input type="number" id="perfVstall" placeholder="From PTFS wiki"></div>
           <div class="field"><label>Aircraft Baseline Weight (kg)</label><input type="number" id="perfBaseWeight" placeholder="Optional — enables load adjustment"></div>
         </div>
@@ -751,15 +757,6 @@
           <div class="field"><label>Vapp</label><input type="text" id="outVapp" readonly value="—"></div>
         </div>
         <div class="perf-note" id="loadWarning"></div>
-
-        <div class="cruise-row">
-          <div class="cruise-field">
-            <label>Cruising Altitude</label>
-            <input type="text" id="cruiseAlt" placeholder="e.g. FL030">
-          </div>
-          <span class="suggested-pill" id="suggestedCruise">Suggested: —</span>
-          <button class="btn-ghost btn-small no-export" id="useSuggestedBtn">Use suggested</button>
-        </div>
       </div>
 
       <!-- 07 REMARKS -->
