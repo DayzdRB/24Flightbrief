@@ -494,6 +494,37 @@
   body.exporting .no-export{display:none!important;}
   body.exporting .sheet-shell{box-shadow:none;}
 
+  .req-mark{color:var(--red);margin-left:2px;}
+  .field.field-error{background:rgba(165,56,44,.12);outline:2px solid var(--red);outline-offset:-2px;}
+  .hidden-until-filed{display:none!important;}
+  body.filed .hidden-until-filed{display:inline-flex!important;}
+  .filed-banner{
+    display:none;
+    background:rgba(27,127,114,.15);
+    border:1.5px dashed var(--teal-dark);
+    color:var(--teal-dark);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    text-align:center;
+    padding:8px;
+    border-radius:4px;
+    margin-bottom:18px;
+  }
+  body.filed .filed-banner{display:block;}
+  .plans-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:8px 10px;
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:6px;
+    margin-bottom:6px;
+  }
+
   @media(max-width:720px){
     .grid, .perf-grid{grid-template-columns:repeat(2,1fr);}
     .field.wide{grid-column:span 2;}
@@ -510,11 +541,28 @@
       <h1>24FlightBrief</h1>
       <div class="sub">Flight planning for ATC24</div>
     </div>
+    <div class="btn-row" id="accountRow">
+      <span id="accountStatus" style="font-size:11.5px;color:#c7d4d1;">Not logged in</span>
+      <button class="btn-ghost btn-small" id="loginBtn">Log in with Discord</button>
+      <button class="btn-ghost btn-small" id="logoutBtn" style="display:none;">Log out</button>
+      <button class="btn-ghost btn-small" id="myPlansBtn" style="display:none;">My Flight Plans</button>
+    </div>
     <div class="btn-row">
       <button class="btn-ghost" id="resetBtn">Reset form</button>
-      <button class="btn-ghost" id="copyImgBtn">Copy as image</button>
-      <button class="btn-amber" id="exportImgBtn">Download PNG</button>
-      <button class="btn-primary" id="exportPdfBtn">Download PDF</button>
+      <button class="btn-ghost" id="editBtn" style="display:none;">Edit</button>
+      <button class="btn-primary" id="createPlanBtn">Create Flight Plan</button>
+      <button class="btn-ghost hidden-until-filed" id="savePlanBtn">Save to my account</button>
+      <button class="btn-ghost hidden-until-filed" id="copyPlanBtn">Copy /createflightplan command</button>
+      <button class="btn-ghost hidden-until-filed" id="copyImgBtn">Copy as image</button>
+      <button class="btn-amber hidden-until-filed" id="exportImgBtn">Download PNG</button>
+      <button class="btn-primary hidden-until-filed" id="exportPdfBtn">Download PDF</button>
+    </div>
+  </div>
+
+  <div class="toolbar no-export" id="plansPanel" style="display:none;">
+    <div style="width:100%;">
+      <h1 style="font-size:15px;">My Flight Plans</h1>
+      <div id="plansList" style="margin-top:10px;font-size:12.5px;color:#dfe9e6;">Loading…</div>
     </div>
   </div>
 
@@ -523,6 +571,7 @@
 
     <div id="manifest">
       <div class="stamp">24FLIGHT<br>BRIEF</div>
+      <div class="filed-banner">✓ Flight Plan Created — ready to export or file</div>
 
       <div class="head">
         <div>
@@ -543,19 +592,22 @@
           <div class="line"></div>
         </div>
         <div class="grid">
-          <div class="field"><label>Callsign</label><input type="text" placeholder="e.g. SBI412"></div>
-          <div class="field"><label>Flight Rules</label>
-            <select class="rules-select" id="flightRules">
+          <div class="field"><label>Callsign <span class="req-mark">*</span></label><input type="text" id="fdCallsign" data-required="1" placeholder="e.g. SBI412"></div>
+          <div class="field"><label>In-Game Callsign (if different)</label><input type="text" id="fdIngameCallsign" placeholder="Defaults to Callsign"></div>
+          <div class="field"><label>Flight Rules <span class="req-mark">*</span></label>
+            <select class="rules-select" id="flightRules" data-required="1">
               <option value="">—</option>
               <option value="IFR">IFR</option>
               <option value="VFR">VFR</option>
             </select>
           </div>
-          <div class="field"><label>Aircraft Type</label><input type="text" placeholder="e.g. B738"></div>
-          <div class="field"><label>Tail Number / Registration</label><input type="text" placeholder="e.g. N24ATC"></div>
+          <div class="field"><label>Roblox Username (Pilot) <span class="req-mark">*</span></label><input type="text" id="fdPilotUsername" data-required="1" placeholder="For /createflightplan"></div>
 
+          <div class="field"><label>Aircraft Type <span class="req-mark">*</span></label><input type="text" id="fdAircraft" data-required="1" placeholder="e.g. B738"></div>
+          <div class="field"><label>Tail Number / Registration</label><input type="text" placeholder="e.g. N24ATC"></div>
           <div class="field"><label>Operator / Airline</label><input type="text" placeholder="e.g. Blue Ridge Air"></div>
           <div class="field"><label>Date</label><input type="date" id="flightDate"></div>
+
           <div class="field"><label>Departure Time (UTC)</label><input type="time"></div>
           <div class="field"><label>Arrival Time (UTC)</label><input type="time"></div>
         </div>
@@ -569,9 +621,9 @@
           <div class="line"></div>
         </div>
         <div class="grid">
-          <div class="field"><label>Departure Airport</label><input type="text" id="depAirport" placeholder="ICAO, e.g. LFPI"></div>
+          <div class="field"><label>Departure Airport <span class="req-mark">*</span></label><input type="text" id="depAirport" data-required="1" placeholder="ICAO, e.g. LFPI"></div>
           <div class="field"><label>Departure Procedure (SID)</label><input type="text" placeholder="If applicable"></div>
-          <div class="field"><label>Arrival Airport</label><input type="text" id="arrAirport" placeholder="ICAO, e.g. TIST"></div>
+          <div class="field"><label>Arrival Airport <span class="req-mark">*</span></label><input type="text" id="arrAirport" data-required="1" placeholder="ICAO, e.g. TIST"></div>
           <div class="field"><label>Arrival Procedure (STAR)</label><input type="text" placeholder="If applicable"></div>
         </div>
 
@@ -600,43 +652,16 @@
           </div>
           <button class="btn-ghost btn-small no-export" id="parseAtisBtn">Parse ATIS</button>
           <div class="atis-chips" id="atisChips"></div>
-          <div class="atis-note">Live ATIS fetching isn't wired up yet — there's no public documented API for ATC24's ATIS feed. If you have access to one, drop the endpoint into <code>ATIS_API_ENDPOINT</code> near the top of the script and the Fetch button will use it automatically.</div>
+          <div class="atis-note">"Fetch live ATIS" pulls from ATC24's real 24data feed via this site's own backend (required by 24data's terms — browsers can't call it directly). Uses whichever of Departure/Arrival Airport is filled in above.</div>
         </div>
+
       </div>
 
-      <!-- 03 PERFORMANCE -->
+      <!-- 03 FLIGHT CREW -->
       <div class="panel">
         <div class="panel-head">
           <span class="panel-eyebrow">03</span>
-          <h3>Performance</h3>
-          <div class="line"></div>
-        </div>
-        <div class="perf-grid">
-          <div class="field"><label>Aircraft Type</label>
-            <select id="perfAircraft"></select>
-          </div>
-          <div class="field"><label>V1 (kt)</label><input type="number" id="perfV1"></div>
-          <div class="field"><label>VR (kt)</label><input type="number" id="perfVR"></div>
-          <div class="field"><label>V2 (kt)</label><input type="number" id="perfV2"></div>
-          <div class="field"><label>Vref (kt)</label><input type="number" id="perfVref"></div>
-        </div>
-        <div class="perf-note">Figures are rough estimates for roleplay reference, not real-world performance data. Pick an aircraft to auto-fill, then edit any value freely.</div>
-
-        <div class="cruise-row">
-          <div class="cruise-field">
-            <label>Cruising Altitude</label>
-            <input type="text" id="cruiseAlt" placeholder="e.g. FL030">
-          </div>
-          <span class="suggested-pill" id="suggestedCruise">Suggested: —</span>
-          <button class="btn-ghost btn-small no-export" id="useSuggestedBtn">Use suggested</button>
-        </div>
-      </div>
-
-      <!-- 04 CREW & PASSENGERS -->
-      <div class="panel">
-        <div class="panel-head">
-          <span class="panel-eyebrow">04</span>
-          <h3>Crew &amp; Passengers</h3>
+          <h3>Flight Crew</h3>
           <div class="line"></div>
         </div>
         <table>
@@ -646,6 +671,22 @@
           <tbody id="crewBody"></tbody>
         </table>
         <button class="btn-add btn-small add-row-btn no-export" id="addCrewBtn">+ Add person</button>
+        <div class="perf-note">Pilots, ground crew, dispatchers — anyone operating the flight. For fare-paying/riding passengers, use the Souls on Board section below instead.</div>
+      </div>
+
+      <!-- 04 SOULS ON BOARD -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-eyebrow">04</span>
+          <h3>Souls on Board</h3>
+          <div class="line"></div>
+        </div>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="field"><label>Passengers</label><input type="number" min="0" step="1" id="soulsCount" placeholder="e.g. 15"></div>
+          <div class="field"><label>Avg. Weight per Person (kg)</label><input type="number" min="0" step="1" id="soulsAvgWeight" value="84"></div>
+          <div class="field"><label>Passenger Weight Total</label><input type="text" id="soulsWeightTotal" readonly value="0 kg"></div>
+        </div>
+        <div class="perf-note">Just a headcount for weight purposes — 84 kg/person is a rough average including carry-on, adjust it however you like.</div>
       </div>
 
       <!-- 05 CARGO -->
@@ -680,20 +721,61 @@
         <button class="btn-add btn-small add-row-btn no-export" id="addCargoBtn">+ Add cargo item</button>
       </div>
 
-      <!-- 06 REMARKS -->
+      <!-- 06 PERFORMANCE -->
       <div class="panel">
         <div class="panel-head">
           <span class="panel-eyebrow">06</span>
+          <h3>Performance</h3>
+          <div class="line"></div>
+        </div>
+        <div class="perf-grid" style="grid-template-columns:1.3fr 1fr 1fr;">
+          <div class="field"><label>Aircraft Type</label><input type="text" id="perfAircraft" placeholder="e.g. Cessna 172"></div>
+          <div class="field"><label>Stall Speed Vs (kt)</label><input type="number" id="perfVstall" placeholder="From PTFS wiki"></div>
+          <div class="field"><label>Aircraft Baseline Weight (kg)</label><input type="number" id="perfBaseWeight" placeholder="Optional — enables load adjustment"></div>
+        </div>
+        <div class="perf-note">Enter the stall speed for your aircraft from its PTFS wiki page. The rest is calculated from it: <strong>VR</strong> ≈ 1.15×Vs, <strong>V1</strong> ≈ 0.92×VR, <strong>V2</strong> = VR + 4kt, <strong>Vref</strong> = 1.3×Vs, <strong>Vapp</strong> = Vref + 5kt — the same ratios the PTFS/ATC24 community performance calculator uses. If you also give a baseline weight, speeds get scaled up for your actual cargo + passenger load below.</div>
+
+        <div class="sub-title"><h4>Load</h4><div class="line-thin"></div></div>
+        <div class="perf-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="field"><label>Cargo Weight</label><input type="text" id="loadCargo" readonly value="0 kg"></div>
+          <div class="field"><label>Passenger Weight</label><input type="text" id="loadPax" readonly value="0 kg"></div>
+          <div class="field"><label>Total Additional Load</label><input type="text" id="loadTotal" readonly value="0 kg"></div>
+        </div>
+
+        <div class="sub-title"><h4>Computed Speeds</h4><div class="line-thin"></div></div>
+        <div class="perf-grid">
+          <div class="field"><label>V1</label><input type="text" id="outV1" readonly value="—"></div>
+          <div class="field"><label>VR</label><input type="text" id="outVR" readonly value="—"></div>
+          <div class="field"><label>V2</label><input type="text" id="outV2" readonly value="—"></div>
+          <div class="field"><label>Vref</label><input type="text" id="outVref" readonly value="—"></div>
+          <div class="field"><label>Vapp</label><input type="text" id="outVapp" readonly value="—"></div>
+        </div>
+        <div class="perf-note" id="loadWarning"></div>
+
+        <div class="cruise-row">
+          <div class="cruise-field">
+            <label>Cruising Altitude</label>
+            <input type="text" id="cruiseAlt" placeholder="e.g. FL030">
+          </div>
+          <span class="suggested-pill" id="suggestedCruise">Suggested: —</span>
+          <button class="btn-ghost btn-small no-export" id="useSuggestedBtn">Use suggested</button>
+        </div>
+      </div>
+
+      <!-- 07 REMARKS -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-eyebrow">07</span>
           <h3>Remarks</h3>
           <div class="line"></div>
         </div>
         <textarea class="remarks" placeholder="Special handling, hazmat notes, load balance, ATC restrictions, roleplay notes..."></textarea>
       </div>
 
-      <!-- 07 SIGNATURES -->
+      <!-- 08 SIGNATURES -->
       <div class="panel">
         <div class="panel-head">
-          <span class="panel-eyebrow">07</span>
+          <span class="panel-eyebrow">08</span>
           <h3>Signatures</h3>
           <div class="line"></div>
         </div>
@@ -746,48 +828,86 @@
 <script>
 (function(){
 
-  // ---------------------------------------------------------------
-  // If you get access to a real ATC24 ATIS API/feed, put its URL
-  // here. Expected to return JSON; adapt parseAtisResponse() below
-  // to match whatever shape it actually returns.
-  // ---------------------------------------------------------------
-  const ATIS_API_ENDPOINT = "";
+  // ATIS is fetched via our own /api/atis backend (see api/atis.js),
+  // which proxies 24data server-side per their terms of use.
 
-  // ===== Aircraft performance reference (rough roleplay estimates) =====
-  const AIRCRAFT_DB = {
-    "C172":  { name:"Cessna 172",        v1:null, vr:55,  v2:null, vref:60  },
-    "PA28":  { name:"Piper PA-28",       v1:null, vr:60,  v2:null, vref:65  },
-    "DA40":  { name:"Diamond DA40",      v1:null, vr:59,  v2:null, vref:63  },
-    "B350":  { name:"King Air 350",      v1:92,   vr:100, v2:108,  vref:105 },
-    "Q400":  { name:"Dash 8 Q400",       v1:108,  vr:113, v2:120,  vref:118 },
-    "E175":  { name:"Embraer E175",      v1:118,  vr:122, v2:128,  vref:132 },
-    "CRJ7":  { name:"CRJ-700",           v1:120,  vr:128, v2:135,  vref:130 },
-    "A319":  { name:"Airbus A319",       v1:130,  vr:138, v2:143,  vref:127 },
-    "A320":  { name:"Airbus A320",       v1:135,  vr:142, v2:148,  vref:130 },
-    "A321":  { name:"Airbus A321",       v1:139,  vr:146, v2:152,  vref:136 },
-    "A350":  { name:"Airbus A350",       v1:150,  vr:160, v2:168,  vref:140 },
-    "B738":  { name:"Boeing 737-800",    v1:138,  vr:144, v2:150,  vref:135 },
-    "B77W":  { name:"Boeing 777-300ER",  v1:160,  vr:170, v2:178,  vref:150 },
-    "B744":  { name:"Boeing 747-400",    v1:165,  vr:175, v2:183,  vref:155 },
-  };
+  // ===== Souls on Board (weight calc) =====
+  const soulsCount = document.getElementById('soulsCount');
+  const soulsAvgWeight = document.getElementById('soulsAvgWeight');
+  const soulsWeightTotal = document.getElementById('soulsWeightTotal');
+  function paxWeightKg(){
+    const n = parseFloat(soulsCount.value) || 0;
+    const w = parseFloat(soulsAvgWeight.value) || 0;
+    return n * w;
+  }
+  function updateSoulsWeight(){
+    soulsWeightTotal.value = paxWeightKg().toFixed(0) + ' kg';
+    updatePerformance();
+  }
+  soulsCount.addEventListener('input', updateSoulsWeight);
+  soulsAvgWeight.addEventListener('input', updateSoulsWeight);
 
-  const perfSelect = document.getElementById('perfAircraft');
-  const custOpt = document.createElement('option');
-  custOpt.value = ""; custOpt.textContent = "— Custom / manual entry —";
-  perfSelect.appendChild(custOpt);
-  Object.keys(AIRCRAFT_DB).forEach(code=>{
-    const o = document.createElement('option');
-    o.value = code;
-    o.textContent = `${code} — ${AIRCRAFT_DB[code].name}`;
-    perfSelect.appendChild(o);
-  });
-  perfSelect.addEventListener('change', ()=>{
-    const d = AIRCRAFT_DB[perfSelect.value];
-    document.getElementById('perfV1').value   = d ? (d.v1  ?? '') : '';
-    document.getElementById('perfVR').value   = d ? (d.vr  ?? '') : '';
-    document.getElementById('perfV2').value   = d ? (d.v2  ?? '') : '';
-    document.getElementById('perfVref').value = d ? (d.vref?? '') : '';
-  });
+  // ===== Performance (stall-speed formula, adjusted for cargo + pax load) =====
+  // Ratios below match the ratios used by the community PTFS/ATC24
+  // performance calculator (VR≈1.15xVs, V2=VR+4, Vref=1.3xVs, Vapp=Vref+5).
+  // V1 is an estimated ratio of VR since no confirmed source formula was found for it.
+  const perfVstall = document.getElementById('perfVstall');
+  const perfBaseWeight = document.getElementById('perfBaseWeight');
+  const loadWarning = document.getElementById('loadWarning');
+
+  function cargoWeightKg(){
+    let wt = 0;
+    cargoBody.querySelectorAll('.wt-input').forEach(inp=>{ wt += parseFloat(inp.value) || 0; });
+    return unit === 'LB' ? wt * 0.45359237 : wt;
+  }
+
+  function updatePerformance(){
+    const vs = parseFloat(perfVstall.value);
+    const baseWeight = parseFloat(perfBaseWeight.value);
+    const cargoKg = cargoWeightKg();
+    const paxKg = paxWeightKg();
+    const totalLoad = cargoKg + paxKg;
+
+    document.getElementById('loadCargo').value = cargoKg.toFixed(0) + ' kg';
+    document.getElementById('loadPax').value = paxKg.toFixed(0) + ' kg';
+    document.getElementById('loadTotal').value = totalLoad.toFixed(0) + ' kg';
+
+    const outs = ['outV1','outVR','outV2','outVref','outVapp'];
+    if(!vs || vs <= 0){
+      outs.forEach(id=>document.getElementById(id).value = '—');
+      loadWarning.textContent = '';
+      return;
+    }
+
+    let scale = 1;
+    let scaleNote = '';
+    if(baseWeight && baseWeight > 0 && totalLoad > 0){
+      scale = Math.sqrt((baseWeight + totalLoad) / baseWeight);
+      scaleNote = ` Speeds scaled ×${scale.toFixed(2)} for ${totalLoad.toFixed(0)}kg of added load over a ${baseWeight.toFixed(0)}kg baseline.`;
+      if(scale > 1.15){
+        loadWarning.innerHTML = `<strong style="color:var(--red);">Heavy load</strong> — this is a big jump over baseline weight, double check against the aircraft's real MTOW.${scaleNote}`;
+      } else {
+        loadWarning.textContent = scaleNote.trim();
+      }
+    } else {
+      loadWarning.textContent = totalLoad > 0 ? 'Enter an aircraft baseline weight above to have speeds adjust for this load.' : '';
+    }
+
+    const effVs = vs * scale;
+    const vr = effVs * 1.15;
+    const v1 = vr * 0.92;
+    const v2 = vr + 4;
+    const vref = effVs * 1.3;
+    const vapp = vref + 5;
+
+    document.getElementById('outV1').value   = Math.round(v1) + ' kt';
+    document.getElementById('outVR').value   = Math.round(vr) + ' kt';
+    document.getElementById('outV2').value   = Math.round(v2) + ' kt';
+    document.getElementById('outVref').value = Math.round(vref) + ' kt';
+    document.getElementById('outVapp').value = Math.round(vapp) + ' kt';
+  }
+  perfVstall.addEventListener('input', updatePerformance);
+  perfBaseWeight.addEventListener('input', updatePerformance);
 
   // ===== Suggested cruising altitude =====
   const flightRulesSel = document.getElementById('flightRules');
@@ -905,21 +1025,30 @@
 
   document.getElementById('fetchAtisBtn').addEventListener('click', async ()=>{
     const btn = document.getElementById('fetchAtisBtn');
-    if(!ATIS_API_ENDPOINT){
-      const orig = btn.textContent;
-      btn.textContent = 'No endpoint configured';
+    const orig = btn.textContent;
+    const airport = (depAirport.value || arrAirport.value || '').trim();
+    if(!airport){
+      btn.textContent = 'Enter an airport first';
       setTimeout(()=>{ btn.textContent = orig; }, 1800);
       return;
     }
+    btn.textContent = 'Fetching…';
     try{
-      const res = await fetch(ATIS_API_ENDPOINT);
-      const data = await res.json();
-      document.getElementById('atisPaste').value = JSON.stringify(data, null, 2);
+      const res = await fetch(`/api/atis?airport=${encodeURIComponent(airport)}`);
+      if(!res.ok) throw new Error(await res.text());
+      const { data } = await res.json();
+      if(!data.length){
+        btn.textContent = `No ATIS found for ${airport.toUpperCase()}`;
+      } else {
+        document.getElementById('atisPaste').value = data[0].content;
+        document.getElementById('parseAtisBtn').click();
+        btn.textContent = 'Fetched!';
+      }
     }catch(e){
-      const orig = btn.textContent;
-      btn.textContent = 'Fetch failed';
-      setTimeout(()=>{ btn.textContent = orig; }, 1800);
+      console.error('24FlightBrief: ATIS fetch failed', e);
+      btn.textContent = 'Fetch failed — backend not deployed yet?';
     }
+    setTimeout(()=>{ btn.textContent = orig; }, 2200);
   });
 
   // ===== Crew & passengers (unlimited, freeform role) =====
@@ -975,6 +1104,7 @@
     });
     document.getElementById('totalPcs').textContent = pcs;
     document.getElementById('totalWt').textContent = wt.toFixed(1) + ' ' + unit;
+    updatePerformance();
   }
   document.getElementById('addCargoBtn').addEventListener('click', makeCargoRow);
   document.getElementById('unitKg').addEventListener('click', ()=>setUnit('KG'));
@@ -1064,6 +1194,30 @@
   }
   document.querySelectorAll('.sig-block').forEach(setupSig);
 
+  // ===== Copy flight plan for ATC24 Discord filing =====
+  // Builds the exact /createflightplan command syntax:
+  // /createflightplan ingamecallsign: callsign: aircraft: flightrules: departing: arriving: flightlevel: ingamename: route:
+  document.getElementById('copyPlanBtn').addEventListener('click', async ()=>{
+    const callsign = document.getElementById('fdCallsign').value.trim() || 'N/A';
+    const ingameCallsign = document.getElementById('fdIngameCallsign').value.trim() || callsign;
+    const pilotUsername = document.getElementById('fdPilotUsername').value.trim() || 'N/A';
+    const aircraft = document.getElementById('fdAircraft').value.trim() || 'N/A';
+    const rules = flightRulesSel.value || 'N/A';
+    const dep = depAirport.value.trim().toUpperCase() || 'N/A';
+    const arr = arrAirport.value.trim().toUpperCase() || 'N/A';
+    const fl = cruiseAltInput.value.trim().replace(/^FL/i,'') || 'N/A';
+    const wps = [...waypointBody.querySelectorAll('.wp-input')].map(i=>i.value.trim().toUpperCase()).filter(Boolean);
+    const route = wps.length ? wps.join(' ') : 'N/A';
+
+    const text = `/createflightplan ingamecallsign:${ingameCallsign} callsign:${callsign} aircraft:${aircraft} flightrules:${rules} departing:${dep} arriving:${arr} flightlevel:${fl} ingamename:${pilotUsername} route:${route}`;
+    try{
+      await navigator.clipboard.writeText(text);
+      flashBtn('copyPlanBtn', 'Copied!');
+    }catch(e){
+      flashBtn('copyPlanBtn', 'Copy failed');
+    }
+  });
+
   // ===== Export =====
   const manifestEl = document.getElementById('manifest');
 
@@ -1083,21 +1237,37 @@
   });
 
   document.getElementById('copyImgBtn').addEventListener('click', async ()=>{
+    let canvas;
     try{
-      const canvas = await renderCanvas();
-      canvas.toBlob(async (blob)=>{
-        try{
-          await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
-          flashBtn('copyImgBtn', 'Copied!');
-        }catch(err){
-          const link = document.createElement('a');
-          link.download = '24flightbrief.png';
-          link.href = URL.createObjectURL(blob);
-          link.click();
-          flashBtn('copyImgBtn', 'Downloaded');
-        }
+      canvas = await renderCanvas();
+    }catch(e){
+      console.error('24FlightBrief: render failed', e);
+      flashBtn('copyImgBtn', 'Render failed — see console');
+      return;
+    }
+    if(!('clipboard' in navigator) || typeof ClipboardItem === 'undefined'){
+      canvas.toBlob(blob=>{
+        const link = document.createElement('a');
+        link.download = '24flightbrief.png';
+        link.href = URL.createObjectURL(blob);
+        link.click();
       });
-    }catch(e){ flashBtn('copyImgBtn','Failed'); }
+      flashBtn('copyImgBtn', 'Clipboard unavailable here — downloaded');
+      return;
+    }
+    canvas.toBlob(async (blob)=>{
+      try{
+        await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+        flashBtn('copyImgBtn', 'Copied!');
+      }catch(err){
+        console.warn('24FlightBrief: clipboard write blocked (common inside embedded previews — works on the deployed site)', err);
+        const link = document.createElement('a');
+        link.download = '24flightbrief.png';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        flashBtn('copyImgBtn', 'Clipboard blocked — downloaded instead');
+      }
+    });
   });
 
   document.getElementById('exportPdfBtn').addEventListener('click', async ()=>{
@@ -1125,14 +1295,230 @@
     crewBody.innerHTML=''; crewIdx=0; makeCrewRow('Pilot in Command'); makeCrewRow('First Officer');
     cargoBody.innerHTML=''; cargoIdx=0; for(let i=0;i<3;i++) makeCargoRow();
     waypointBody.innerHTML=''; wpIdx=0; makeWaypointRow(); makeWaypointRow();
+    soulsAvgWeight.value = 84;
+    updateSoulsWeight();
     updateTotals();
     refreshSuggestion();
     renderRouteDiagram();
     document.getElementById('atisChips').innerHTML = '';
     document.querySelectorAll('.sigpad').forEach(c=>{ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); });
+    document.body.classList.remove('filed');
+    document.getElementById('editBtn').style.display = 'none';
   });
 
   document.getElementById('genStamp').textContent = 'Generated ' + new Date().toLocaleDateString();
+
+  // ===============================================================
+  // Create Flight Plan: validate required fields, then unlock export
+  // ===============================================================
+  function validateRequired(){
+    let firstBad = null;
+    manifestEl.querySelectorAll('[data-required="1"]').forEach(el=>{
+      const wrap = el.closest('.field');
+      const bad = !el.value.trim();
+      wrap.classList.toggle('field-error', bad);
+      if(bad && !firstBad) firstBad = el;
+    });
+    if(firstBad){
+      firstBad.scrollIntoView({behavior:'smooth', block:'center'});
+      firstBad.focus();
+      return false;
+    }
+    return true;
+  }
+
+  document.getElementById('createPlanBtn').addEventListener('click', ()=>{
+    if(!validateRequired()) return;
+    document.body.classList.add('filed');
+    document.getElementById('editBtn').style.display = 'inline-flex';
+    document.getElementById('createPlanBtn').style.display = 'none';
+    document.querySelector('.filed-banner').scrollIntoView({behavior:'smooth', block:'center'});
+  });
+
+  document.getElementById('editBtn').addEventListener('click', ()=>{
+    document.body.classList.remove('filed');
+    document.getElementById('editBtn').style.display = 'none';
+    document.getElementById('createPlanBtn').style.display = 'inline-flex';
+  });
+
+  // ===============================================================
+  // Serialize / load the whole form, used for saving to an account
+  // ===============================================================
+  function serializeForm(){
+    const data = { fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, unit };
+    manifestEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{
+      if(el.readOnly) return;
+      data.fields[el.id] = el.value;
+    });
+    manifestEl.querySelectorAll('.remarks').forEach(el=>{ data.fields.__remarks = el.value; });
+    waypointBody.querySelectorAll('tr').forEach(tr=>{
+      const ins = tr.querySelectorAll('input');
+      data.waypoints.push({ wp: ins[0].value, note: ins[1].value });
+    });
+    crewBody.querySelectorAll('tr').forEach(tr=>{
+      const ins = tr.querySelectorAll('input');
+      data.crew.push({ role: ins[0].value, name: ins[1].value });
+    });
+    cargoBody.querySelectorAll('tr').forEach(tr=>{
+      const ins = tr.querySelectorAll('input');
+      data.cargo.push({ desc: ins[0].value, shipper: ins[1].value, consignee: ins[2].value, pcs: ins[3].value, wt: ins[4].value });
+    });
+    document.querySelectorAll('.sig-block').forEach(block=>{
+      const key = block.dataset.sig;
+      const mode = block.querySelector('.mode-type').classList.contains('active') ? 'type' : 'draw';
+      const canvas = block.querySelector('canvas');
+      data.sigs[key] = {
+        mode,
+        typed: block.querySelector('.sig-type').value,
+        drawn: mode === 'draw' ? canvas.toDataURL() : null,
+        name: block.querySelector('.sig-name-line input').value
+      };
+    });
+    return data;
+  }
+
+  function loadFormData(data){
+    waypointBody.innerHTML=''; wpIdx=0;
+    crewBody.innerHTML=''; crewIdx=0;
+    cargoBody.innerHTML=''; cargoIdx=0;
+    (data.waypoints||[]).forEach(w=>{
+      makeWaypointRow();
+      const tr = waypointBody.lastElementChild;
+      const ins = tr.querySelectorAll('input');
+      ins[0].value = w.wp||''; ins[1].value = w.note||'';
+    });
+    (data.crew||[]).forEach(c=>{
+      makeCrewRow(c.role||'');
+      const tr = crewBody.lastElementChild;
+      tr.querySelectorAll('input')[1].value = c.name||'';
+    });
+    (data.cargo||[]).forEach(c=>{
+      makeCargoRow();
+      const tr = cargoBody.lastElementChild;
+      const ins = tr.querySelectorAll('input');
+      ins[0].value=c.desc||''; ins[1].value=c.shipper||''; ins[2].value=c.consignee||''; ins[3].value=c.pcs||''; ins[4].value=c.wt||'';
+    });
+    Object.entries(data.fields||{}).forEach(([id,val])=>{
+      if(id === '__remarks'){ manifestEl.querySelector('.remarks').value = val; return; }
+      const el = document.getElementById(id);
+      if(el) el.value = val;
+    });
+    setUnit(data.unit || 'KG');
+    Object.entries(data.sigs||{}).forEach(([key,sig])=>{
+      const block = document.querySelector(`.sig-block[data-sig="${key}"]`);
+      if(!block) return;
+      block.querySelector('.sig-name-line input').value = sig.name || '';
+      if(sig.mode === 'type'){
+        block.querySelector('.mode-type').click();
+        block.querySelector('.sig-type').value = sig.typed || '';
+      } else if(sig.drawn){
+        const canvas = block.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = ()=>ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        img.src = sig.drawn;
+      }
+    });
+    updateTotals();
+    updateSoulsWeight();
+    refreshSuggestion();
+    renderRouteDiagram();
+    updatePerformance();
+    document.body.classList.remove('filed');
+    document.getElementById('editBtn').style.display = 'none';
+    document.getElementById('createPlanBtn').style.display = 'inline-flex';
+  }
+
+  // ===============================================================
+  // Discord login + saved flight plans
+  // These call same-origin /api routes — they'll 404 until the
+  // backend is deployed. Handled gracefully either way.
+  // ===============================================================
+  let currentUser = null;
+
+  async function refreshAccountStatus(){
+    try{
+      const res = await fetch('/api/auth/me');
+      if(res.ok){
+        currentUser = await res.json();
+        document.getElementById('accountStatus').textContent = `Logged in as ${currentUser.username}`;
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'inline-flex';
+        document.getElementById('myPlansBtn').style.display = 'inline-flex';
+      } else {
+        currentUser = null;
+        document.getElementById('accountStatus').textContent = 'Not logged in';
+        document.getElementById('loginBtn').style.display = 'inline-flex';
+        document.getElementById('logoutBtn').style.display = 'none';
+        document.getElementById('myPlansBtn').style.display = 'none';
+      }
+    }catch(e){
+      // backend not deployed yet — fail quietly, login just won't do anything
+      document.getElementById('accountStatus').textContent = 'Not logged in';
+    }
+  }
+  refreshAccountStatus();
+
+  document.getElementById('loginBtn').addEventListener('click', ()=>{ window.location.href = '/api/auth/login'; });
+  document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+    await fetch('/api/auth/logout', { method:'POST' }).catch(()=>{});
+    refreshAccountStatus();
+  });
+
+  document.getElementById('savePlanBtn').addEventListener('click', async ()=>{
+    if(!currentUser){ flashBtn('savePlanBtn', 'Log in first'); return; }
+    try{
+      const res = await fetch('/api/plans', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ name: document.getElementById('fdCallsign').value || 'Untitled plan', data: serializeForm() })
+      });
+      if(!res.ok) throw new Error('save failed');
+      flashBtn('savePlanBtn', 'Saved!');
+    }catch(e){
+      console.error('24FlightBrief: save failed', e);
+      flashBtn('savePlanBtn', 'Save failed');
+    }
+  });
+
+  async function loadPlansList(){
+    const list = document.getElementById('plansList');
+    list.textContent = 'Loading…';
+    try{
+      const res = await fetch('/api/plans');
+      const plans = await res.json();
+      if(!plans.length){ list.textContent = 'No saved flight plans yet.'; return; }
+      list.innerHTML = '';
+      plans.forEach(p=>{
+        const row = document.createElement('div');
+        row.className = 'plans-row';
+        row.innerHTML = `<span>${p.name} <span style="opacity:.6;">(${new Date(p.createdAt).toLocaleString()})</span></span>`;
+        const loadBtn = document.createElement('button');
+        loadBtn.className = 'btn-ghost btn-small';
+        loadBtn.textContent = 'Load';
+        loadBtn.addEventListener('click', ()=>{ loadFormData(p.data); document.getElementById('plansPanel').style.display = 'none'; });
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-ghost btn-small';
+        delBtn.textContent = 'Delete';
+        delBtn.addEventListener('click', async ()=>{
+          await fetch(`/api/plans/${p.id}`, { method:'DELETE' }).catch(()=>{});
+          loadPlansList();
+        });
+        const btnWrap = document.createElement('span');
+        btnWrap.append(loadBtn, delBtn);
+        row.appendChild(btnWrap);
+        list.appendChild(row);
+      });
+    }catch(e){
+      list.textContent = 'Could not reach the backend yet.';
+    }
+  }
+
+  document.getElementById('myPlansBtn').addEventListener('click', ()=>{
+    const panel = document.getElementById('plansPanel');
+    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    if(panel.style.display !== 'none') loadPlansList();
+  });
 })();
 </script>
 </body>
