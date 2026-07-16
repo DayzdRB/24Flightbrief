@@ -253,7 +253,60 @@
   input::placeholder, textarea::placeholder{color:#a9b6b3;}
   select{appearance:none;-webkit-appearance:none;cursor:pointer;}
   .rules-select{font-weight:700;}
+  .airport-grid{overflow:visible;position:relative;z-index:10;}
+  .airport-field{position:relative;z-index:1;}
+  .airport-field:focus-within{z-index:80;}
   .airport-field input{text-transform:uppercase;}
+  .airport-menu{
+    display:none;
+    position:absolute;
+    left:-1px;
+    right:-1px;
+    top:calc(100% - 1px);
+    z-index:100;
+    max-height:286px;
+    overflow-y:auto;
+    border:1.5px solid var(--ink);
+    border-radius:0 0 6px 6px;
+    background:#f7faf9;
+    box-shadow:0 12px 25px rgba(22,35,43,.2);
+  }
+  .airport-menu.is-open{display:block;}
+  .airport-option{
+    display:block;
+    width:100%;
+    border:0;
+    border-bottom:1px solid var(--rule);
+    padding:8px 10px 7px;
+    background:transparent;
+    color:var(--ink);
+    text-align:left;
+    cursor:pointer;
+  }
+  .airport-option:last-child{border-bottom:0;}
+  .airport-option:hover,.airport-option.is-active{background:rgba(27,127,114,.12);}
+  .airport-option-name{
+    display:block;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    line-height:1.25;
+    font-weight:700;
+  }
+  .airport-option-code{
+    display:block;
+    margin-top:2px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    line-height:1.2;
+    letter-spacing:.09em;
+    color:var(--rule-strong);
+  }
+  .airport-option-empty{
+    padding:10px;
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    color:var(--rule-strong);
+  }
   .airport-resolved{
     display:block;
     min-height:13px;
@@ -515,7 +568,7 @@
     padding:6px 0;
     margin-top:6px;
   }
-  #routeSvg{display:block;height:120px;}
+  #routeSvg{display:block;height:150px;}
 
   /* ===== ATIS panel ===== */
   .atis-box{
@@ -802,13 +855,12 @@
           <h3>Route &amp; Waypoints</h3>
           <div class="line"></div>
         </div>
-        <div class="grid">
-          <div class="field airport-field"><label>Departure Airport <span class="req-mark">*</span></label><input type="text" id="depAirport" data-required="1" list="airportOptions" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IRFD"><span class="airport-resolved" id="depAirportResolved"></span></div>
+        <div class="grid airport-grid">
+          <div class="field airport-field"><label>Departure Airport <span class="req-mark">*</span></label><input type="text" id="depAirport" data-required="1" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IRFD" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="depAirportMenu"><div class="airport-menu no-export" id="depAirportMenu" role="listbox"></div><span class="airport-resolved" id="depAirportResolved"></span></div>
           <div class="field"><label>Departure Procedure (SID)</label><input type="text" placeholder="If applicable"></div>
-          <div class="field airport-field"><label>Arrival Airport <span class="req-mark">*</span></label><input type="text" id="arrAirport" data-required="1" list="airportOptions" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IPPH"><span class="airport-resolved" id="arrAirportResolved"></span></div>
+          <div class="field airport-field"><label>Arrival Airport <span class="req-mark">*</span></label><input type="text" id="arrAirport" data-required="1" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IPPH" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="arrAirportMenu"><div class="airport-menu no-export" id="arrAirportMenu" role="listbox"></div><span class="airport-resolved" id="arrAirportResolved"></span></div>
           <div class="field"><label>Arrival Procedure (STAR)</label><input type="text" placeholder="If applicable"></div>
         </div>
-        <datalist id="airportOptions"></datalist>
         <datalist id="waypointOptions"></datalist>
 
         <div class="cruise-row">
@@ -1825,7 +1877,8 @@
   const arrAirport = document.getElementById('arrAirport');
   const depAirportResolved = document.getElementById('depAirportResolved');
   const arrAirportResolved = document.getElementById('arrAirportResolved');
-  const airportOptions = document.getElementById('airportOptions');
+  const depAirportMenu = document.getElementById('depAirportMenu');
+  const arrAirportMenu = document.getElementById('arrAirportMenu');
   const waypointOptions = document.getElementById('waypointOptions');
   const waypointBody = document.getElementById('waypointBody');
   const waypointValidationStatus = document.getElementById('waypointValidationStatus');
@@ -2032,16 +2085,97 @@
     validateCruiseAltitude();
   });
 
-  AIRPORT_DIRECTORY.forEach(airport=>{
-    const codeOption = document.createElement('option');
-    codeOption.value = airport.code;
-    codeOption.label = airport.name;
-    airportOptions.appendChild(codeOption);
+  // Native datalists cannot style airport names and ICAO codes independently, and
+  // the old code/name pair created two entries per airport. This custom combobox
+  // renders one airport once: full name first, ICAO beneath it.
+  const airportComboboxStates = [];
 
-    const nameOption = document.createElement('option');
-    nameOption.value = airport.name;
-    nameOption.label = airport.code;
-    airportOptions.appendChild(nameOption);
+  function airportMatches(query){
+    const q = airportLookupKey(query);
+    if(!q) return AIRPORT_DIRECTORY;
+    return AIRPORT_DIRECTORY.filter(airport=>
+      airportLookupKey(airport.code).includes(q) || airportLookupKey(airport.name).includes(q)
+    );
+  }
+
+  function setAirportMenuOpen(state, open){
+    state.open = open === true;
+    state.menu.classList.toggle('is-open', state.open);
+    state.input.setAttribute('aria-expanded', String(state.open));
+    if(!state.open) state.activeIndex = -1;
+  }
+
+  function renderAirportMenu(state){
+    state.matches = airportMatches(state.input.value);
+    state.activeIndex = Math.min(state.activeIndex, state.matches.length - 1);
+    state.menu.innerHTML = '';
+    if(state.matches.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'airport-option-empty';
+      empty.textContent = 'No matching airport';
+      state.menu.appendChild(empty);
+      return;
+    }
+    state.matches.forEach((airport, index)=>{
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'airport-option' + (index === state.activeIndex ? ' is-active' : '');
+      option.setAttribute('role', 'option');
+      option.setAttribute('aria-selected', String(index === state.activeIndex));
+      option.dataset.code = airport.code;
+      option.innerHTML = `<span class="airport-option-name"></span><span class="airport-option-code"></span>`;
+      option.querySelector('.airport-option-name').textContent = airport.name;
+      option.querySelector('.airport-option-code').textContent = airport.code;
+      option.addEventListener('mousedown', event=>event.preventDefault());
+      option.addEventListener('click', ()=>selectAirportOption(state, airport));
+      state.menu.appendChild(option);
+    });
+  }
+
+  function selectAirportOption(state, airport){
+    state.input.value = airport.code;
+    setAirportMenuOpen(state, false);
+    refreshAirportField(state.input, state.hint, true);
+    syncAtisAirportLabels();
+    state.input.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+
+  function moveAirportMenuSelection(state, delta){
+    if(!state.open){
+      renderAirportMenu(state);
+      setAirportMenuOpen(state, true);
+    }
+    if(!state.matches.length) return;
+    state.activeIndex = (state.activeIndex + delta + state.matches.length) % state.matches.length;
+    renderAirportMenu(state);
+    state.menu.querySelector('.is-active')?.scrollIntoView({block:'nearest'});
+  }
+
+  function setupAirportCombobox(input, menu, hint){
+    const state = {input, menu, hint, matches:[], activeIndex:-1, open:false};
+    airportComboboxStates.push(state);
+    input.addEventListener('focus', ()=>{ renderAirportMenu(state); setAirportMenuOpen(state, true); });
+    input.addEventListener('click', ()=>{ renderAirportMenu(state); setAirportMenuOpen(state, true); });
+    input.addEventListener('input', ()=>{ state.activeIndex = -1; renderAirportMenu(state); setAirportMenuOpen(state, true); });
+    input.addEventListener('keydown', event=>{
+      if(event.key === 'ArrowDown'){ event.preventDefault(); moveAirportMenuSelection(state, 1); }
+      else if(event.key === 'ArrowUp'){ event.preventDefault(); moveAirportMenuSelection(state, -1); }
+      else if(event.key === 'Enter' && state.open && state.activeIndex >= 0){
+        event.preventDefault();
+        selectAirportOption(state, state.matches[state.activeIndex]);
+      } else if(event.key === 'Escape'){
+        setAirportMenuOpen(state, false);
+      }
+    });
+    input.addEventListener('blur', ()=>setTimeout(()=>setAirportMenuOpen(state, false), 0));
+  }
+
+  setupAirportCombobox(depAirport, depAirportMenu, depAirportResolved);
+  setupAirportCombobox(arrAirport, arrAirportMenu, arrAirportResolved);
+  document.addEventListener('mousedown', event=>{
+    airportComboboxStates.forEach(state=>{
+      if(!state.input.closest('.airport-field').contains(event.target)) setAirportMenuOpen(state, false);
+    });
   });
 
   Object.keys(WAYPOINTS).sort().forEach(code=>{
@@ -2079,35 +2213,78 @@
   const routeSvg = document.getElementById('routeSvg');
   let wpIdx = 0;
 
+  const DEFAULT_DEPARTURE_RUNWAYS = {
+    IRFD: {runway:'25', heading:250}
+  };
+
+  function routeNodePosition(node){
+    if(node.kind === 'wp') return WAYPOINTS[waypointKey(node.label)] || null;
+    return AIRPORTS[airportCode(node.label)] || null;
+  }
+
+  function chartHeading(from, to){
+    if(!from || !to || (from.x === to.x && from.y === to.y)) return null;
+    const degrees = (Math.atan2(to.x - from.x, from.y - to.y) * 180 / Math.PI + 360) % 360;
+    const rounded = Math.round(degrees) % 360;
+    return rounded === 0 ? 360 : rounded;
+  }
+
+  function formatHeading(value){
+    return value === null ? '---°' : `${String(value).padStart(3, '0')}°`;
+  }
+
+  function runwayHeadingFromDesignator(designator){
+    const number = parseInt(String(designator || '').match(/\d{1,2}/)?.[0] || '', 10);
+    if(!number || number < 1 || number > 36) return null;
+    return number === 36 ? 360 : number * 10;
+  }
+
+  function departureRunwayInfo(){
+    const atisText = String(document.getElementById('departureAtisPaste')?.value || '').toUpperCase();
+    const match = atisText.match(/(?:ACTIVE\s+)?RWY\s+(\d{1,2}[LRC]?)/);
+    if(match){
+      return {runway:match[1], heading:runwayHeadingFromDesignator(match[1]), source:'ATIS'};
+    }
+    return DEFAULT_DEPARTURE_RUNWAYS[airportCode(depAirport.value)] || null;
+  }
+
   function renderRouteDiagram(){
     const nodes = [];
     if(depAirport.value.trim()) nodes.push({label: airportCode(depAirport.value), kind:'dep'});
     if(routeType === 'waypoints'){
       waypointBody.querySelectorAll('tr').forEach(tr=>{
         const v = tr.querySelector('.wp-input').value.trim();
-        if(v) nodes.push({label: v.toUpperCase(), kind:'wp'});
+        if(v) nodes.push({label: waypointKey(v), kind:'wp'});
       });
     }
     if(arrAirport.value.trim()) nodes.push({label: airportCode(arrAirport.value), kind:'arr'});
+    nodes.forEach(node=>{ node.position = routeNodePosition(node); });
 
-    const spacing = 140;
-    const pad = 50;
-    const width = Math.max(nodes.length * spacing, spacing) + pad*2;
-    const cy = 60;
-    routeSvg.setAttribute('viewBox', `0 0 ${width} 120`);
+    const spacing = 175;
+    const pad = 58;
+    const width = Math.max((nodes.length - 1) * spacing + pad * 2, 300);
+    const height = 150;
+    const cy = 84;
+    routeSvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     routeSvg.setAttribute('width', width);
 
     let svg = '';
     if(nodes.length === 0){
       svg = `<text x="20" y="${cy+5}" font-family="Inter,sans-serif" font-size="12" fill="#6b7c78">Add a departure, waypoints, and an arrival to see the route.</text>`;
     } else {
-      const segLabel = routeType === 'direct' ? 'DCT' : routeType === 'rdv' ? 'RDV' : '';
       for(let i=0;i<nodes.length-1;i++){
         const x1 = pad + i*spacing, x2 = pad + (i+1)*spacing;
+        const mid = (x1+x2)/2;
+        const heading = chartHeading(nodes[i].position, nodes[i+1].position);
+        let segmentText = '';
+        if(routeType === 'waypoints') segmentText = `HDG ${formatHeading(heading)}`;
+        else if(routeType === 'direct') segmentText = `DCT · ${formatHeading(heading)}`;
+        else segmentText = 'RDV';
+
         svg += `<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="#5c6f6a" stroke-width="1.5" stroke-dasharray="5,4"/>`;
-        if(segLabel){
-          svg += `<text x="${(x1+x2)/2}" y="${cy-6}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10.5" font-weight="700" fill="var(--teal-dark)">${segLabel}</text>`;
-        }
+        const badgeWidth = Math.max(72, segmentText.length * 7.1 + 18);
+        svg += `<rect x="${mid-badgeWidth/2}" y="${cy-48}" width="${badgeWidth}" height="21" rx="10.5" fill="#eef4f2" stroke="#9fb2ad"/>`;
+        svg += `<text x="${mid}" y="${cy-33}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10.5" font-weight="700" fill="#12675d">${segmentText}</text>`;
       }
       nodes.forEach((n,i)=>{
         const x = pad + i*spacing;
@@ -2115,9 +2292,17 @@
         if(n.kind==='dep'){ fill='#1b7f72'; r=9; }
         if(n.kind==='arr'){ fill='#a5382c'; r=9; }
         svg += `<circle cx="${x}" cy="${cy}" r="${r}" fill="${fill}" stroke="#16232b" stroke-width="1.5"/>`;
-        svg += `<text x="${x}" y="${cy-16}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="#16232b">${n.label}</text>`;
-        svg += `<text x="${x}" y="${cy+26}" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" letter-spacing="1" fill="#6b7c78">${n.kind==='dep'?'DEP':n.kind==='arr'?'ARR':'FIX'}</text>`;
+        svg += `<text x="${x}" y="${cy-15}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="#16232b">${n.label}</text>`;
+        svg += `<text x="${x}" y="${cy+27}" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" letter-spacing="1" fill="#6b7c78">${n.kind==='dep'?'DEP':n.kind==='arr'?'ARR':'FIX'}</text>`;
       });
+
+      const runway = routeType === 'waypoints' ? departureRunwayInfo() : null;
+      if(runway && nodes[0]?.kind === 'dep' && runway.heading){
+        const runwayText = `RWY ${runway.runway} · ${formatHeading(runway.heading)}`;
+        const runwayWidth = Math.max(96, runwayText.length * 6.7 + 18);
+        svg += `<rect x="${pad-runwayWidth/2}" y="${cy+38}" width="${runwayWidth}" height="20" rx="10" fill="#16232b"/>`;
+        svg += `<text x="${pad}" y="${cy+52}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700" fill="#f4f8f7">${runwayText}</text>`;
+      }
     }
     routeSvg.innerHTML = svg;
   }
@@ -2237,12 +2422,14 @@
       chip.textContent = 'No recognizable fields found';
       panel.chips.appendChild(chip);
     }
+    renderRouteDiagram();
     return found;
   }
 
   document.querySelectorAll('.parse-atis-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>parseAtisInto(btn.dataset.atisPanel));
   });
+  atisPanels.departure.input.addEventListener('input', renderRouteDiagram);
 
   function syncAtisAirportLabels(clearChanged=true){
     Object.entries(atisPanels).forEach(([key, panel])=>{
