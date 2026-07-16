@@ -1134,7 +1134,7 @@
         <div class="panel-head"><span class="panel-eyebrow">09</span><h3>Review &amp; Submit</h3><div class="line"></div></div>
         <div class="perf-note">Review the vital details below. Use Amend to return directly to a section. This summary is used for image and PDF exports.</div>
         <div class="review-grid" id="reviewGrid"></div>
-        <div class="customs-link-box no-export" id="customsLinkBox"><strong>Customs inspection link</strong><br>Share this only with the cargo/customs agent. They must sign in with Discord.<input id="customsUrl" readonly></div>
+        <div class="customs-link-box no-export" id="customsLinkBox"><strong>Customs inspection link</strong><br>Share this only with the cargo/customs agent. They must sign in with Discord.<input id="customsUrl" readonly aria-label="Customs inspection link" title="Click to select the full link"></div>
       </div>
       <div class="wizard-nav no-export" id="wizardNav"><button class="btn-ghost" id="wizardPrev" type="button">Previous</button><span class="autosave-state" id="autosaveState">Not saved yet</span><button class="btn-primary" id="wizardNext" type="button">Next</button></div>
 </div>
@@ -2701,12 +2701,8 @@
     }
 
     const text = `/createflightplan ingamecallsign:${ingameCallsign} callsign:${callsign} aircraft:${aircraft} flightrules:${rules} departing:${dep} arriving:${arr} flightlevel:${fl} ingamename:${pilotUsername} route:${route}`;
-    try{
-      await navigator.clipboard.writeText(text);
-      flashBtn('copyPlanBtn', 'Copied!');
-    }catch(e){
-      flashBtn('copyPlanBtn', 'Copy failed');
-    }
+    const copied = await copyText(text);
+    flashBtn('copyPlanBtn', copied ? 'Copied!' : 'Copy blocked');
   });
 
   // ===== Export =====
@@ -2775,9 +2771,47 @@
 
   function flashBtn(id, text){
     const btn = document.getElementById(id);
+    if(!btn) return;
     const orig = btn.textContent;
     btn.textContent = text;
-    setTimeout(()=>{ btn.textContent = orig; }, 1400);
+    setTimeout(()=>{ btn.textContent = orig; }, 1800);
+  }
+
+  async function copyText(text){
+    if(!text) return false;
+
+    // The modern Clipboard API only works in secure browser contexts and may
+    // still be blocked by browser permissions. Use it first, then fall back to
+    // the older selection-based copy method for previews and stricter browsers.
+    if(navigator.clipboard && window.isSecureContext){
+      try{
+        await navigator.clipboard.writeText(text);
+        return true;
+      }catch(err){
+        console.warn('24FlightBrief: Clipboard API blocked; trying fallback copy.', err);
+      }
+    }
+
+    const field = document.createElement('textarea');
+    field.value = text;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.left = '-9999px';
+    field.style.top = '0';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.focus();
+    field.select();
+    field.setSelectionRange(0, field.value.length);
+
+    let copied = false;
+    try{
+      copied = document.execCommand('copy');
+    }catch(err){
+      console.warn('24FlightBrief: fallback copy failed.', err);
+    }
+    field.remove();
+    return copied;
   }
 
   document.getElementById('resetBtn').addEventListener('click', ()=>{
@@ -3062,7 +3096,32 @@
     autosaveTimer=setTimeout(()=>{ try{localStorage.setItem('24fb-autosave',JSON.stringify(serializeForm())); document.getElementById('autosaveState').textContent='Draft autosaved';}catch(e){document.getElementById('autosaveState').textContent='Autosave failed';}},700);
   });
   try{ const draft=localStorage.getItem('24fb-autosave'); if(draft && confirm('Restore your autosaved flight-plan draft?')) loadFormData(JSON.parse(draft)); }catch(e){}
-  document.getElementById('customsLinkBtn').addEventListener('click',async()=>{ const url=document.getElementById('customsUrl').value; if(!url)return; await navigator.clipboard.writeText(url); flashBtn('customsLinkBtn','Copied!'); });
+  document.getElementById('customsLinkBtn').addEventListener('click', async ()=>{
+    const input = document.getElementById('customsUrl');
+    const url = input?.value?.trim();
+    if(!url){
+      flashBtn('customsLinkBtn', 'Save plan first');
+      return;
+    }
+
+    const copied = await copyText(url);
+    if(copied){
+      flashBtn('customsLinkBtn', 'Copied!');
+      return;
+    }
+
+    // Last-resort manual fallback: select the visible URL so the user can use
+    // Ctrl/Cmd+C even when the browser refuses all scripted clipboard access.
+    input.focus();
+    input.select();
+    input.setSelectionRange(0, input.value.length);
+    flashBtn('customsLinkBtn', 'Selected — press Ctrl/Cmd+C');
+  });
+
+  document.getElementById('customsUrl').addEventListener('click', event=>{
+    event.currentTarget.select();
+    event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
+  });
   showWizardStep(0);
 
   refreshAccountStatus();
