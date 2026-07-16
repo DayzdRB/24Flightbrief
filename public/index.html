@@ -3066,7 +3066,9 @@
 
   const wizardPanels = [...manifestEl.querySelectorAll(':scope > .panel')];
   const reviewPage = document.getElementById('reviewPage');
-  const wizardSteps = [...wizardPanels];
+  // The summary lives outside the editable manifest container so exports can
+  // capture only the compact final view. It still must be the wizard's last step.
+  const wizardSteps = [...wizardPanels, reviewPage];
   let wizardIndex = 0;
   const stepNames = wizardSteps.map(step => step.querySelector('h3')?.textContent.trim() || 'Review');
   document.body.classList.add('wizard-enabled');
