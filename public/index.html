@@ -428,9 +428,9 @@
     stroke-linejoin:round;
   }
   .map-route-waypoint{
-    fill:#f4f8f7;
-    stroke:#16232b;
-    stroke-width:3;
+    fill:rgba(244,248,247,.18);
+    stroke:#1b7f72;
+    stroke-width:5;
     vector-effect:non-scaling-stroke;
   }
   .map-route-waypoint-label{
@@ -821,45 +821,6 @@
           <span class="altitude-rule-status" id="altitudeRuleStatus" aria-live="polite">IFR uses the east/west odd-even rule. VFR must stay within one island and may use any valid altitude.</span>
         </div>
 
-        <div class="sub-title"><h4>Route Type</h4><div class="line-thin"></div></div>
-        <div class="route-type-toggle" id="routeTypeToggle">
-          <button type="button" class="active" data-route-type="waypoints">Waypoints</button>
-          <button type="button" data-route-type="direct">GPS Direct</button>
-          <button type="button" data-route-type="rdv">Radar Vectors (RDV)</button>
-        </div>
-        <div class="perf-note" id="routeTypeNote">List named fixes below to build the route.</div>
-
-        <div id="waypointsSection">
-          <div class="sub-title"><h4>Waypoints</h4><div class="line-thin"></div></div>
-          <table>
-            <thead>
-              <tr><th style="width:28px;">#</th><th class="col-w-desc">Waypoint / Fix</th><th style="width:220px;">Altitude / Restriction (optional)</th><th class="rm no-export"></th></tr>
-            </thead>
-            <tbody id="waypointBody"></tbody>
-          </table>
-          <button class="btn-add btn-small add-row-btn no-export" id="addWaypointBtn">+ Add waypoint</button>
-          <div class="waypoint-validation-status" id="waypointValidationStatus" aria-live="polite"></div>
-        </div>
-
-        <div class="sub-title"><h4>Route Diagram</h4><div class="line-thin"></div></div>
-        <div class="route-diagram-wrap">
-          <svg id="routeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
-        </div>
-
-        <div class="sub-title"><h4>Route Map</h4><div class="line-thin"></div></div>
-        <div class="route-map-toolbar no-export">
-          <button class="map-layer-toggle active" id="waypointLayerToggle" type="button" aria-pressed="true">Waypoints</button>
-        </div>
-        <div class="route-map-wrap">
-          <svg id="routeMapSvg" viewBox="0 0 2048 1692" role="img" aria-label="ATC24 enroute chart and route map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-            <image class="map-chart-base" href="EnrouteChartBase.png" xlink:href="EnrouteChartBase.png" x="0" y="0" width="2048" height="1692" preserveAspectRatio="none"></image>
-            <image class="map-waypoint-layer" id="mapWaypointLayer" href="EnrouteChartWaypoints.png" xlink:href="EnrouteChartWaypoints.png" x="0" y="0" width="2048" height="1692" preserveAspectRatio="none"></image>
-            <g id="mapRoute"></g>
-            <g id="mapAirports"></g>
-          </svg>
-        </div>
-        <div class="perf-note">PDF-derived islands, permanent sector borders, airport detail, and chart fixes with the planned route overlaid. The Waypoints control hides only waypoint/fix symbols and names. <a class="airport-chart-link" href="EnrouteChart.png" target="_blank" rel="noopener">Open the full chart</a>.</div>
-
         <div class="sub-title"><h4>ATIS</h4><div class="line-thin"></div></div>
         <div class="atis-box">
           <div class="atis-row no-export">
@@ -893,6 +854,47 @@
             </section>
           </div>
           <div class="atis-note">Live data comes from 24data through this site's backend cache. The raw reports stay visible while runway, wind, altimeter, and information-letter fields are shown as quick-reference chips.</div>
+        </div>
+
+        <div class="sub-title"><h4>Route Type</h4><div class="line-thin"></div></div>
+        <div class="route-type-toggle" id="routeTypeToggle">
+          <button type="button" class="active" data-route-type="waypoints">Waypoints</button>
+          <button type="button" data-route-type="direct">GPS Direct</button>
+          <button type="button" data-route-type="rdv">Radar Vectors (RDV)</button>
+        </div>
+        <div class="perf-note" id="routeTypeNote">List named fixes below. The map shows selected fixes by default; use Route line when you want the connecting track.</div>
+
+        <div id="waypointsSection">
+          <div class="sub-title"><h4>Waypoints</h4><div class="line-thin"></div></div>
+          <table>
+            <thead>
+              <tr><th style="width:28px;">#</th><th class="col-w-desc">Waypoint / Fix</th><th style="width:220px;">Altitude / Restriction (optional)</th><th class="rm no-export"></th></tr>
+            </thead>
+            <tbody id="waypointBody"></tbody>
+          </table>
+          <button class="btn-add btn-small add-row-btn no-export" id="addWaypointBtn">+ Add waypoint</button>
+          <div class="waypoint-validation-status" id="waypointValidationStatus" aria-live="polite"></div>
+        </div>
+
+        <div class="sub-title"><h4>Route Map</h4><div class="line-thin"></div></div>
+        <div class="route-map-toolbar no-export">
+          <button class="map-layer-toggle active" id="waypointLayerToggle" type="button" aria-pressed="true">Waypoints</button>
+          <button class="map-layer-toggle" id="routeLineToggle" type="button" aria-pressed="false">Route line</button>
+        </div>
+        <div class="route-map-wrap">
+          <svg id="routeMapSvg" viewBox="0 0 2048 1692" role="img" aria-label="ATC24 enroute chart and route map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <image class="map-chart-base" href="EnrouteChartBase.png" xlink:href="EnrouteChartBase.png" x="0" y="0" width="2048" height="1692" preserveAspectRatio="none"></image>
+            <g id="mapRouteLine"></g>
+            <image class="map-waypoint-layer" id="mapWaypointLayer" href="EnrouteChartWaypoints.png" xlink:href="EnrouteChartWaypoints.png" x="0" y="0" width="2048" height="1692" preserveAspectRatio="none"></image>
+            <g id="mapRouteMarkers"></g>
+            <g id="mapAirports"></g>
+          </svg>
+        </div>
+        <div class="perf-note">Chart waypoints and VORs are rendered above the route line. In Waypoints mode, the line starts hidden; use Route line to show the connecting track without hiding selected fixes or airports. The Waypoints control hides only chart fix symbols and names. <a class="airport-chart-link" href="EnrouteChart.png" target="_blank" rel="noopener">Open the full chart</a>.</div>
+
+        <div class="sub-title"><h4>Route Diagram</h4><div class="line-thin"></div></div>
+        <div class="route-diagram-wrap">
+          <svg id="routeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
         </div>
 
       </div>
@@ -1710,10 +1712,13 @@
   }
 
   const mapAirportsG = document.getElementById('mapAirports');
-  const mapRouteG = document.getElementById('mapRoute');
+  const mapRouteLineG = document.getElementById('mapRouteLine');
+  const mapRouteMarkersG = document.getElementById('mapRouteMarkers');
   const mapWaypointLayer = document.getElementById('mapWaypointLayer');
   const waypointLayerToggle = document.getElementById('waypointLayerToggle');
+  const routeLineToggle = document.getElementById('routeLineToggle');
   let waypointLayerVisible = true;
+  let waypointRouteLineVisible = false;
 
   function setWaypointLayerVisible(visible){
     waypointLayerVisible = visible !== false;
@@ -1722,6 +1727,14 @@
     waypointLayerToggle.setAttribute('aria-pressed', String(waypointLayerVisible));
   }
   waypointLayerToggle.addEventListener('click', ()=>setWaypointLayerVisible(!waypointLayerVisible));
+
+  function setWaypointRouteLineVisible(visible){
+    waypointRouteLineVisible = visible === true;
+    routeLineToggle.classList.toggle('active', waypointRouteLineVisible);
+    routeLineToggle.setAttribute('aria-pressed', String(waypointRouteLineVisible));
+    renderRouteMap();
+  }
+  routeLineToggle.addEventListener('click', ()=>setWaypointRouteLineVisible(!waypointRouteLineVisible));
 
   function renderRouteMap(){
     const dep = airportCode(depAirport.value);
@@ -1736,7 +1749,8 @@
     });
     mapAirportsG.innerHTML = airportsSvg;
 
-    let routeSvgContent = '';
+    let routeLineSvg = '';
+    let routeMarkerSvg = '';
     const depPos = AIRPORTS[dep], arrPos = AIRPORTS[arr];
     if(depPos && arrPos){
       let dash, stroke, label = '';
@@ -1758,23 +1772,27 @@
       }
 
       const nodes = [depPos, ...routeFixes, arrPos];
-      const points = nodes.map(pos=>`${pos.x},${pos.y}`).join(' ');
-      const dashAttr = dash !== 'none' ? ` stroke-dasharray="${dash}"` : '';
-      routeSvgContent += `<polyline class="map-route-casing" points="${points}"${dashAttr}/>`;
-      routeSvgContent += `<polyline class="map-route-line" points="${points}" stroke="${stroke}"${dashAttr}/>`;
+      const showLine = routeType !== 'waypoints' || waypointRouteLineVisible;
+      if(showLine){
+        const points = nodes.map(pos=>`${pos.x},${pos.y}`).join(' ');
+        const dashAttr = dash !== 'none' ? ` stroke-dasharray="${dash}"` : '';
+        routeLineSvg += `<polyline class="map-route-casing" points="${points}"${dashAttr}/>`;
+        routeLineSvg += `<polyline class="map-route-line" points="${points}" stroke="${stroke}"${dashAttr}/>`;
+      }
 
       routeFixes.forEach(fix=>{
-        routeSvgContent += `<circle class="map-route-waypoint" cx="${fix.x}" cy="${fix.y}" r="10"/>`;
-        routeSvgContent += `<text class="map-route-waypoint-label" x="${fix.x}" y="${fix.y - 18}" text-anchor="middle">${fix.code}</text>`;
+        routeMarkerSvg += `<circle class="map-route-waypoint" cx="${fix.x}" cy="${fix.y}" r="14"/>`;
+        routeMarkerSvg += `<text class="map-route-waypoint-label" x="${fix.x}" y="${fix.y - 21}" text-anchor="middle">${fix.code}</text>`;
       });
 
       if(label){
         const midX = (depPos.x + arrPos.x) / 2;
         const midY = (depPos.y + arrPos.y) / 2;
-        routeSvgContent += `<text class="map-route-label" x="${midX}" y="${midY - 28}" text-anchor="middle">${label}</text>`;
+        routeMarkerSvg += `<text class="map-route-label" x="${midX}" y="${midY - 28}" text-anchor="middle">${label}</text>`;
       }
     }
-    mapRouteG.innerHTML = routeSvgContent;
+    mapRouteLineG.innerHTML = routeLineSvg;
+    mapRouteMarkersG.innerHTML = routeMarkerSvg;
   }
 
   // ===== Route Type (Waypoints / GPS Direct / Radar Vectors) =====
@@ -1782,7 +1800,7 @@
   const routeTypeNote = document.getElementById('routeTypeNote');
   const waypointsSection = document.getElementById('waypointsSection');
   const routeTypeNotes = {
-    waypoints: "List named fixes below to build the route.",
+    waypoints: "List named fixes below. The map shows selected fixes by default; use Route line when you want the connecting track.",
     direct: "Filed as GPS Direct (DCT) — no fixes needed, straight line from departure to arrival.",
     rdv: "Filed as Radar Vectors (RDV) — routing is at the controller's discretion, no fixes needed."
   };
@@ -1792,6 +1810,7 @@
       b.classList.toggle('active', b.dataset.routeType === type);
     });
     waypointsSection.style.display = (type === 'waypoints') ? '' : 'none';
+    routeLineToggle.hidden = type !== 'waypoints';
     routeTypeNote.textContent = routeTypeNotes[type] || '';
     validateWaypointInputs();
     renderRouteDiagram();
@@ -2387,6 +2406,7 @@
   for(let i=0;i<3;i++) makeCargoRow();
   updateTotals();
   setWaypointLayerVisible(true);
+  setWaypointRouteLineVisible(false);
   renderRouteDiagram();
   renderRouteMap();
   refreshSuggestion();
@@ -2571,6 +2591,7 @@
     waypointBody.innerHTML=''; wpIdx=0; makeWaypointRow(); makeWaypointRow();
     setRouteType('waypoints');
     setWaypointLayerVisible(true);
+    setWaypointRouteLineVisible(false);
     soulsAvgWeight.value = 84;
     updateSoulsWeight();
     updateTotals();
@@ -2637,7 +2658,7 @@
   // Serialize / load the whole form, used for saving to an account
   // ===============================================================
   function serializeForm(){
-    const data = { fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, unit, routeType, waypointLayerVisible };
+    const data = { fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, unit, routeType, waypointLayerVisible, waypointRouteLineVisible };
     manifestEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{
       if(el.readOnly) return;
       data.fields[el.id] = el.value;
@@ -2698,6 +2719,7 @@
     setUnit(data.unit || 'KG');
     setRouteType(data.routeType || 'waypoints');
     setWaypointLayerVisible(data.waypointLayerVisible !== false);
+    setWaypointRouteLineVisible(data.waypointRouteLineVisible === true);
     Object.entries(data.sigs||{}).forEach(([key,sig])=>{
       const block = document.querySelector(`.sig-block[data-sig="${key}"]`);
       if(!block) return;
