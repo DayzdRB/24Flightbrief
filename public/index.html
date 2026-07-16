@@ -427,6 +427,39 @@
     stroke-width:6px;
     stroke-linejoin:round;
   }
+  .map-route-waypoint{
+    fill:#f4f8f7;
+    stroke:#16232b;
+    stroke-width:3;
+    vector-effect:non-scaling-stroke;
+  }
+  .map-route-waypoint-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:18px;
+    font-weight:700;
+    fill:#f4f8f7;
+    paint-order:stroke;
+    stroke:#16232b;
+    stroke-width:5px;
+    stroke-linejoin:round;
+  }
+  .wp-input.is-unknown{
+    background:rgba(165,56,44,.12);
+    outline:2px solid var(--red);
+    outline-offset:-2px;
+  }
+  .waypoint-validation-status{
+    min-height:16px;
+    margin-top:6px;
+    color:var(--red);
+    font-size:10.5px;
+    font-weight:700;
+  }
+  .field.vfr-route-error{
+    background:rgba(165,56,44,.12);
+    outline:2px solid var(--red);
+    outline-offset:-2px;
+  }
   .airport-chart-reference{
     margin-top:10px;
     border:1px solid var(--rule);
@@ -761,6 +794,7 @@
           <div class="field"><label>Arrival Procedure (STAR)</label><input type="text" placeholder="If applicable"></div>
         </div>
         <datalist id="airportOptions"></datalist>
+        <datalist id="waypointOptions"></datalist>
 
         <div class="cruise-row">
           <div class="cruise-field" id="cruiseField">
@@ -769,7 +803,7 @@
           </div>
           <span class="suggested-pill" id="suggestedCruise">Suggested: —</span>
           <button class="btn-ghost btn-small no-export" id="useSuggestedBtn" type="button" style="border-color:var(--rule-strong);color:var(--ink-soft);">Use suggested</button>
-          <span class="altitude-rule-status" id="altitudeRuleStatus" aria-live="polite">Choose flight rules, departure, and arrival airports to check the semi-circular altitude rule.</span>
+          <span class="altitude-rule-status" id="altitudeRuleStatus" aria-live="polite">IFR uses the east/west odd-even rule. VFR must stay within one island and may use any valid altitude.</span>
         </div>
 
         <div class="sub-title"><h4>Route Type</h4><div class="line-thin"></div></div>
@@ -789,6 +823,7 @@
             <tbody id="waypointBody"></tbody>
           </table>
           <button class="btn-add btn-small add-row-btn no-export" id="addWaypointBtn">+ Add waypoint</button>
+          <div class="waypoint-validation-status" id="waypointValidationStatus" aria-live="polite"></div>
         </div>
 
         <div class="sub-title"><h4>Route Diagram</h4><div class="line-thin"></div></div>
@@ -808,7 +843,7 @@
             <g id="mapAirports"></g>
           </svg>
         </div>
-        <div class="perf-note">PDF-derived islands, waypoint chart, and sector borders with the planned route overlaid. The Waypoints control is the only map layer toggle. <a class="airport-chart-link" href="EnrouteChart.png" target="_blank" rel="noopener">Open the full chart</a>.</div>
+        <div class="perf-note">PDF-derived islands, permanent sector borders, airport detail, and chart fixes with the planned route overlaid. The Waypoints control hides only waypoint/fix symbols and names. <a class="airport-chart-link" href="EnrouteChart.png" target="_blank" rel="noopener">Open the full chart</a>.</div>
 
         <div class="sub-title"><h4>ATIS</h4><div class="line-thin"></div></div>
         <div class="atis-box">
@@ -1168,6 +1203,476 @@
     IZOL: {x:1810, y:886}
   };
 
+  const WAYPOINTS = {
+    "ABSRS": {
+        "x": 1996,
+        "y": 939
+    },
+    "ACRES": {
+        "x": 169,
+        "y": 640
+    },
+    "ALDER": {
+        "x": 554,
+        "y": 1400
+    },
+    "ALLRY": {
+        "x": 1156,
+        "y": 511
+    },
+    "ALTRS": {
+        "x": 1654,
+        "y": 1668
+    },
+    "ANYMS": {
+        "x": 1296,
+        "y": 1140
+    },
+    "AQWRT": {
+        "x": 1307,
+        "y": 1449
+    },
+    "ASTRO": {
+        "x": 781,
+        "y": 296
+    },
+    "ATPEV": {
+        "x": 1125,
+        "y": 1106
+    },
+    "BEANS": {
+        "x": 570,
+        "y": 1151
+    },
+    "BILLO": {
+        "x": 1857,
+        "y": 1016
+    },
+    "BLANK": {
+        "x": 620,
+        "y": 578
+    },
+    "BOBOS": {
+        "x": 248,
+        "y": 546
+    },
+    "BOBUX": {
+        "x": 1730,
+        "y": 1434
+    },
+    "BUCFA": {
+        "x": 700,
+        "y": 974
+    },
+    "BULLY": {
+        "x": 467,
+        "y": 311
+    },
+    "CAMEL": {
+        "x": 1414,
+        "y": 716
+    },
+    "CAWZE": {
+        "x": 1373,
+        "y": 956
+    },
+    "CELAR": {
+        "x": 398,
+        "y": 912
+    },
+    "CHAIN": {
+        "x": 1995,
+        "y": 1150
+    },
+    "CHILY": {
+        "x": 1109,
+        "y": 125
+    },
+    "CRAZY": {
+        "x": 1366,
+        "y": 218
+    },
+    "CYRIL": {
+        "x": 1506,
+        "y": 832
+    },
+    "DEATH": {
+        "x": 708,
+        "y": 1645
+    },
+    "DEBUG": {
+        "x": 1856,
+        "y": 1332
+    },
+    "DINER": {
+        "x": 1106,
+        "y": 653
+    },
+    "DOGGO": {
+        "x": 1666,
+        "y": 948
+    },
+    "DUNKS": {
+        "x": 1536,
+        "y": 721
+    },
+    "EMJAY": {
+        "x": 781,
+        "y": 1445
+    },
+    "ENDER": {
+        "x": 692,
+        "y": 836
+    },
+    "EURAD": {
+        "x": 576,
+        "y": 477
+    },
+    "EXMOR": {
+        "x": 710,
+        "y": 1285
+    },
+    "EZYDB": {
+        "x": 626,
+        "y": 748
+    },
+    "FORCE": {
+        "x": 1386,
+        "y": 1668
+    },
+    "FORIA": {
+        "x": 1156,
+        "y": 1550
+    },
+    "FRANK": {
+        "x": 92,
+        "y": 858
+    },
+    "FROOT": {
+        "x": 359,
+        "y": 440
+    },
+    "GAVIN": {
+        "x": 1145,
+        "y": 849
+    },
+    "GEORG": {
+        "x": 255,
+        "y": 1218
+    },
+    "GERLD": {
+        "x": 768,
+        "y": 560
+    },
+    "GODLU": {
+        "x": 1092,
+        "y": 1295
+    },
+    "GRASS": {
+        "x": 1354,
+        "y": 1266
+    },
+    "GULEG": {
+        "x": 670,
+        "y": 380
+    },
+    "HACKE": {
+        "x": 112,
+        "y": 1175
+    },
+    "HAWFA": {
+        "x": 900,
+        "y": 1022
+    },
+    "HECKS": {
+        "x": 76,
+        "y": 1346
+    },
+    "HOGGS": {
+        "x": 530,
+        "y": 1508
+    },
+    "HONDA": {
+        "x": 1158,
+        "y": 218
+    },
+    "ICTAM": {
+        "x": 806,
+        "y": 1038
+    },
+    "INDEX": {
+        "x": 931,
+        "y": 812
+    },
+    "JACKI": {
+        "x": 1631,
+        "y": 1332
+    },
+    "JAMSI": {
+        "x": 1185,
+        "y": 1210
+    },
+    "JAZZR": {
+        "x": 1854,
+        "y": 1551
+    },
+    "JOOPY": {
+        "x": 1002,
+        "y": 558
+    },
+    "JUSTY": {
+        "x": 1708,
+        "y": 1100
+    },
+    "KELLA": {
+        "x": 1636,
+        "y": 500
+    },
+    "KENED": {
+        "x": 838,
+        "y": 887
+    },
+    "KNIFE": {
+        "x": 1070,
+        "y": 393
+    },
+    "KUNAV": {
+        "x": 838,
+        "y": 988
+    },
+    "LAVNO": {
+        "x": 1072,
+        "y": 1128
+    },
+    "LAZER": {
+        "x": 1172,
+        "y": 1329
+    },
+    "LETSE": {
+        "x": 968,
+        "y": 218
+    },
+    "LLIME": {
+        "x": 1970,
+        "y": 680
+    },
+    "LOGAN": {
+        "x": 690,
+        "y": 1178
+    },
+    "MASEV": {
+        "x": 1516,
+        "y": 1672
+    },
+    "MOGTA": {
+        "x": 842,
+        "y": 1226
+    },
+    "MORRD": {
+        "x": 1917,
+        "y": 790
+    },
+    "MUONE": {
+        "x": 1708,
+        "y": 1550
+    },
+    "NIKON": {
+        "x": 842,
+        "y": 96
+    },
+    "NOONU": {
+        "x": 1550,
+        "y": 496
+    },
+    "NUBER": {
+        "x": 1994,
+        "y": 1458
+    },
+    "OCEEN": {
+        "x": 1236,
+        "y": 915
+    },
+    "ODOKU": {
+        "x": 970,
+        "y": 1444
+    },
+    "ONDER": {
+        "x": 950,
+        "y": 427
+    },
+    "PACKT": {
+        "x": 198,
+        "y": 1378
+    },
+    "PEPUL": {
+        "x": 888,
+        "y": 1321
+    },
+    "PIPER": {
+        "x": 818,
+        "y": 392
+    },
+    "PROBE": {
+        "x": 908,
+        "y": 644
+    },
+    "QUEEN": {
+        "x": 996,
+        "y": 1094
+    },
+    "REAPR": {
+        "x": 1010,
+        "y": 1582
+    },
+    "RENDR": {
+        "x": 838,
+        "y": 577
+    },
+    "RENTS": {
+        "x": 1486,
+        "y": 1206
+    },
+    "ROBUX": {
+        "x": 456,
+        "y": 1649
+    },
+    "ROSMO": {
+        "x": 1732,
+        "y": 659
+    },
+    "SAWPE": {
+        "x": 562,
+        "y": 1010
+    },
+    "SEEKS": {
+        "x": 406,
+        "y": 1269
+    },
+    "SETHR": {
+        "x": 1092,
+        "y": 956
+    },
+    "SHELL": {
+        "x": 596,
+        "y": 130
+    },
+    "SHIBA": {
+        "x": 734,
+        "y": 174
+    },
+    "SHREK": {
+        "x": 244,
+        "y": 1018
+    },
+    "SILVA": {
+        "x": 1336,
+        "y": 851
+    },
+    "SISTA": {
+        "x": 1603,
+        "y": 606
+    },
+    "SPACE": {
+        "x": 404,
+        "y": 1050
+    },
+    "SQUID": {
+        "x": 1672,
+        "y": 374
+    },
+    "STACK": {
+        "x": 359,
+        "y": 1440
+    },
+    "STRAX": {
+        "x": 1257,
+        "y": 526
+    },
+    "SUNST": {
+        "x": 601,
+        "y": 912
+    },
+    "TALIS": {
+        "x": 1491,
+        "y": 624
+    },
+    "THACC": {
+        "x": 90,
+        "y": 1002
+    },
+    "THERN": {
+        "x": 356,
+        "y": 604
+    },
+    "TINDR": {
+        "x": 1228,
+        "y": 438
+    },
+    "TRELN": {
+        "x": 860,
+        "y": 1609
+    },
+    "TUDEP": {
+        "x": 770,
+        "y": 510
+    },
+    "UDMUG": {
+        "x": 1918,
+        "y": 582
+    },
+    "UWAIS": {
+        "x": 82,
+        "y": 725
+    },
+    "WAGON": {
+        "x": 1798,
+        "y": 306
+    },
+    "WASTE": {
+        "x": 188,
+        "y": 1524
+    },
+    "WELLS": {
+        "x": 1474,
+        "y": 372
+    },
+    "WELSH": {
+        "x": 838,
+        "y": 746
+    },
+    "WOTAN": {
+        "x": 1634,
+        "y": 250
+    },
+    "YOUTH": {
+        "x": 483,
+        "y": 672
+    },
+    "ZESTA": {
+        "x": 1844,
+        "y": 421
+    }
+};
+
+  const VFR_AIRSPACE_GROUPS = [
+    { id:'grindavik', label:'Grindavik island', airports:['IKFL','ITEY'] },
+    { id:'tokyo', label:'Tokyo island', airports:['ITKO','IDCS'] },
+    { id:'perth', label:'Perth island', airports:['IPPH','ILKL'] },
+    { id:'rockford', label:'Rockford island', airports:['IRFD','IMLR','IBLT','IGAR','ITRC','IUFO'] },
+    { id:'izolirani', label:'Izolirani island', airports:['IZOL','IJAF'] },
+    { id:'larnaca', label:'Larnaca island', airports:['ILAR','IPAP','IIAB','IHEN','IBAR','IBRD'] },
+    { id:'sauthemptona', label:'Sauthemptona island', airports:['ISAU'] },
+    { id:'barthelemy', label:'Saint Barthelemy island', airports:['IBTH'] },
+    { id:'skopelos', label:'Skopelos island', airports:['ISKP'] },
+    { id:'scampton', label:'Scampton island', airports:['ISCM'] }
+  ];
+  const VFR_AIRSPACE_BY_AIRPORT = new Map();
+  VFR_AIRSPACE_GROUPS.forEach(group=>group.airports.forEach(code=>VFR_AIRSPACE_BY_AIRPORT.set(code, group)));
+
+  function waypointKey(value){
+    return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+
   const mapAirportsG = document.getElementById('mapAirports');
   const mapRouteG = document.getElementById('mapRoute');
   const mapWaypointLayer = document.getElementById('mapWaypointLayer');
@@ -1198,15 +1703,38 @@
     let routeSvgContent = '';
     const depPos = AIRPORTS[dep], arrPos = AIRPORTS[arr];
     if(depPos && arrPos){
-      const midX = (depPos.x + arrPos.x) / 2, midY = (depPos.y + arrPos.y) / 2;
       let dash, stroke, label = '';
-      if(routeType === 'direct'){ dash = 'none'; stroke = '#1b7f72'; label = 'DCT'; }
-      else if(routeType === 'rdv'){ dash = '3 9'; stroke = '#c8842a'; label = 'RDV'; }
-      else { dash = '14 8'; stroke = '#5c6f6a'; label = ''; }
+      if(routeType === 'direct'){
+        dash = 'none'; stroke = '#1b7f72'; label = 'DCT';
+      } else if(routeType === 'rdv'){
+        dash = '3 9'; stroke = '#c8842a'; label = 'RDV';
+      } else {
+        dash = '14 8'; stroke = '#5c6f6a';
+      }
+
+      const routeFixes = [];
+      if(routeType === 'waypoints'){
+        waypointBody.querySelectorAll('.wp-input').forEach(input=>{
+          const code = waypointKey(input.value);
+          const pos = WAYPOINTS[code];
+          if(code && pos) routeFixes.push({code, ...pos});
+        });
+      }
+
+      const nodes = [depPos, ...routeFixes, arrPos];
+      const points = nodes.map(pos=>`${pos.x},${pos.y}`).join(' ');
       const dashAttr = dash !== 'none' ? ` stroke-dasharray="${dash}"` : '';
-      routeSvgContent += `<line class="map-route-casing" x1="${depPos.x}" y1="${depPos.y}" x2="${arrPos.x}" y2="${arrPos.y}"${dashAttr}/>`;
-      routeSvgContent += `<line class="map-route-line" x1="${depPos.x}" y1="${depPos.y}" x2="${arrPos.x}" y2="${arrPos.y}" stroke="${stroke}"${dashAttr}/>`;
+      routeSvgContent += `<polyline class="map-route-casing" points="${points}"${dashAttr}/>`;
+      routeSvgContent += `<polyline class="map-route-line" points="${points}" stroke="${stroke}"${dashAttr}/>`;
+
+      routeFixes.forEach(fix=>{
+        routeSvgContent += `<circle class="map-route-waypoint" cx="${fix.x}" cy="${fix.y}" r="10"/>`;
+        routeSvgContent += `<text class="map-route-waypoint-label" x="${fix.x}" y="${fix.y - 18}" text-anchor="middle">${fix.code}</text>`;
+      });
+
       if(label){
+        const midX = (depPos.x + arrPos.x) / 2;
+        const midY = (depPos.y + arrPos.y) / 2;
         routeSvgContent += `<text class="map-route-label" x="${midX}" y="${midY - 28}" text-anchor="middle">${label}</text>`;
       }
     }
@@ -1229,6 +1757,7 @@
     });
     waypointsSection.style.display = (type === 'waypoints') ? '' : 'none';
     routeTypeNote.textContent = routeTypeNotes[type] || '';
+    validateWaypointInputs();
     renderRouteDiagram();
     renderRouteMap();
   }
@@ -1242,9 +1771,11 @@
   const depAirportResolved = document.getElementById('depAirportResolved');
   const arrAirportResolved = document.getElementById('arrAirportResolved');
   const airportOptions = document.getElementById('airportOptions');
+  const waypointOptions = document.getElementById('waypointOptions');
   const waypointBody = document.getElementById('waypointBody');
+  const waypointValidationStatus = document.getElementById('waypointValidationStatus');
 
-  // ===== Semi-circular cruising altitude rule =====
+  // ===== IFR semi-circular altitude rule and VFR island limits =====
   function routeBearing(){
     const dep = AIRPORTS[airportCode(depAirport.value)];
     const arr = AIRPORTS[airportCode(arrAirport.value)];
@@ -1255,16 +1786,34 @@
 
   function altitudeRule(){
     const bearing = routeBearing();
-    if(bearing === null || !['IFR', 'VFR'].includes(flightRulesSel.value)) return null;
+    if(bearing === null || flightRulesSel.value !== 'IFR') return null;
     const eastbound = bearing < 180;
-    const vfr = flightRulesSel.value === 'VFR';
     return {
       bearing,
       eastbound,
-      vfr,
       parity: eastbound ? 1 : 0,
       direction: eastbound ? 'eastbound' : 'westbound',
       levelName: eastbound ? 'odd' : 'even'
+    };
+  }
+
+  function vfrRouteCheck(){
+    if(flightRulesSel.value !== 'VFR') return null;
+    const dep = airportCode(depAirport.value);
+    const arr = airportCode(arrAirport.value);
+    if(!dep || !arr || !AIRPORTS[dep] || !AIRPORTS[arr]){
+      return { ready:false, valid:false, dep, arr };
+    }
+    const depGroup = VFR_AIRSPACE_BY_AIRPORT.get(dep);
+    const arrGroup = VFR_AIRSPACE_BY_AIRPORT.get(arr);
+    return {
+      ready:true,
+      valid:Boolean(depGroup && arrGroup && depGroup.id === arrGroup.id),
+      dep,
+      arr,
+      depGroup,
+      arrGroup,
+      group:depGroup && arrGroup && depGroup.id === arrGroup.id ? depGroup : null
     };
   }
 
@@ -1292,31 +1841,90 @@
   function currentSuggestion(){
     const rule = altitudeRule();
     if(!rule) return null;
-    if(rule.vfr) return rule.eastbound ? '3500 FT' : '4500 FT';
     return rule.eastbound ? 'FL030' : 'FL040';
   }
 
-  function updateSaveAvailability(valid){
+  let altitudeInputValid = true;
+  let waypointInputValid = true;
+
+  function refreshSaveAvailability(){
     const saveBtn = document.getElementById('savePlanBtn');
     if(!saveBtn) return;
+    const valid = altitudeInputValid && waypointInputValid;
     saveBtn.disabled = !valid;
-    saveBtn.title = valid ? '' : 'Correct the cruising altitude before saving.';
+    saveBtn.title = valid ? '' : 'Correct the route, chart fixes, or cruising altitude before saving.';
+  }
+
+  function updateSaveAvailability(valid){
+    altitudeInputValid = Boolean(valid);
+    refreshSaveAvailability();
   }
 
   function validateCruiseAltitude(options={}){
     const parsed = parseCruiseAltitude(cruiseAltInput.value);
     const rule = altitudeRule();
+    const vfrCheck = vfrRouteCheck();
+    const depWrap = depAirport.closest('.field');
+    const arrWrap = arrAirport.closest('.field');
     cruiseField.classList.remove('field-error');
+    depWrap.classList.remove('vfr-route-error');
+    arrWrap.classList.remove('vfr-route-error');
     altitudeRuleStatus.classList.remove('is-valid', 'is-error');
+
+    if(flightRulesSel.value === 'VFR'){
+      if(vfrCheck && vfrCheck.ready && !vfrCheck.valid){
+        depWrap.classList.add('vfr-route-error');
+        arrWrap.classList.add('vfr-route-error');
+        altitudeRuleStatus.classList.add('is-error');
+        altitudeRuleStatus.textContent = `VFR island-to-island flights are not permitted. ${vfrCheck.dep} and ${vfrCheck.arr} are in different airport groups; choose airports on the same island or file IFR.`;
+        updateSaveAvailability(false);
+        if(options.focus){
+          arrAirport.scrollIntoView({behavior:'smooth', block:'center'});
+          arrAirport.focus();
+        }
+        return false;
+      }
+
+      if(!vfrCheck || !vfrCheck.ready){
+        altitudeRuleStatus.textContent = 'Choose valid departure and arrival airports to verify the VFR island restriction.';
+        const valid = parsed.empty || parsed.valid;
+        cruiseField.classList.toggle('field-error', !valid);
+        if(!parsed.empty && !parsed.valid){
+          altitudeRuleStatus.classList.add('is-error');
+          altitudeRuleStatus.textContent = 'Enter an altitude as FL030, 3000, or 3000 FT.';
+        }
+        updateSaveAvailability(valid);
+        return valid;
+      }
+
+      if(parsed.empty){
+        altitudeRuleStatus.classList.add('is-valid');
+        altitudeRuleStatus.textContent = `VFR is permitted within ${vfrCheck.group.label}. Any valid altitude is accepted; the IFR odd/even rule does not apply.`;
+        updateSaveAvailability(true);
+        return true;
+      }
+
+      const valid = parsed.valid;
+      cruiseField.classList.toggle('field-error', !valid);
+      altitudeRuleStatus.classList.add(valid ? 'is-valid' : 'is-error');
+      altitudeRuleStatus.textContent = valid
+        ? `${formatFlightLevel(parsed.feet)} is accepted for VFR within ${vfrCheck.group.label}.`
+        : 'Enter an altitude as FL030, 3000, or 3000 FT.';
+      updateSaveAvailability(valid);
+      if(!valid && options.focus){
+        cruiseAltInput.scrollIntoView({behavior:'smooth', block:'center'});
+        cruiseAltInput.focus();
+      }
+      return valid;
+    }
 
     if(parsed.empty){
       if(rule){
-        const suffix = rule.vfr ? `${rule.levelName} thousands plus 500 feet` : `${rule.levelName} thousands`;
-        altitudeRuleStatus.textContent = `${rule.direction[0].toUpperCase()+rule.direction.slice(1)} ${bearingText(rule.bearing)}: use ${suffix}.`;
-      } else if(!['IFR', 'VFR'].includes(flightRulesSel.value)){
-        altitudeRuleStatus.textContent = 'Choose IFR or VFR to check the semi-circular altitude rule.';
+        altitudeRuleStatus.textContent = `${rule.direction[0].toUpperCase()+rule.direction.slice(1)} ${bearingText(rule.bearing)}: use ${rule.levelName} thousands.`;
+      } else if(flightRulesSel.value !== 'IFR'){
+        altitudeRuleStatus.textContent = 'Choose IFR or VFR. IFR uses odd/even thousands; VFR is limited to airports on the same island.';
       } else {
-        altitudeRuleStatus.textContent = 'Choose valid departure and arrival airports to check the semi-circular altitude rule.';
+        altitudeRuleStatus.textContent = 'Choose valid departure and arrival airports to check the IFR semi-circular altitude rule.';
       }
       updateSaveAvailability(true);
       return true;
@@ -1328,13 +1936,7 @@
       message = 'Enter an altitude as FL030, 3000, or 3000 FT.';
     } else if(!rule){
       valid = false;
-      message = 'Choose IFR or VFR and valid departure and arrival airports before entering a cruising altitude.';
-    } else if(rule.vfr){
-      const thousands = Math.floor(parsed.feet / 1000);
-      valid = parsed.feet % 1000 === 500 && thousands % 2 === rule.parity;
-      message = valid
-        ? `${formatFlightLevel(parsed.feet)} is valid for this ${rule.direction} VFR route (${bearingText(rule.bearing)}).`
-        : `${formatFlightLevel(parsed.feet)} is invalid for this ${rule.direction} VFR route. Use ${rule.levelName} thousands plus 500 feet.`;
+      message = 'Choose IFR and valid departure and arrival airports before entering a cruising altitude.';
     } else {
       const thousands = parsed.feet / 1000;
       valid = Number.isInteger(thousands) && thousands % 2 === rule.parity;
@@ -1356,7 +1958,12 @@
 
   function refreshSuggestion(){
     const suggestion = currentSuggestion();
-    suggestedPill.textContent = 'Suggested: ' + (suggestion || '—');
+    if(flightRulesSel.value === 'VFR'){
+      suggestedPill.textContent = 'Suggested: pilot discretion';
+    } else {
+      suggestedPill.textContent = 'Suggested: ' + (suggestion || '—');
+    }
+    document.getElementById('useSuggestedBtn').disabled = !suggestion;
     validateCruiseAltitude();
   }
 
@@ -1380,6 +1987,12 @@
     nameOption.value = airport.name;
     nameOption.label = airport.code;
     airportOptions.appendChild(nameOption);
+  });
+
+  Object.keys(WAYPOINTS).sort().forEach(code=>{
+    const option = document.createElement('option');
+    option.value = code;
+    waypointOptions.appendChild(option);
   });
 
   function refreshAirportField(input, hint, commitCode=false){
@@ -1454,17 +2067,59 @@
     routeSvg.innerHTML = svg;
   }
 
+  function validateWaypointInputs(options={}){
+    const inputs = [...waypointBody.querySelectorAll('.wp-input')];
+    let firstBad = null;
+    const unknown = [];
+
+    inputs.forEach(input=>{
+      const raw = input.value.trim();
+      const code = waypointKey(raw);
+      const bad = routeType === 'waypoints' && Boolean(raw) && !WAYPOINTS[code];
+      input.classList.toggle('is-unknown', bad);
+      input.setAttribute('aria-invalid', String(bad));
+      input.title = bad ? 'Unknown chart fix. Choose a waypoint shown on the enroute chart.' : '';
+      if(bad){
+        unknown.push(raw.toUpperCase());
+        if(!firstBad) firstBad = input;
+      }
+    });
+
+    waypointValidationStatus.textContent = unknown.length
+      ? `Unknown chart fix${unknown.length > 1 ? 'es' : ''}: ${unknown.join(', ')}. Choose a fix shown on the enroute chart.`
+      : '';
+
+    waypointInputValid = !firstBad;
+    refreshSaveAvailability();
+
+    if(firstBad && options.focus){
+      firstBad.scrollIntoView({behavior:'smooth', block:'center'});
+      firstBad.focus();
+    }
+    return waypointInputValid;
+  }
+
   function makeWaypointRow(){
     wpIdx++;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="num">${wpIdx}</td>
-      <td><input type="text" class="wp-input" placeholder="e.g. SEXI" style="text-transform:uppercase;"></td>
+      <td><input type="text" class="wp-input" list="waypointOptions" autocomplete="off" spellcheck="false" placeholder="e.g. SHELL" style="text-transform:uppercase;"></td>
       <td><input type="text" placeholder="e.g. AT OR ABOVE FL030"></td>
       <td class="rm no-export"><button class="row-remove" title="Remove waypoint">&times;</button></td>
     `;
-    tr.querySelector('.row-remove').addEventListener('click', ()=>{ tr.remove(); renumberWaypoints(); renderRouteDiagram(); });
-    tr.querySelector('.wp-input').addEventListener('input', renderRouteDiagram);
+    tr.querySelector('.row-remove').addEventListener('click', ()=>{
+      tr.remove();
+      renumberWaypoints();
+      validateWaypointInputs();
+      renderRouteDiagram();
+      renderRouteMap();
+    });
+    tr.querySelector('.wp-input').addEventListener('input', ()=>{
+      validateWaypointInputs();
+      renderRouteDiagram();
+      renderRouteMap();
+    });
     waypointBody.appendChild(tr);
   }
   function renumberWaypoints(){
@@ -1688,6 +2343,7 @@
   // Builds the exact /createflightplan command syntax:
   // /createflightplan ingamecallsign: callsign: aircraft: flightrules: departing: arriving: flightlevel: ingamename: route:
   document.getElementById('copyPlanBtn').addEventListener('click', async ()=>{
+    if(!validateRequired()) return;
     const callsign = document.getElementById('fdCallsign').value.trim() || 'N/A';
     const ingameCallsign = document.getElementById('fdIngameCallsign').value.trim() || callsign;
     const pilotUsername = document.getElementById('fdPilotUsername').value.trim() || 'N/A';
@@ -1827,8 +2483,13 @@
       arrAirportResolved.textContent = 'Arrival must be different from departure';
       arrAirportResolved.classList.add('is-error');
     }
+    const waypointOk = validateWaypointInputs();
+    if(!waypointOk && !firstBad) firstBad = waypointBody.querySelector('.wp-input.is-unknown');
     const altitudeOk = validateCruiseAltitude();
-    if(!altitudeOk && !firstBad) firstBad = cruiseAltInput;
+    if(!altitudeOk && !firstBad){
+      const vfrCheck = vfrRouteCheck();
+      firstBad = vfrCheck && vfrCheck.ready && !vfrCheck.valid ? arrAirport : cruiseAltInput;
+    }
     if(firstBad){
       firstBad.scrollIntoView({behavior:'smooth', block:'center'});
       firstBad.focus();
@@ -1935,6 +2596,9 @@
     updateSoulsWeight();
     refreshSuggestion();
     refreshBothAirportFields(true);
+    validateWaypointInputs();
+    renderRouteDiagram();
+    renderRouteMap();
     updatePerformance();
     document.body.classList.remove('filed');
     document.getElementById('editBtn').style.display = 'none';
@@ -1978,7 +2642,7 @@
   });
 
   document.getElementById('savePlanBtn').addEventListener('click', async ()=>{
-    if(!validateCruiseAltitude({focus:true})) return;
+    if(!validateRequired()) return;
     if(!currentUser){ flashBtn('savePlanBtn', 'Log in first'); return; }
     try{
       const res = await fetch('/api/plans', {
