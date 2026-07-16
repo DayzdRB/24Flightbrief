@@ -769,6 +769,28 @@
     #manifest{padding:22px 16px 20px;}
     .head h2{font-size:24px;}
   }
+
+  /* Multi-step flight-plan wizard */
+  .wizard-progress{max-width:1180px;margin:14px auto 0;padding:0 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .wizard-progress .step-dot{border:1px solid rgba(255,255,255,.2);background:#20312e;color:#c7d4d1;border-radius:999px;padding:7px 10px;font:700 10px/1 Arial;cursor:pointer}
+  .wizard-progress .step-dot.active{background:var(--amber);color:#17201e;border-color:var(--amber)}
+  .wizard-progress .step-dot.done{border-color:#7fb39f;color:#dff7ee}
+  .wizard-nav{display:flex;justify-content:space-between;gap:12px;margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--rule)}
+  body.wizard-enabled #manifest>.panel{display:none}
+  body.wizard-enabled #manifest>.panel.wizard-active{display:block}
+  body.wizard-enabled #reviewPage{display:none}
+  body.wizard-enabled #reviewPage.wizard-active{display:block}
+  .review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .review-card{border:1px solid var(--rule);background:rgba(255,255,255,.36);padding:14px;border-radius:5px;position:relative}
+  .review-card h4{margin:0 0 9px;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+  .review-card dl{margin:0;display:grid;grid-template-columns:130px 1fr;gap:5px 10px;font-size:11px}
+  .review-card dt{font-weight:700;color:var(--ink-soft)} .review-card dd{margin:0;word-break:break-word}
+  .review-edit{position:absolute;right:10px;top:9px;border:0;background:transparent;text-decoration:underline;cursor:pointer;color:var(--ink-soft);font-size:10px}
+  .autosave-state{font-size:10px;color:#b8c8c4;margin-left:auto}
+  .customs-link-box{margin:12px 0;padding:12px;border:1px dashed var(--rule-strong);background:rgba(255,255,255,.28);font-size:11px;display:none}
+  .customs-link-box input{width:100%;margin-top:7px;padding:8px;border:1px solid var(--rule);background:#fff;font:11px monospace}
+  @media(max-width:720px){.review-grid{grid-template-columns:1fr}.wizard-progress{overflow-x:auto;flex-wrap:nowrap}.review-card dl{grid-template-columns:105px 1fr}}
+
 </style>
 </head>
 <body>
@@ -789,6 +811,7 @@
       <button class="btn-ghost" id="editBtn" style="display:none;">Edit</button>
       <button class="btn-primary" id="createPlanBtn">Create Flight Plan</button>
       <button class="btn-ghost hidden-until-filed" id="savePlanBtn">Save to my account</button>
+      <button class="btn-ghost hidden-until-filed" id="customsLinkBtn" style="display:none;">Copy customs link</button>
       <button class="btn-ghost hidden-until-filed" id="copyPlanBtn">Copy /createflightplan command</button>
       <button class="btn-ghost hidden-until-filed" id="copyImgBtn">Copy as image</button>
       <button class="btn-amber hidden-until-filed" id="exportImgBtn">Download PNG</button>
@@ -802,6 +825,8 @@
       <div id="plansList" style="margin-top:10px;font-size:12.5px;color:#dfe9e6;">Loading…</div>
     </div>
   </div>
+
+  <div class="wizard-progress no-export" id="wizardProgress"></div>
 
   <div class="sheet-shell">
     <div class="sprocket"></div>
@@ -1026,7 +1051,7 @@
           <div class="field"><label>Stall Speed Vs (kt)</label><input type="number" id="perfVstall" placeholder="From PTFS wiki"></div>
           <div class="field"><label>Aircraft Baseline Weight (kg)</label><input type="number" id="perfBaseWeight" placeholder="Optional — enables load adjustment"></div>
         </div>
-        <div class="perf-note">Enter the stall speed for your aircraft from its PTFS wiki page. The rest is calculated from it: <strong>VR</strong> ≈ 1.15×Vs, <strong>V1</strong> ≈ 0.92×VR, <strong>V2</strong> = VR + 4kt, <strong>Vref</strong> = 1.3×Vs, <strong>Vapp</strong> = Vref + 5kt — the same ratios the PTFS/ATC24 community performance calculator uses. If you also give a baseline weight, speeds get scaled up for your actual cargo + passenger load below.</div>
+        <div class="perf-note">ATC24 speeds are based on the aircraft stall speed and flap configuration. Passenger, cargo, and fuel weight are displayed for planning only and do not change speed in-game. <strong>V1</strong> is slightly below rotate, <strong>VR</strong> is near stall speed, and <strong>V2</strong> is slightly above rotate.</div>
 
         <div class="sub-title"><h4>Load</h4><div class="line-thin"></div></div>
         <div class="perf-grid" style="grid-template-columns:repeat(3,1fr);">
@@ -1104,7 +1129,15 @@
       </div>
     </div>
 
-    <div class="sprocket"></div>
+    <div class="sprocket">
+      <div class="panel" id="reviewPage">
+        <div class="panel-head"><span class="panel-eyebrow">09</span><h3>Review &amp; Submit</h3><div class="line"></div></div>
+        <div class="perf-note">Review the vital details below. Use Amend to return directly to a section. This summary is used for image and PDF exports.</div>
+        <div class="review-grid" id="reviewGrid"></div>
+        <div class="customs-link-box no-export" id="customsLinkBox"><strong>Customs inspection link</strong><br>Share this only with the cargo/customs agent. They must sign in with Discord.<input id="customsUrl" readonly></div>
+      </div>
+      <div class="wizard-nav no-export" id="wizardNav"><button class="btn-ghost" id="wizardPrev" type="button">Previous</button><span class="autosave-state" id="autosaveState">Not saved yet</span><button class="btn-primary" id="wizardNext" type="button">Next</button></div>
+</div>
   </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1147,46 +1180,23 @@
 
   function updatePerformance(){
     const vs = parseFloat(perfVstall.value);
-    const baseWeight = parseFloat(perfBaseWeight.value);
     const cargoKg = cargoWeightKg();
     const paxKg = paxWeightKg();
     const totalLoad = cargoKg + paxKg;
-
     document.getElementById('loadCargo').value = cargoKg.toFixed(0) + ' kg';
     document.getElementById('loadPax').value = paxKg.toFixed(0) + ' kg';
     document.getElementById('loadTotal').value = totalLoad.toFixed(0) + ' kg';
-
+    loadWarning.textContent = 'Weight is informational only. ATC24 speed values do not change with passengers, cargo, or fuel.';
     const outs = ['outV1','outVR','outV2','outVref','outVapp'];
-    if(!vs || vs <= 0){
-      outs.forEach(id=>document.getElementById(id).value = '—');
-      loadWarning.textContent = '';
-      return;
-    }
-
-    let scale = 1;
-    let scaleNote = '';
-    if(baseWeight && baseWeight > 0 && totalLoad > 0){
-      scale = Math.sqrt((baseWeight + totalLoad) / baseWeight);
-      scaleNote = ` Speeds scaled ×${scale.toFixed(2)} for ${totalLoad.toFixed(0)}kg of added load over a ${baseWeight.toFixed(0)}kg baseline.`;
-      if(scale > 1.15){
-        loadWarning.innerHTML = `<strong style="color:var(--red);">Heavy load</strong> — this is a big jump over baseline weight, double check against the aircraft's real MTOW.${scaleNote}`;
-      } else {
-        loadWarning.textContent = scaleNote.trim();
-      }
-    } else {
-      loadWarning.textContent = totalLoad > 0 ? 'Enter an aircraft baseline weight above to have speeds adjust for this load.' : '';
-    }
-
-    const effVs = vs * scale;
-    const vr = effVs * 1.15;
-    const v1 = vr * 0.92;
-    const v2 = vr + 4;
-    const vref = effVs * 1.3;
-    const vapp = vref + 5;
-
-    document.getElementById('outV1').value   = Math.round(v1) + ' kt';
-    document.getElementById('outVR').value   = Math.round(vr) + ' kt';
-    document.getElementById('outV2').value   = Math.round(v2) + ' kt';
+    if(!vs || vs <= 0){ outs.forEach(id=>document.getElementById(id).value = '—'); return; }
+    const vr = vs * 1.02;
+    const v1 = vr * 0.97;
+    const v2 = vr * 1.05;
+    const vref = vs * 1.15;
+    const vapp = vref * 1.03;
+    document.getElementById('outV1').value = Math.round(v1) + ' kt';
+    document.getElementById('outVR').value = Math.round(vr) + ' kt';
+    document.getElementById('outV2').value = Math.round(v2) + ' kt';
     document.getElementById('outVref').value = Math.round(vref) + ' kt';
     document.getElementById('outVapp').value = Math.round(vapp) + ' kt';
   }
@@ -2704,7 +2714,9 @@
 
   async function renderCanvas(){
     document.body.classList.add('exporting');
-    const canvas = await html2canvas(manifestEl, { scale: 2, backgroundColor: '#e8edec' });
+    buildReview();
+    const reviewEl = document.getElementById('reviewPage');
+    const canvas = await html2canvas(reviewEl, { scale: 2, backgroundColor: '#e8edec' });
     document.body.classList.remove('exporting');
     return canvas;
   }
@@ -2789,6 +2801,8 @@
     document.body.classList.remove('filed');
     document.getElementById('editBtn').style.display = 'none';
     document.getElementById('createPlanBtn').style.display = 'inline-flex';
+    localStorage.removeItem('24fb-autosave');
+    showWizardStep(0);
   });
 
   document.getElementById('genStamp').textContent = 'Generated ' + new Date().toLocaleDateString();
@@ -2827,12 +2841,15 @@
     return true;
   }
 
-  document.getElementById('createPlanBtn').addEventListener('click', ()=>{
+  document.getElementById('createPlanBtn').addEventListener('click', async ()=>{
     if(!validateRequired()) return;
+    await saveRobloxUsername();
+    buildReview();
+    showWizardStep(wizardSteps.length - 1);
     document.body.classList.add('filed');
     document.getElementById('editBtn').style.display = 'inline-flex';
     document.getElementById('createPlanBtn').style.display = 'none';
-    document.querySelector('.filed-banner').scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById('reviewPage').scrollIntoView({behavior:'smooth', block:'start'});
   });
 
   document.getElementById('editBtn').addEventListener('click', ()=>{
@@ -2941,6 +2958,7 @@
   // backend is deployed. Handled gracefully either way.
   // ===============================================================
   let currentUser = null;
+  let currentCustoms = null;
 
   async function refreshAccountStatus(){
     try{
@@ -2951,6 +2969,7 @@
         document.getElementById('loginBtn').style.display = 'none';
         document.getElementById('logoutBtn').style.display = 'inline-flex';
         document.getElementById('myPlansBtn').style.display = 'inline-flex';
+        loadRobloxUsername();
       } else {
         currentUser = null;
         document.getElementById('accountStatus').textContent = 'Not logged in';
@@ -2963,12 +2982,96 @@
       document.getElementById('accountStatus').textContent = 'Not logged in';
     }
   }
+
+  async function loadRobloxUsername(){
+    if(!currentUser) return;
+    try{
+      const res = await fetch('/api/profile');
+      if(res.ok){
+        const profile = await res.json();
+        const input = document.getElementById('fdPilotUsername');
+        if(profile.robloxUsername && !input.value.trim()) input.value = profile.robloxUsername;
+      }
+    }catch(e){}
+  }
+  async function saveRobloxUsername(){
+    if(!currentUser) return;
+    const robloxUsername = document.getElementById('fdPilotUsername').value.trim();
+    if(!robloxUsername) return;
+    await fetch('/api/profile', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({robloxUsername})}).catch(()=>{});
+  }
+
+  const wizardPanels = [...manifestEl.querySelectorAll(':scope > .panel')];
+  const reviewPage = document.getElementById('reviewPage');
+  const wizardSteps = [...wizardPanels];
+  let wizardIndex = 0;
+  const stepNames = wizardSteps.map(step => step.querySelector('h3')?.textContent.trim() || 'Review');
+  document.body.classList.add('wizard-enabled');
+  function validateStep(index){
+    const step = wizardSteps[index];
+    if(!step || step === reviewPage) return true;
+    let first = null;
+    step.querySelectorAll('[data-required="1"]').forEach(el=>{
+      const bad = !String(el.value||'').trim() || ((el===depAirport||el===arrAirport) && !resolveAirport(el.value));
+      el.closest('.field')?.classList.toggle('field-error', bad);
+      if(bad && !first) first=el;
+    });
+    if(first){ first.focus(); return false; }
+    if(step.contains(cruiseAltInput) && !validateCruiseAltitude()) return false;
+    if(step.contains(waypointBody) && !validateWaypointInputs()) return false;
+    return true;
+  }
+  function renderWizardProgress(){
+    const wrap=document.getElementById('wizardProgress'); wrap.innerHTML='';
+    stepNames.forEach((name,i)=>{ const b=document.createElement('button'); b.type='button'; b.className='step-dot'+(i===wizardIndex?' active':'')+(i<wizardIndex?' done':''); b.textContent=`${i+1}. ${name}`; b.addEventListener('click',()=>{ if(i<wizardIndex || validateStep(wizardIndex)) showWizardStep(i); }); wrap.appendChild(b); });
+  }
+  function showWizardStep(index){
+    wizardIndex=Math.max(0,Math.min(index,wizardSteps.length-1));
+    wizardSteps.forEach((step,i)=>step.classList.toggle('wizard-active',i===wizardIndex));
+    document.getElementById('wizardPrev').style.visibility=wizardIndex===0?'hidden':'visible';
+    document.getElementById('wizardNext').textContent=wizardIndex===wizardSteps.length-1?'Back to first section':'Next';
+    renderWizardProgress();
+    window.scrollTo({top:document.querySelector('.sheet-shell').offsetTop-10,behavior:'smooth'});
+  }
+  document.getElementById('wizardPrev').addEventListener('click',()=>showWizardStep(wizardIndex-1));
+  document.getElementById('wizardNext').addEventListener('click',()=>{
+    if(wizardIndex===wizardSteps.length-1) return showWizardStep(0);
+    if(!validateStep(wizardIndex)) return;
+    if(wizardIndex===wizardSteps.length-2) buildReview();
+    showWizardStep(wizardIndex+1);
+  });
+  function value(id){ return document.getElementById(id)?.value?.trim() || '—'; }
+  function buildReview(){
+    const waypointText=[...waypointBody.querySelectorAll('.wp-input')].map(x=>x.value.trim()).filter(Boolean).join(' → ') || ({direct:'GPS Direct',rdv:'Radar Vectors'}[routeType] || '—');
+    const cargoRows=[...cargoBody.querySelectorAll('tr')].map(tr=>{ const x=tr.querySelectorAll('input'); return x[0]?.value.trim()?`${x[0].value.trim()} (${x[3]?.value||'0'} pcs, ${x[4]?.value||'0'} ${unit})`:''; }).filter(Boolean);
+    const cards=[
+      ['Flight Details',0,[['Callsign',value('fdCallsign')],['Pilot',value('fdPilotUsername')],['Aircraft',value('fdAircraft')],['Rules',value('flightRules')],['Date',value('flightDate')]]],
+      ['Route',1,[['Departure',value('depAirport')],['Arrival',value('arrAirport')],['Cruise',value('cruiseAlt')],['Route',waypointText]]],
+      ['People',2,[['Crew',[...crewBody.querySelectorAll('tr')].map(r=>[...r.querySelectorAll('input')].map(x=>x.value).filter(Boolean).join(': ')).filter(Boolean).join(', ')||'—'],['Souls',value('soulsCount')],['Passenger weight',value('soulsWeightTotal')]]],
+      ['Cargo',4,[['Items',cargoRows.join('; ')||'No cargo listed'],['Cargo weight',document.getElementById('loadCargo').value||'0 kg']]],
+      ['Performance',5,[['Stall',value('perfVstall')+' kt'],['V1',value('outV1')],['Rotate',value('outVR')],['V2',value('outV2')],['Vref',value('outVref')],['Approach',value('outVapp')]]],
+      ['Remarks & Signatures',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['Departure customs',currentCustoms?.departure?.status||'Not requested'],['Arrival customs',currentCustoms?.arrival?.status||'Not requested'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—'],['Notice','Use Roblox usernames rather than real names for signatures.']]]
+    ];
+    const grid=document.getElementById('reviewGrid'); grid.innerHTML='';
+    cards.forEach(([title,step,rows])=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><h4>${title}</h4><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
+  }
+  let autosaveTimer;
+  manifestEl.addEventListener('input',()=>{
+    clearTimeout(autosaveTimer);
+    document.getElementById('autosaveState').textContent='Saving…';
+    autosaveTimer=setTimeout(()=>{ try{localStorage.setItem('24fb-autosave',JSON.stringify(serializeForm())); document.getElementById('autosaveState').textContent='Draft autosaved';}catch(e){document.getElementById('autosaveState').textContent='Autosave failed';}},700);
+  });
+  try{ const draft=localStorage.getItem('24fb-autosave'); if(draft && confirm('Restore your autosaved flight-plan draft?')) loadFormData(JSON.parse(draft)); }catch(e){}
+  document.getElementById('customsLinkBtn').addEventListener('click',async()=>{ const url=document.getElementById('customsUrl').value; if(!url)return; await navigator.clipboard.writeText(url); flashBtn('customsLinkBtn','Copied!'); });
+  showWizardStep(0);
+
   refreshAccountStatus();
 
   document.getElementById('loginBtn').addEventListener('click', ()=>{ window.location.href = '/api/auth/login'; });
   document.getElementById('logoutBtn').addEventListener('click', async ()=>{
     await fetch('/api/auth/logout', { method:'POST' }).catch(()=>{});
-    refreshAccountStatus();
+  
+  refreshAccountStatus();
   });
 
   document.getElementById('savePlanBtn').addEventListener('click', async ()=>{
@@ -2981,6 +3084,14 @@
         body: JSON.stringify({ name: document.getElementById('fdCallsign').value || 'Untitled plan', data: serializeForm() })
       });
       if(!res.ok) throw new Error('save failed');
+      const saved = await res.json();
+      if(saved.customsUrl){
+        const fullUrl = new URL(saved.customsUrl, window.location.origin).href;
+        document.getElementById('customsUrl').value = fullUrl;
+        document.getElementById('customsLinkBox').style.display = 'block';
+        document.getElementById('customsLinkBtn').style.display = 'inline-flex';
+      }
+      await saveRobloxUsername();
       flashBtn('savePlanBtn', 'Saved!');
     }catch(e){
       console.error('24FlightBrief: save failed', e);
@@ -3003,7 +3114,7 @@
         const loadBtn = document.createElement('button');
         loadBtn.className = 'btn-ghost btn-small';
         loadBtn.textContent = 'Load';
-        loadBtn.addEventListener('click', ()=>{ loadFormData(p.data); document.getElementById('plansPanel').style.display = 'none'; });
+        loadBtn.addEventListener('click', ()=>{ currentCustoms = p.customs || null; loadFormData(p.data); buildReview(); document.getElementById('plansPanel').style.display = 'none'; });
         const delBtn = document.createElement('button');
         delBtn.className = 'btn-ghost btn-small';
         delBtn.textContent = 'Delete';
