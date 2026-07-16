@@ -253,7 +253,60 @@
   input::placeholder, textarea::placeholder{color:#a9b6b3;}
   select{appearance:none;-webkit-appearance:none;cursor:pointer;}
   .rules-select{font-weight:700;}
+  .airport-grid{overflow:visible;position:relative;z-index:10;}
+  .airport-field{position:relative;z-index:1;}
+  .airport-field:focus-within{z-index:80;}
   .airport-field input{text-transform:uppercase;}
+  .airport-menu{
+    display:none;
+    position:absolute;
+    left:-1px;
+    right:-1px;
+    top:calc(100% - 1px);
+    z-index:100;
+    max-height:286px;
+    overflow-y:auto;
+    border:1.5px solid var(--ink);
+    border-radius:0 0 6px 6px;
+    background:#f7faf9;
+    box-shadow:0 12px 25px rgba(22,35,43,.2);
+  }
+  .airport-menu.is-open{display:block;}
+  .airport-option{
+    display:block;
+    width:100%;
+    border:0;
+    border-bottom:1px solid var(--rule);
+    padding:8px 10px 7px;
+    background:transparent;
+    color:var(--ink);
+    text-align:left;
+    cursor:pointer;
+  }
+  .airport-option:last-child{border-bottom:0;}
+  .airport-option:hover,.airport-option.is-active{background:rgba(27,127,114,.12);}
+  .airport-option-name{
+    display:block;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    line-height:1.25;
+    font-weight:700;
+  }
+  .airport-option-code{
+    display:block;
+    margin-top:2px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    line-height:1.2;
+    letter-spacing:.09em;
+    color:var(--rule-strong);
+  }
+  .airport-option-empty{
+    padding:10px;
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    color:var(--rule-strong);
+  }
   .airport-resolved{
     display:block;
     min-height:13px;
@@ -515,7 +568,7 @@
     padding:6px 0;
     margin-top:6px;
   }
-  #routeSvg{display:block;height:120px;}
+  #routeSvg{display:block;height:150px;}
 
   /* ===== ATIS panel ===== */
   .atis-box{
@@ -716,6 +769,35 @@
     #manifest{padding:22px 16px 20px;}
     .head h2{font-size:24px;}
   }
+
+  /* Multi-step flight-plan wizard */
+  .wizard-progress{max-width:1180px;margin:14px auto 0;padding:0 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .wizard-progress .step-dot{border:1px solid rgba(255,255,255,.2);background:#20312e;color:#c7d4d1;border-radius:999px;padding:7px 10px;font:700 10px/1 Arial;cursor:pointer}
+  .wizard-progress .step-dot.active{background:var(--amber);color:#17201e;border-color:var(--amber)}
+  .wizard-progress .step-dot.done{border-color:#7fb39f;color:#dff7ee}
+  .wizard-nav{display:flex;justify-content:space-between;gap:12px;margin:18px 0 4px;padding-top:14px;border-top:1px solid var(--rule)}
+  body.wizard-enabled #manifest>.panel{display:none}
+  body.wizard-enabled #manifest>.panel.wizard-active{display:block}
+  body.wizard-enabled #reviewPage{display:none}
+  body.wizard-enabled #reviewPage.wizard-active{display:block}
+  .review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .review-card{border:1px solid var(--rule);background:rgba(255,255,255,.36);padding:14px;border-radius:5px;position:relative}
+  .review-card h4{margin:0 0 9px;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+  .review-card dl{margin:0;display:grid;grid-template-columns:130px 1fr;gap:5px 10px;font-size:11px}
+  .review-card dt{font-weight:700;color:var(--ink-soft)} .review-card dd{margin:0;word-break:break-word}
+  .review-edit{position:absolute;right:10px;top:9px;border:0;background:transparent;text-decoration:underline;cursor:pointer;color:var(--ink-soft);font-size:10px}
+  .autosave-state{font-size:10px;color:#b8c8c4;margin-left:auto}
+  .customs-link-box{margin:12px 0;padding:12px;border:1px dashed var(--rule-strong);background:rgba(255,255,255,.28);font-size:11px;display:none}
+  .customs-link-box input{width:100%;margin-top:7px;padding:8px;border:1px solid var(--rule);background:#fff;font:11px monospace}
+  .summary-signature{margin-top:14px;border-top:1px solid var(--rule);padding-top:14px}
+  .summary-signature-choice{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;margin-bottom:10px;border:1px dashed var(--rule-strong);background:rgba(255,255,255,.28);border-radius:5px;font-size:11px;line-height:1.45}
+  .summary-signature-choice input{width:auto;margin-top:2px;accent-color:var(--teal)}
+  .summary-signature-choice strong{display:block;margin-bottom:2px}
+  .summary-signature .sig-block{max-width:560px;margin:0 auto}
+  .summary-signature .sig-privacy{font-size:10px;color:var(--ink-soft);margin:0 0 8px;text-align:center}
+  .summary-signature-status{max-width:560px;margin:0 auto;padding:14px;border:1px dashed var(--rule);border-radius:5px;text-align:center;font-size:11px;color:var(--ink-soft);background:rgba(255,255,255,.24)}
+  @media(max-width:720px){.review-grid{grid-template-columns:1fr}.wizard-progress{overflow-x:auto;flex-wrap:nowrap}.review-card dl{grid-template-columns:105px 1fr}}
+
 </style>
 </head>
 <body>
@@ -736,6 +818,7 @@
       <button class="btn-ghost" id="editBtn" style="display:none;">Edit</button>
       <button class="btn-primary" id="createPlanBtn">Create Flight Plan</button>
       <button class="btn-ghost hidden-until-filed" id="savePlanBtn">Save to my account</button>
+      <button class="btn-ghost hidden-until-filed" id="customsLinkBtn" style="display:none;">Copy customs link</button>
       <button class="btn-ghost hidden-until-filed" id="copyPlanBtn">Copy /createflightplan command</button>
       <button class="btn-ghost hidden-until-filed" id="copyImgBtn">Copy as image</button>
       <button class="btn-amber hidden-until-filed" id="exportImgBtn">Download PNG</button>
@@ -749,6 +832,8 @@
       <div id="plansList" style="margin-top:10px;font-size:12.5px;color:#dfe9e6;">Loading…</div>
     </div>
   </div>
+
+  <div class="wizard-progress no-export" id="wizardProgress"></div>
 
   <div class="sheet-shell">
     <div class="sprocket"></div>
@@ -802,13 +887,12 @@
           <h3>Route &amp; Waypoints</h3>
           <div class="line"></div>
         </div>
-        <div class="grid">
-          <div class="field airport-field"><label>Departure Airport <span class="req-mark">*</span></label><input type="text" id="depAirport" data-required="1" list="airportOptions" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IRFD"><span class="airport-resolved" id="depAirportResolved"></span></div>
+        <div class="grid airport-grid">
+          <div class="field airport-field"><label>Departure Airport <span class="req-mark">*</span></label><input type="text" id="depAirport" data-required="1" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IRFD" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="depAirportMenu"><div class="airport-menu no-export" id="depAirportMenu" role="listbox"></div><span class="airport-resolved" id="depAirportResolved"></span></div>
           <div class="field"><label>Departure Procedure (SID)</label><input type="text" placeholder="If applicable"></div>
-          <div class="field airport-field"><label>Arrival Airport <span class="req-mark">*</span></label><input type="text" id="arrAirport" data-required="1" list="airportOptions" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IPPH"><span class="airport-resolved" id="arrAirportResolved"></span></div>
+          <div class="field airport-field"><label>Arrival Airport <span class="req-mark">*</span></label><input type="text" id="arrAirport" data-required="1" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IPPH" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="arrAirportMenu"><div class="airport-menu no-export" id="arrAirportMenu" role="listbox"></div><span class="airport-resolved" id="arrAirportResolved"></span></div>
           <div class="field"><label>Arrival Procedure (STAR)</label><input type="text" placeholder="If applicable"></div>
         </div>
-        <datalist id="airportOptions"></datalist>
         <datalist id="waypointOptions"></datalist>
 
         <div class="cruise-row">
@@ -974,7 +1058,7 @@
           <div class="field"><label>Stall Speed Vs (kt)</label><input type="number" id="perfVstall" placeholder="From PTFS wiki"></div>
           <div class="field"><label>Aircraft Baseline Weight (kg)</label><input type="number" id="perfBaseWeight" placeholder="Optional — enables load adjustment"></div>
         </div>
-        <div class="perf-note">Enter the stall speed for your aircraft from its PTFS wiki page. The rest is calculated from it: <strong>VR</strong> ≈ 1.15×Vs, <strong>V1</strong> ≈ 0.92×VR, <strong>V2</strong> = VR + 4kt, <strong>Vref</strong> = 1.3×Vs, <strong>Vapp</strong> = Vref + 5kt — the same ratios the PTFS/ATC24 community performance calculator uses. If you also give a baseline weight, speeds get scaled up for your actual cargo + passenger load below.</div>
+        <div class="perf-note">ATC24 speeds are based on the aircraft stall speed and flap configuration. Passenger, cargo, and fuel weight are displayed for planning only and do not change speed in-game. <strong>V1</strong> is slightly below rotate, <strong>VR</strong> is near stall speed, and <strong>V2</strong> is slightly above rotate.</div>
 
         <div class="sub-title"><h4>Load</h4><div class="line-thin"></div></div>
         <div class="perf-grid" style="grid-template-columns:repeat(3,1fr);">
@@ -1004,55 +1088,46 @@
         <textarea class="remarks" placeholder="Special handling, hazmat notes, load balance, ATC restrictions, roleplay notes..."></textarea>
       </div>
 
-      <!-- 08 SIGNATURES -->
-      <div class="panel">
-        <div class="panel-head">
-          <span class="panel-eyebrow">08</span>
-          <h3>Signatures</h3>
-          <div class="line"></div>
-        </div>
-        <div class="sig-wrap">
-          <div class="sig-block" data-sig="dispatch">
-            <div class="sig-block-head">
-              <span>Loadmaster / Dispatcher Signature</span>
-              <div class="sig-mode-toggle no-export">
-                <button class="mode-draw active" data-mode="draw">Draw</button>
-                <button class="mode-type" data-mode="type">Type</button>
-              </div>
-            </div>
-            <canvas class="sigpad"></canvas>
-            <input class="sig-type" style="display:none;" placeholder="Type signature">
-            <div class="sig-under">
-              <span class="sig-name-line"><input type="text" placeholder="Printed name" style="width:150px;"></span>
-              <button class="sig-clear no-export">Clear</button>
-            </div>
-          </div>
-
-          <div class="sig-block" data-sig="pic">
-            <div class="sig-block-head">
-              <span>Pilot in Command Signature</span>
-              <div class="sig-mode-toggle no-export">
-                <button class="mode-draw active" data-mode="draw">Draw</button>
-                <button class="mode-type" data-mode="type">Type</button>
-              </div>
-            </div>
-            <canvas class="sigpad"></canvas>
-            <input class="sig-type" style="display:none;" placeholder="Type signature">
-            <div class="sig-under">
-              <span class="sig-name-line"><input type="text" placeholder="Printed name" style="width:150px;"></span>
-              <button class="sig-clear no-export">Clear</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="foot">
         <span>24FlightBrief · Fan-made · For roleplay use on the ATC24 Roblox network only</span>
         <span id="genStamp"></span>
       </div>
     </div>
 
-    <div class="sprocket"></div>
+    <div class="sprocket">
+      <div class="panel" id="reviewPage">
+        <div class="panel-head"><span class="panel-eyebrow">08</span><h3>Flight Plan Summary</h3><div class="line"></div></div>
+        <div class="perf-note">Review the vital details below. Use Amend to return directly to a section. This summary is used for image and PDF exports.</div>
+        <div class="review-grid" id="reviewGrid"></div>
+
+        <div class="summary-signature" id="summarySignature">
+          <label class="summary-signature-choice no-export" for="includePilotSignature">
+            <input type="checkbox" id="includePilotSignature">
+            <span><strong>Add my pilot signature to this flight plan</strong>This is optional. Use your Roblox username rather than your real name.</span>
+          </label>
+          <div class="summary-signature-status" id="pilotSignatureStatus">Pilot signature not added.</div>
+          <div class="sig-block" data-sig="pic" id="pilotSignatureBlock">
+            <div class="sig-block-head">
+              <span>Pilot in Command Signature</span>
+              <div class="sig-mode-toggle no-export">
+                <button class="mode-draw active" data-mode="draw" type="button">Draw</button>
+                <button class="mode-type" data-mode="type" type="button">Type</button>
+              </div>
+            </div>
+            <p class="sig-privacy">Use a Roblox username or roleplay name. Do not enter your real name.</p>
+            <canvas class="sigpad"></canvas>
+            <input class="sig-type" style="display:none;" placeholder="Type Roblox username signature">
+            <div class="sig-under">
+              <span class="sig-name-line"><input type="text" placeholder="Roblox username" style="width:170px;"></span>
+              <button class="sig-clear no-export" type="button">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="customs-link-box no-export" id="customsLinkBox"><strong>Customs inspection link</strong><br>Share this only with the cargo/customs agent. They must sign in with Discord.<input id="customsUrl" readonly aria-label="Customs inspection link" title="Click to select the full link"></div>
+      </div>
+      <div class="wizard-nav no-export" id="wizardNav"><button class="btn-ghost" id="wizardPrev" type="button">Previous</button><span class="autosave-state" id="autosaveState">Not saved yet</span><button class="btn-primary" id="wizardNext" type="button">Next</button></div>
+</div>
   </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1095,46 +1170,23 @@
 
   function updatePerformance(){
     const vs = parseFloat(perfVstall.value);
-    const baseWeight = parseFloat(perfBaseWeight.value);
     const cargoKg = cargoWeightKg();
     const paxKg = paxWeightKg();
     const totalLoad = cargoKg + paxKg;
-
     document.getElementById('loadCargo').value = cargoKg.toFixed(0) + ' kg';
     document.getElementById('loadPax').value = paxKg.toFixed(0) + ' kg';
     document.getElementById('loadTotal').value = totalLoad.toFixed(0) + ' kg';
-
+    loadWarning.textContent = 'Weight is informational only. ATC24 speed values do not change with passengers, cargo, or fuel.';
     const outs = ['outV1','outVR','outV2','outVref','outVapp'];
-    if(!vs || vs <= 0){
-      outs.forEach(id=>document.getElementById(id).value = '—');
-      loadWarning.textContent = '';
-      return;
-    }
-
-    let scale = 1;
-    let scaleNote = '';
-    if(baseWeight && baseWeight > 0 && totalLoad > 0){
-      scale = Math.sqrt((baseWeight + totalLoad) / baseWeight);
-      scaleNote = ` Speeds scaled ×${scale.toFixed(2)} for ${totalLoad.toFixed(0)}kg of added load over a ${baseWeight.toFixed(0)}kg baseline.`;
-      if(scale > 1.15){
-        loadWarning.innerHTML = `<strong style="color:var(--red);">Heavy load</strong> — this is a big jump over baseline weight, double check against the aircraft's real MTOW.${scaleNote}`;
-      } else {
-        loadWarning.textContent = scaleNote.trim();
-      }
-    } else {
-      loadWarning.textContent = totalLoad > 0 ? 'Enter an aircraft baseline weight above to have speeds adjust for this load.' : '';
-    }
-
-    const effVs = vs * scale;
-    const vr = effVs * 1.15;
-    const v1 = vr * 0.92;
-    const v2 = vr + 4;
-    const vref = effVs * 1.3;
-    const vapp = vref + 5;
-
-    document.getElementById('outV1').value   = Math.round(v1) + ' kt';
-    document.getElementById('outVR').value   = Math.round(vr) + ' kt';
-    document.getElementById('outV2').value   = Math.round(v2) + ' kt';
+    if(!vs || vs <= 0){ outs.forEach(id=>document.getElementById(id).value = '—'); return; }
+    const vr = vs * 1.02;
+    const v1 = vr * 0.97;
+    const v2 = vr * 1.05;
+    const vref = vs * 1.15;
+    const vapp = vref * 1.03;
+    document.getElementById('outV1').value = Math.round(v1) + ' kt';
+    document.getElementById('outVR').value = Math.round(vr) + ' kt';
+    document.getElementById('outV2').value = Math.round(v2) + ' kt';
     document.getElementById('outVref').value = Math.round(vref) + ' kt';
     document.getElementById('outVapp').value = Math.round(vapp) + ' kt';
   }
@@ -1825,7 +1877,8 @@
   const arrAirport = document.getElementById('arrAirport');
   const depAirportResolved = document.getElementById('depAirportResolved');
   const arrAirportResolved = document.getElementById('arrAirportResolved');
-  const airportOptions = document.getElementById('airportOptions');
+  const depAirportMenu = document.getElementById('depAirportMenu');
+  const arrAirportMenu = document.getElementById('arrAirportMenu');
   const waypointOptions = document.getElementById('waypointOptions');
   const waypointBody = document.getElementById('waypointBody');
   const waypointValidationStatus = document.getElementById('waypointValidationStatus');
@@ -2032,16 +2085,97 @@
     validateCruiseAltitude();
   });
 
-  AIRPORT_DIRECTORY.forEach(airport=>{
-    const codeOption = document.createElement('option');
-    codeOption.value = airport.code;
-    codeOption.label = airport.name;
-    airportOptions.appendChild(codeOption);
+  // Native datalists cannot style airport names and ICAO codes independently, and
+  // the old code/name pair created two entries per airport. This custom combobox
+  // renders one airport once: full name first, ICAO beneath it.
+  const airportComboboxStates = [];
 
-    const nameOption = document.createElement('option');
-    nameOption.value = airport.name;
-    nameOption.label = airport.code;
-    airportOptions.appendChild(nameOption);
+  function airportMatches(query){
+    const q = airportLookupKey(query);
+    if(!q) return AIRPORT_DIRECTORY;
+    return AIRPORT_DIRECTORY.filter(airport=>
+      airportLookupKey(airport.code).includes(q) || airportLookupKey(airport.name).includes(q)
+    );
+  }
+
+  function setAirportMenuOpen(state, open){
+    state.open = open === true;
+    state.menu.classList.toggle('is-open', state.open);
+    state.input.setAttribute('aria-expanded', String(state.open));
+    if(!state.open) state.activeIndex = -1;
+  }
+
+  function renderAirportMenu(state){
+    state.matches = airportMatches(state.input.value);
+    state.activeIndex = Math.min(state.activeIndex, state.matches.length - 1);
+    state.menu.innerHTML = '';
+    if(state.matches.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'airport-option-empty';
+      empty.textContent = 'No matching airport';
+      state.menu.appendChild(empty);
+      return;
+    }
+    state.matches.forEach((airport, index)=>{
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'airport-option' + (index === state.activeIndex ? ' is-active' : '');
+      option.setAttribute('role', 'option');
+      option.setAttribute('aria-selected', String(index === state.activeIndex));
+      option.dataset.code = airport.code;
+      option.innerHTML = `<span class="airport-option-name"></span><span class="airport-option-code"></span>`;
+      option.querySelector('.airport-option-name').textContent = airport.name;
+      option.querySelector('.airport-option-code').textContent = airport.code;
+      option.addEventListener('mousedown', event=>event.preventDefault());
+      option.addEventListener('click', ()=>selectAirportOption(state, airport));
+      state.menu.appendChild(option);
+    });
+  }
+
+  function selectAirportOption(state, airport){
+    state.input.value = airport.code;
+    setAirportMenuOpen(state, false);
+    refreshAirportField(state.input, state.hint, true);
+    syncAtisAirportLabels();
+    state.input.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+
+  function moveAirportMenuSelection(state, delta){
+    if(!state.open){
+      renderAirportMenu(state);
+      setAirportMenuOpen(state, true);
+    }
+    if(!state.matches.length) return;
+    state.activeIndex = (state.activeIndex + delta + state.matches.length) % state.matches.length;
+    renderAirportMenu(state);
+    state.menu.querySelector('.is-active')?.scrollIntoView({block:'nearest'});
+  }
+
+  function setupAirportCombobox(input, menu, hint){
+    const state = {input, menu, hint, matches:[], activeIndex:-1, open:false};
+    airportComboboxStates.push(state);
+    input.addEventListener('focus', ()=>{ renderAirportMenu(state); setAirportMenuOpen(state, true); });
+    input.addEventListener('click', ()=>{ renderAirportMenu(state); setAirportMenuOpen(state, true); });
+    input.addEventListener('input', ()=>{ state.activeIndex = -1; renderAirportMenu(state); setAirportMenuOpen(state, true); });
+    input.addEventListener('keydown', event=>{
+      if(event.key === 'ArrowDown'){ event.preventDefault(); moveAirportMenuSelection(state, 1); }
+      else if(event.key === 'ArrowUp'){ event.preventDefault(); moveAirportMenuSelection(state, -1); }
+      else if(event.key === 'Enter' && state.open && state.activeIndex >= 0){
+        event.preventDefault();
+        selectAirportOption(state, state.matches[state.activeIndex]);
+      } else if(event.key === 'Escape'){
+        setAirportMenuOpen(state, false);
+      }
+    });
+    input.addEventListener('blur', ()=>setTimeout(()=>setAirportMenuOpen(state, false), 0));
+  }
+
+  setupAirportCombobox(depAirport, depAirportMenu, depAirportResolved);
+  setupAirportCombobox(arrAirport, arrAirportMenu, arrAirportResolved);
+  document.addEventListener('mousedown', event=>{
+    airportComboboxStates.forEach(state=>{
+      if(!state.input.closest('.airport-field').contains(event.target)) setAirportMenuOpen(state, false);
+    });
   });
 
   Object.keys(WAYPOINTS).sort().forEach(code=>{
@@ -2079,35 +2213,78 @@
   const routeSvg = document.getElementById('routeSvg');
   let wpIdx = 0;
 
+  const DEFAULT_DEPARTURE_RUNWAYS = {
+    IRFD: {runway:'25', heading:250}
+  };
+
+  function routeNodePosition(node){
+    if(node.kind === 'wp') return WAYPOINTS[waypointKey(node.label)] || null;
+    return AIRPORTS[airportCode(node.label)] || null;
+  }
+
+  function chartHeading(from, to){
+    if(!from || !to || (from.x === to.x && from.y === to.y)) return null;
+    const degrees = (Math.atan2(to.x - from.x, from.y - to.y) * 180 / Math.PI + 360) % 360;
+    const rounded = Math.round(degrees) % 360;
+    return rounded === 0 ? 360 : rounded;
+  }
+
+  function formatHeading(value){
+    return value === null ? '---°' : `${String(value).padStart(3, '0')}°`;
+  }
+
+  function runwayHeadingFromDesignator(designator){
+    const number = parseInt(String(designator || '').match(/\d{1,2}/)?.[0] || '', 10);
+    if(!number || number < 1 || number > 36) return null;
+    return number === 36 ? 360 : number * 10;
+  }
+
+  function departureRunwayInfo(){
+    const atisText = String(document.getElementById('departureAtisPaste')?.value || '').toUpperCase();
+    const match = atisText.match(/(?:ACTIVE\s+)?RWY\s+(\d{1,2}[LRC]?)/);
+    if(match){
+      return {runway:match[1], heading:runwayHeadingFromDesignator(match[1]), source:'ATIS'};
+    }
+    return DEFAULT_DEPARTURE_RUNWAYS[airportCode(depAirport.value)] || null;
+  }
+
   function renderRouteDiagram(){
     const nodes = [];
     if(depAirport.value.trim()) nodes.push({label: airportCode(depAirport.value), kind:'dep'});
     if(routeType === 'waypoints'){
       waypointBody.querySelectorAll('tr').forEach(tr=>{
         const v = tr.querySelector('.wp-input').value.trim();
-        if(v) nodes.push({label: v.toUpperCase(), kind:'wp'});
+        if(v) nodes.push({label: waypointKey(v), kind:'wp'});
       });
     }
     if(arrAirport.value.trim()) nodes.push({label: airportCode(arrAirport.value), kind:'arr'});
+    nodes.forEach(node=>{ node.position = routeNodePosition(node); });
 
-    const spacing = 140;
-    const pad = 50;
-    const width = Math.max(nodes.length * spacing, spacing) + pad*2;
-    const cy = 60;
-    routeSvg.setAttribute('viewBox', `0 0 ${width} 120`);
+    const spacing = 175;
+    const pad = 58;
+    const width = Math.max((nodes.length - 1) * spacing + pad * 2, 300);
+    const height = 150;
+    const cy = 84;
+    routeSvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     routeSvg.setAttribute('width', width);
 
     let svg = '';
     if(nodes.length === 0){
       svg = `<text x="20" y="${cy+5}" font-family="Inter,sans-serif" font-size="12" fill="#6b7c78">Add a departure, waypoints, and an arrival to see the route.</text>`;
     } else {
-      const segLabel = routeType === 'direct' ? 'DCT' : routeType === 'rdv' ? 'RDV' : '';
       for(let i=0;i<nodes.length-1;i++){
         const x1 = pad + i*spacing, x2 = pad + (i+1)*spacing;
+        const mid = (x1+x2)/2;
+        const heading = chartHeading(nodes[i].position, nodes[i+1].position);
+        let segmentText = '';
+        if(routeType === 'waypoints') segmentText = `HDG ${formatHeading(heading)}`;
+        else if(routeType === 'direct') segmentText = `DCT · ${formatHeading(heading)}`;
+        else segmentText = 'RDV';
+
         svg += `<line x1="${x1}" y1="${cy}" x2="${x2}" y2="${cy}" stroke="#5c6f6a" stroke-width="1.5" stroke-dasharray="5,4"/>`;
-        if(segLabel){
-          svg += `<text x="${(x1+x2)/2}" y="${cy-6}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10.5" font-weight="700" fill="var(--teal-dark)">${segLabel}</text>`;
-        }
+        const badgeWidth = Math.max(72, segmentText.length * 7.1 + 18);
+        svg += `<rect x="${mid-badgeWidth/2}" y="${cy-48}" width="${badgeWidth}" height="21" rx="10.5" fill="#eef4f2" stroke="#9fb2ad"/>`;
+        svg += `<text x="${mid}" y="${cy-33}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10.5" font-weight="700" fill="#12675d">${segmentText}</text>`;
       }
       nodes.forEach((n,i)=>{
         const x = pad + i*spacing;
@@ -2115,9 +2292,17 @@
         if(n.kind==='dep'){ fill='#1b7f72'; r=9; }
         if(n.kind==='arr'){ fill='#a5382c'; r=9; }
         svg += `<circle cx="${x}" cy="${cy}" r="${r}" fill="${fill}" stroke="#16232b" stroke-width="1.5"/>`;
-        svg += `<text x="${x}" y="${cy-16}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="#16232b">${n.label}</text>`;
-        svg += `<text x="${x}" y="${cy+26}" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" letter-spacing="1" fill="#6b7c78">${n.kind==='dep'?'DEP':n.kind==='arr'?'ARR':'FIX'}</text>`;
+        svg += `<text x="${x}" y="${cy-15}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="12" font-weight="700" fill="#16232b">${n.label}</text>`;
+        svg += `<text x="${x}" y="${cy+27}" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" letter-spacing="1" fill="#6b7c78">${n.kind==='dep'?'DEP':n.kind==='arr'?'ARR':'FIX'}</text>`;
       });
+
+      const runway = routeType === 'waypoints' ? departureRunwayInfo() : null;
+      if(runway && nodes[0]?.kind === 'dep' && runway.heading){
+        const runwayText = `RWY ${runway.runway} · ${formatHeading(runway.heading)}`;
+        const runwayWidth = Math.max(96, runwayText.length * 6.7 + 18);
+        svg += `<rect x="${pad-runwayWidth/2}" y="${cy+38}" width="${runwayWidth}" height="20" rx="10" fill="#16232b"/>`;
+        svg += `<text x="${pad}" y="${cy+52}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700" fill="#f4f8f7">${runwayText}</text>`;
+      }
     }
     routeSvg.innerHTML = svg;
   }
@@ -2237,12 +2422,14 @@
       chip.textContent = 'No recognizable fields found';
       panel.chips.appendChild(chip);
     }
+    renderRouteDiagram();
     return found;
   }
 
   document.querySelectorAll('.parse-atis-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>parseAtisInto(btn.dataset.atisPanel));
   });
+  atisPanels.departure.input.addEventListener('input', renderRouteDiagram);
 
   function syncAtisAirportLabels(clearChanged=true){
     Object.entries(atisPanels).forEach(([key, panel])=>{
@@ -2431,6 +2618,7 @@
       ctx.lineCap = 'round';
       ctx.strokeStyle = '#16232b';
     }
+    block._resizeSignature = resize;
     resize();
     window.addEventListener('resize', resize);
 
@@ -2439,7 +2627,7 @@
       const p = e.touches ? e.touches[0] : e;
       return { x: p.clientX - rect.left, y: p.clientY - rect.top };
     }
-    function start(e){ drawing = true; last = pos(e); e.preventDefault(); }
+    function start(e){ drawing = true; last = pos(e); block.dataset.hasInk = '1'; e.preventDefault(); }
     function move(e){
       if(!drawing) return;
       const p = pos(e);
@@ -2462,7 +2650,12 @@
     block.querySelector('.sig-clear').addEventListener('click', ()=>{
       ctx.clearRect(0,0,canvas.width,canvas.height);
       typeInput.value = '';
+      block.dataset.hasInk = '0';
+      scheduleAutosave();
     });
+    typeInput.addEventListener('input', ()=>{ block.dataset.hasInk = typeInput.value.trim() ? '1' : '0'; });
+    canvas.addEventListener('mouseup', ()=>scheduleAutosave());
+    canvas.addEventListener('touchend', ()=>scheduleAutosave());
 
     block.querySelectorAll('.sig-mode-toggle button').forEach(btn=>{
       btn.addEventListener('click', ()=>{
@@ -2479,6 +2672,23 @@
     });
   }
   document.querySelectorAll('.sig-block').forEach(setupSig);
+
+  const includePilotSignature = document.getElementById('includePilotSignature');
+  const pilotSignatureBlock = document.getElementById('pilotSignatureBlock');
+  const pilotSignatureStatus = document.getElementById('pilotSignatureStatus');
+  function updatePilotSignatureVisibility(){
+    const enabled = includePilotSignature.checked;
+    pilotSignatureBlock.style.display = enabled ? 'block' : 'none';
+    pilotSignatureStatus.style.display = enabled ? 'none' : 'block';
+    if(enabled){
+      const printedName = pilotSignatureBlock.querySelector('.sig-name-line input');
+      const pilotUsername = document.getElementById('fdPilotUsername').value.trim();
+      if(!printedName.value.trim() && pilotUsername) printedName.value = pilotUsername;
+      requestAnimationFrame(()=>pilotSignatureBlock._resizeSignature?.());
+    }
+  }
+  includePilotSignature.addEventListener('change', updatePilotSignatureVisibility);
+  updatePilotSignatureVisibility();
 
   // ===== Copy flight plan for ATC24 Discord filing =====
   // Builds the exact /createflightplan command syntax:
@@ -2504,12 +2714,8 @@
     }
 
     const text = `/createflightplan ingamecallsign:${ingameCallsign} callsign:${callsign} aircraft:${aircraft} flightrules:${rules} departing:${dep} arriving:${arr} flightlevel:${fl} ingamename:${pilotUsername} route:${route}`;
-    try{
-      await navigator.clipboard.writeText(text);
-      flashBtn('copyPlanBtn', 'Copied!');
-    }catch(e){
-      flashBtn('copyPlanBtn', 'Copy failed');
-    }
+    const copied = await copyText(text);
+    flashBtn('copyPlanBtn', copied ? 'Copied!' : 'Copy blocked');
   });
 
   // ===== Export =====
@@ -2517,7 +2723,9 @@
 
   async function renderCanvas(){
     document.body.classList.add('exporting');
-    const canvas = await html2canvas(manifestEl, { scale: 2, backgroundColor: '#e8edec' });
+    buildReview();
+    const reviewEl = document.getElementById('reviewPage');
+    const canvas = await html2canvas(reviewEl, { scale: 2, backgroundColor: '#e8edec' });
     document.body.classList.remove('exporting');
     return canvas;
   }
@@ -2576,9 +2784,47 @@
 
   function flashBtn(id, text){
     const btn = document.getElementById(id);
+    if(!btn) return;
     const orig = btn.textContent;
     btn.textContent = text;
-    setTimeout(()=>{ btn.textContent = orig; }, 1400);
+    setTimeout(()=>{ btn.textContent = orig; }, 1800);
+  }
+
+  async function copyText(text){
+    if(!text) return false;
+
+    // The modern Clipboard API only works in secure browser contexts and may
+    // still be blocked by browser permissions. Use it first, then fall back to
+    // the older selection-based copy method for previews and stricter browsers.
+    if(navigator.clipboard && window.isSecureContext){
+      try{
+        await navigator.clipboard.writeText(text);
+        return true;
+      }catch(err){
+        console.warn('24FlightBrief: Clipboard API blocked; trying fallback copy.', err);
+      }
+    }
+
+    const field = document.createElement('textarea');
+    field.value = text;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.left = '-9999px';
+    field.style.top = '0';
+    field.style.opacity = '0';
+    document.body.appendChild(field);
+    field.focus();
+    field.select();
+    field.setSelectionRange(0, field.value.length);
+
+    let copied = false;
+    try{
+      copied = document.execCommand('copy');
+    }catch(err){
+      console.warn('24FlightBrief: fallback copy failed.', err);
+    }
+    field.remove();
+    return copied;
   }
 
   document.getElementById('resetBtn').addEventListener('click', ()=>{
@@ -2599,9 +2845,16 @@
     refreshBothAirportFields();
     Object.values(atisPanels).forEach(panel=>{ panel.chips.innerHTML=''; panel.status.textContent=panel.emptyText; panel.code.textContent='----'; panel.code.dataset.airport=''; });
     document.querySelectorAll('.sigpad').forEach(c=>{ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); });
+    includePilotSignature.checked = false;
+    pilotSignatureBlock.dataset.hasInk = '0';
+    pilotSignatureBlock.querySelector('.sig-type').value = '';
+    pilotSignatureBlock.querySelector('.sig-name-line input').value = '';
+    updatePilotSignatureVisibility();
     document.body.classList.remove('filed');
     document.getElementById('editBtn').style.display = 'none';
     document.getElementById('createPlanBtn').style.display = 'inline-flex';
+    localStorage.removeItem('24fb-autosave');
+    showWizardStep(0);
   });
 
   document.getElementById('genStamp').textContent = 'Generated ' + new Date().toLocaleDateString();
@@ -2640,12 +2893,15 @@
     return true;
   }
 
-  document.getElementById('createPlanBtn').addEventListener('click', ()=>{
+  document.getElementById('createPlanBtn').addEventListener('click', async ()=>{
     if(!validateRequired()) return;
+    await saveRobloxUsername();
+    buildReview();
+    showWizardStep(wizardSteps.length - 1);
     document.body.classList.add('filed');
     document.getElementById('editBtn').style.display = 'inline-flex';
     document.getElementById('createPlanBtn').style.display = 'none';
-    document.querySelector('.filed-banner').scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById('reviewPage').scrollIntoView({behavior:'smooth', block:'start'});
   });
 
   document.getElementById('editBtn').addEventListener('click', ()=>{
@@ -2658,7 +2914,7 @@
   // Serialize / load the whole form, used for saving to an account
   // ===============================================================
   function serializeForm(){
-    const data = { fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, unit, routeType, waypointLayerVisible, waypointRouteLineVisible };
+    const data = { fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, pilotSignatureEnabled:includePilotSignature.checked, unit, routeType, waypointLayerVisible, waypointRouteLineVisible };
     manifestEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{
       if(el.readOnly) return;
       data.fields[el.id] = el.value;
@@ -2683,7 +2939,7 @@
       data.sigs[key] = {
         mode,
         typed: block.querySelector('.sig-type').value,
-        drawn: mode === 'draw' ? canvas.toDataURL() : null,
+        drawn: mode === 'draw' && block.dataset.hasInk === '1' ? canvas.toDataURL() : null,
         name: block.querySelector('.sig-name-line input').value
       };
     });
@@ -2720,6 +2976,12 @@
     setRouteType(data.routeType || 'waypoints');
     setWaypointLayerVisible(data.waypointLayerVisible !== false);
     setWaypointRouteLineVisible(data.waypointRouteLineVisible === true);
+    const pilotCanvas = pilotSignatureBlock.querySelector('canvas');
+    pilotCanvas.getContext('2d').clearRect(0,0,pilotCanvas.width,pilotCanvas.height);
+    pilotSignatureBlock.querySelector('.sig-type').value = '';
+    pilotSignatureBlock.querySelector('.sig-name-line input').value = '';
+    pilotSignatureBlock.dataset.hasInk = '0';
+    pilotSignatureBlock.querySelector('.mode-draw').click();
     Object.entries(data.sigs||{}).forEach(([key,sig])=>{
       const block = document.querySelector(`.sig-block[data-sig="${key}"]`);
       if(!block) return;
@@ -2727,7 +2989,9 @@
       if(sig.mode === 'type'){
         block.querySelector('.mode-type').click();
         block.querySelector('.sig-type').value = sig.typed || '';
+        block.dataset.hasInk = sig.typed?.trim() ? '1' : '0';
       } else if(sig.drawn){
+        block.dataset.hasInk = '1';
         const canvas = block.querySelector('canvas');
         const ctx = canvas.getContext('2d');
         const img = new Image();
@@ -2735,6 +2999,9 @@
         img.src = sig.drawn;
       }
     });
+    const savedPilotSig = data.sigs?.pic;
+    includePilotSignature.checked = data.pilotSignatureEnabled === true || (!('pilotSignatureEnabled' in data) && Boolean(savedPilotSig?.typed?.trim() || savedPilotSig?.name?.trim()));
+    updatePilotSignatureVisibility();
     updateTotals();
     updateSoulsWeight();
     refreshSuggestion();
@@ -2754,6 +3021,7 @@
   // backend is deployed. Handled gracefully either way.
   // ===============================================================
   let currentUser = null;
+  let currentCustoms = null;
 
   async function refreshAccountStatus(){
     try{
@@ -2764,6 +3032,7 @@
         document.getElementById('loginBtn').style.display = 'none';
         document.getElementById('logoutBtn').style.display = 'inline-flex';
         document.getElementById('myPlansBtn').style.display = 'inline-flex';
+        loadRobloxUsername();
       } else {
         currentUser = null;
         document.getElementById('accountStatus').textContent = 'Not logged in';
@@ -2776,12 +3045,126 @@
       document.getElementById('accountStatus').textContent = 'Not logged in';
     }
   }
+
+  async function loadRobloxUsername(){
+    if(!currentUser) return;
+    try{
+      const res = await fetch('/api/profile');
+      if(res.ok){
+        const profile = await res.json();
+        const input = document.getElementById('fdPilotUsername');
+        if(profile.robloxUsername && !input.value.trim()) input.value = profile.robloxUsername;
+      }
+    }catch(e){}
+  }
+  async function saveRobloxUsername(){
+    if(!currentUser) return;
+    const robloxUsername = document.getElementById('fdPilotUsername').value.trim();
+    if(!robloxUsername) return;
+    await fetch('/api/profile', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({robloxUsername})}).catch(()=>{});
+  }
+
+  const wizardPanels = [...manifestEl.querySelectorAll(':scope > .panel')];
+  const reviewPage = document.getElementById('reviewPage');
+  // The summary lives outside the editable manifest container so exports can
+  // capture only the compact final view. It still must be the wizard's last step.
+  const wizardSteps = [...wizardPanels, reviewPage];
+  let wizardIndex = 0;
+  const stepNames = wizardSteps.map(step => step.querySelector('h3')?.textContent.trim() || 'Review');
+  document.body.classList.add('wizard-enabled');
+  function validateStep(index){
+    const step = wizardSteps[index];
+    if(!step || step === reviewPage) return true;
+    let first = null;
+    step.querySelectorAll('[data-required="1"]').forEach(el=>{
+      const bad = !String(el.value||'').trim() || ((el===depAirport||el===arrAirport) && !resolveAirport(el.value));
+      el.closest('.field')?.classList.toggle('field-error', bad);
+      if(bad && !first) first=el;
+    });
+    if(first){ first.focus(); return false; }
+    if(step.contains(cruiseAltInput) && !validateCruiseAltitude()) return false;
+    if(step.contains(waypointBody) && !validateWaypointInputs()) return false;
+    return true;
+  }
+  function renderWizardProgress(){
+    const wrap=document.getElementById('wizardProgress'); wrap.innerHTML='';
+    stepNames.forEach((name,i)=>{ const b=document.createElement('button'); b.type='button'; b.className='step-dot'+(i===wizardIndex?' active':'')+(i<wizardIndex?' done':''); b.textContent=`${i+1}. ${name}`; b.addEventListener('click',()=>{ if(i<wizardIndex || validateStep(wizardIndex)) showWizardStep(i); }); wrap.appendChild(b); });
+  }
+  function showWizardStep(index){
+    wizardIndex=Math.max(0,Math.min(index,wizardSteps.length-1));
+    wizardSteps.forEach((step,i)=>step.classList.toggle('wizard-active',i===wizardIndex));
+    document.getElementById('wizardPrev').style.visibility=wizardIndex===0?'hidden':'visible';
+    document.getElementById('wizardNext').textContent=wizardIndex===wizardSteps.length-1?'Back to first section':'Next';
+    renderWizardProgress();
+    window.scrollTo({top:document.querySelector('.sheet-shell').offsetTop-10,behavior:'smooth'});
+  }
+  document.getElementById('wizardPrev').addEventListener('click',()=>showWizardStep(wizardIndex-1));
+  document.getElementById('wizardNext').addEventListener('click',()=>{
+    if(wizardIndex===wizardSteps.length-1) return showWizardStep(0);
+    if(!validateStep(wizardIndex)) return;
+    if(wizardIndex===wizardSteps.length-2) buildReview();
+    showWizardStep(wizardIndex+1);
+  });
+  function value(id){ return document.getElementById(id)?.value?.trim() || '—'; }
+  function buildReview(){
+    const waypointText=[...waypointBody.querySelectorAll('.wp-input')].map(x=>x.value.trim()).filter(Boolean).join(' → ') || ({direct:'GPS Direct',rdv:'Radar Vectors'}[routeType] || '—');
+    const cargoRows=[...cargoBody.querySelectorAll('tr')].map(tr=>{ const x=tr.querySelectorAll('input'); return x[0]?.value.trim()?`${x[0].value.trim()} (${x[3]?.value||'0'} pcs, ${x[4]?.value||'0'} ${unit})`:''; }).filter(Boolean);
+    const cards=[
+      ['Flight Details',0,[['Callsign',value('fdCallsign')],['Pilot',value('fdPilotUsername')],['Aircraft',value('fdAircraft')],['Rules',value('flightRules')],['Date',value('flightDate')]]],
+      ['Route',1,[['Departure',value('depAirport')],['Arrival',value('arrAirport')],['Cruise',value('cruiseAlt')],['Route',waypointText]]],
+      ['People',2,[['Crew',[...crewBody.querySelectorAll('tr')].map(r=>[...r.querySelectorAll('input')].map(x=>x.value).filter(Boolean).join(': ')).filter(Boolean).join(', ')||'—'],['Souls',value('soulsCount')],['Passenger weight',value('soulsWeightTotal')]]],
+      ['Cargo',4,[['Items',cargoRows.join('; ')||'No cargo listed'],['Cargo weight',document.getElementById('loadCargo').value||'0 kg']]],
+      ['Performance',5,[['Stall',value('perfVstall')+' kt'],['V1',value('outV1')],['Rotate',value('outVR')],['V2',value('outV2')],['Vref',value('outVref')],['Approach',value('outVapp')]]],
+      ['Remarks & Customs',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['Departure customs',currentCustoms?.departure?.status||'Not requested'],['Arrival customs',currentCustoms?.arrival?.status||'Not requested'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—']]]
+    ];
+    const grid=document.getElementById('reviewGrid'); grid.innerHTML='';
+    cards.forEach(([title,step,rows])=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><h4>${title}</h4><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
+  }
+  let autosaveTimer;
+  function scheduleAutosave(){
+    clearTimeout(autosaveTimer);
+    document.getElementById('autosaveState').textContent='Saving…';
+    autosaveTimer=setTimeout(()=>{ try{localStorage.setItem('24fb-autosave',JSON.stringify(serializeForm())); document.getElementById('autosaveState').textContent='Draft autosaved';}catch(e){document.getElementById('autosaveState').textContent='Autosave failed';}},700);
+  }
+  manifestEl.addEventListener('input',scheduleAutosave);
+  reviewPage.addEventListener('input',scheduleAutosave);
+  includePilotSignature.addEventListener('change',scheduleAutosave);
+  try{ const draft=localStorage.getItem('24fb-autosave'); if(draft && confirm('Restore your autosaved flight-plan draft?')) loadFormData(JSON.parse(draft)); }catch(e){}
+  document.getElementById('customsLinkBtn').addEventListener('click', async ()=>{
+    const input = document.getElementById('customsUrl');
+    const url = input?.value?.trim();
+    if(!url){
+      flashBtn('customsLinkBtn', 'Save plan first');
+      return;
+    }
+
+    const copied = await copyText(url);
+    if(copied){
+      flashBtn('customsLinkBtn', 'Copied!');
+      return;
+    }
+
+    // Last-resort manual fallback: select the visible URL so the user can use
+    // Ctrl/Cmd+C even when the browser refuses all scripted clipboard access.
+    input.focus();
+    input.select();
+    input.setSelectionRange(0, input.value.length);
+    flashBtn('customsLinkBtn', 'Selected — press Ctrl/Cmd+C');
+  });
+
+  document.getElementById('customsUrl').addEventListener('click', event=>{
+    event.currentTarget.select();
+    event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
+  });
+  showWizardStep(0);
+
   refreshAccountStatus();
 
   document.getElementById('loginBtn').addEventListener('click', ()=>{ window.location.href = '/api/auth/login'; });
   document.getElementById('logoutBtn').addEventListener('click', async ()=>{
     await fetch('/api/auth/logout', { method:'POST' }).catch(()=>{});
-    refreshAccountStatus();
+  
+  refreshAccountStatus();
   });
 
   document.getElementById('savePlanBtn').addEventListener('click', async ()=>{
@@ -2794,6 +3177,14 @@
         body: JSON.stringify({ name: document.getElementById('fdCallsign').value || 'Untitled plan', data: serializeForm() })
       });
       if(!res.ok) throw new Error('save failed');
+      const saved = await res.json();
+      if(saved.customsUrl){
+        const fullUrl = new URL(saved.customsUrl, window.location.origin).href;
+        document.getElementById('customsUrl').value = fullUrl;
+        document.getElementById('customsLinkBox').style.display = 'block';
+        document.getElementById('customsLinkBtn').style.display = 'inline-flex';
+      }
+      await saveRobloxUsername();
       flashBtn('savePlanBtn', 'Saved!');
     }catch(e){
       console.error('24FlightBrief: save failed', e);
@@ -2816,7 +3207,7 @@
         const loadBtn = document.createElement('button');
         loadBtn.className = 'btn-ghost btn-small';
         loadBtn.textContent = 'Load';
-        loadBtn.addEventListener('click', ()=>{ loadFormData(p.data); document.getElementById('plansPanel').style.display = 'none'; });
+        loadBtn.addEventListener('click', ()=>{ currentCustoms = p.customs || null; loadFormData(p.data); buildReview(); document.getElementById('plansPanel').style.display = 'none'; });
         const delBtn = document.createElement('button');
         delBtn.className = 'btn-ghost btn-small';
         delBtn.textContent = 'Delete';
