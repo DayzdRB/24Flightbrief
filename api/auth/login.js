@@ -21,6 +21,16 @@ module.exports = async (req, res) => {
 
   const state = crypto.randomBytes(16).toString('hex');
   setShortCookie(res, 'ffb_oauth_state', state, 600);
+  const requestUrl = new URL(req.url, `https://${req.headers.host}`);
+  const requestedReturn = requestUrl.searchParams.get('returnTo') || '/';
+  let safeReturn = '/';
+  try {
+    const parsed = new URL(requestedReturn, `https://${req.headers.host}`);
+    if (parsed.host === req.headers.host) safeReturn = parsed.pathname + parsed.search;
+  } catch {}
+  const prior = res.getHeader('Set-Cookie');
+  const returnCookie = `ffb_oauth_return=${encodeURIComponent(safeReturn)}; Max-Age=600; Path=/; HttpOnly; Secure; SameSite=Lax`;
+  res.setHeader('Set-Cookie', Array.isArray(prior) ? [...prior, returnCookie] : [prior, returnCookie].filter(Boolean));
 
   const url = new URL('https://discord.com/oauth2/authorize');
   url.searchParams.set('client_id', clientId);

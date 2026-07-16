@@ -53,7 +53,8 @@ module.exports = async (req, res) => {
     const user = await userRes.json();
 
     setSessionCookie(res, { id: user.id, username: user.username });
-    res.writeHead(302, { Location: '/' });
+    const returnTo = cookies.ffb_oauth_return && cookies.ffb_oauth_return.startsWith('/') ? cookies.ffb_oauth_return : '/';
+    res.writeHead(302, { Location: returnTo });
     res.end();
   } catch (err) {
     console.error('Discord OAuth callback error:', err);
