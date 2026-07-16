@@ -1,5 +1,6 @@
 // GET /api/atis            -> all airports' current ATIS
 // GET /api/atis?airport=XX -> just one airport
+// GET /api/atis?airports=XX,YY -> selected airports
 //
 // 24data's rules say requests must come from a server, not a
 // browser, and to keep polling well under their suggested rate
@@ -44,9 +45,15 @@ module.exports = async (req, res) => {
     }
 
     const url = new URL(req.url, `https://${req.headers.host}`);
-    const airport = url.searchParams.get('airport');
-    const data = airport
-      ? cached.data.filter(a => a.airport.toUpperCase() === airport.toUpperCase())
+    const requestedAirports = [
+      ...url.searchParams.getAll('airport'),
+      ...(url.searchParams.get('airports') || '').split(','),
+    ]
+      .map(value => value.trim().toUpperCase())
+      .filter(Boolean);
+    const requestedSet = new Set(requestedAirports);
+    const data = requestedSet.size
+      ? cached.data.filter(a => requestedSet.has(String(a.airport || '').toUpperCase()))
       : cached.data;
 
     res.status(200).json({ fetchedAt: cached.fetchedAt, data });

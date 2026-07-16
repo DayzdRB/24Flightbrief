@@ -524,17 +524,32 @@
     background:rgba(255,255,255,.35);
     padding:12px;
   }
-  .atis-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;}
-  .atis-row textarea{
+  .atis-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+  .atis-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+  .atis-card{
+    min-width:0;
+    border:1px solid var(--rule);
+    border-radius:4px;
+    background:rgba(255,255,255,.5);
+    padding:10px;
+  }
+  .atis-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:7px;}
+  .atis-card-title{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);}
+  .atis-airport-code{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:var(--ink);}
+  .atis-status{font-size:10px;line-height:1.35;color:var(--ink-soft);text-align:right;}
+  .atis-card textarea{
     width:100%;
-    min-height:56px;
-    font-size:12px;
+    min-height:92px;
+    font-size:11.5px;
+    line-height:1.45;
     border:1px dashed var(--rule);
     border-radius:3px;
-    padding:6px 8px;
-    background:rgba(255,255,255,.5);
+    padding:7px 8px;
+    background:rgba(255,255,255,.62);
+    resize:vertical;
   }
-  .atis-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .atis-card-actions{display:flex;justify-content:flex-end;margin-top:7px;}
+  .atis-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:21px;}
   .chip{
     font-family:'JetBrains Mono',monospace;
     font-size:11px;
@@ -543,7 +558,7 @@
     padding:3px 9px;
     border-radius:20px;
   }
-  .atis-note{font-size:10.5px;color:var(--ink-soft);margin-top:6px;line-height:1.5;}
+  .atis-note{font-size:10.5px;color:var(--ink-soft);margin-top:8px;line-height:1.5;}
 
   /* ===== Performance ===== */
   .perf-grid{
@@ -697,7 +712,7 @@
   @media(max-width:720px){
     .grid, .perf-grid{grid-template-columns:repeat(2,1fr);}
     .field.wide{grid-column:span 2;}
-    .sig-wrap{grid-template-columns:1fr;}
+    .sig-wrap,.atis-grid{grid-template-columns:1fr;}
     #manifest{padding:22px 16px 20px;}
     .head h2{font-size:24px;}
   }
@@ -848,15 +863,36 @@
         <div class="sub-title"><h4>ATIS</h4><div class="line-thin"></div></div>
         <div class="atis-box">
           <div class="atis-row no-export">
-            <button class="btn-ghost btn-small" id="fetchAtisBtn" style="border-color:var(--rule-strong);color:var(--ink-soft);">Fetch live ATIS</button>
-            <span style="font-size:10.5px;color:var(--ink-soft);">or paste the current ATIS text below</span>
+            <button class="btn-ghost btn-small" id="fetchAtisBtn" style="border-color:var(--rule-strong);color:var(--ink-soft);">Fetch departure + arrival ATIS</button>
+            <span style="font-size:10.5px;color:var(--ink-soft);">Both airports are fetched together and parsed automatically.</span>
           </div>
-          <div class="atis-row">
-            <textarea id="atisPaste" placeholder="Paste raw ATIS text here, e.g. LFPI ATIS INFO ROMEO... WIND 270/08... ACTIVE RWY 27..."></textarea>
+          <div class="atis-grid">
+            <section class="atis-card" aria-labelledby="departureAtisTitle">
+              <div class="atis-card-head">
+                <div>
+                  <div class="atis-card-title" id="departureAtisTitle">Departure ATIS</div>
+                  <div class="atis-airport-code" id="departureAtisCode">----</div>
+                </div>
+                <div class="atis-status" id="departureAtisStatus">Enter a departure airport</div>
+              </div>
+              <textarea id="departureAtisPaste" placeholder="Live departure ATIS will appear here. You can also paste text manually."></textarea>
+              <div class="atis-card-actions no-export"><button class="btn-ghost btn-small parse-atis-btn" type="button" data-atis-panel="departure">Parse departure ATIS</button></div>
+              <div class="atis-chips" id="departureAtisChips"></div>
+            </section>
+            <section class="atis-card" aria-labelledby="arrivalAtisTitle">
+              <div class="atis-card-head">
+                <div>
+                  <div class="atis-card-title" id="arrivalAtisTitle">Arrival ATIS</div>
+                  <div class="atis-airport-code" id="arrivalAtisCode">----</div>
+                </div>
+                <div class="atis-status" id="arrivalAtisStatus">Enter an arrival airport</div>
+              </div>
+              <textarea id="arrivalAtisPaste" placeholder="Live arrival ATIS will appear here. You can also paste text manually."></textarea>
+              <div class="atis-card-actions no-export"><button class="btn-ghost btn-small parse-atis-btn" type="button" data-atis-panel="arrival">Parse arrival ATIS</button></div>
+              <div class="atis-chips" id="arrivalAtisChips"></div>
+            </section>
           </div>
-          <button class="btn-ghost btn-small no-export" id="parseAtisBtn">Parse ATIS</button>
-          <div class="atis-chips" id="atisChips"></div>
-          <div class="atis-note">"Fetch live ATIS" pulls from ATC24's real 24data feed via this site's own backend (required by 24data's terms — browsers can't call it directly). Uses whichever of Departure/Arrival Airport is filled in above.</div>
+          <div class="atis-note">Live data comes from 24data through this site's backend cache. The raw reports stay visible while runway, wind, altimeter, and information-letter fields are shown as quick-reference chips.</div>
         </div>
 
       </div>
@@ -1186,7 +1222,7 @@
     IHEN: {x:1336, y:1534},
     IIAB: {x:1455, y:1500},
     IJAF: {x:1817, y:821},
-    IKFL: {x:285, y:763},
+    IKFL: {x:286, y:792},
     ILAR: {x:1408, y:1375},
     ILKL: {x:1420, y:536},
     IMLR: {x:700, y:1070},
@@ -1196,7 +1232,7 @@
     ISAU: {x:243, y:1290},
     ISCM: {x:1658, y:717},
     ISKP: {x:1450, y:1043},
-    ITEY: {x:287, y:801},
+    ITEY: {x:315, y:659},
     ITKO: {x:901, y:274},
     ITRC: {x:990, y:1342},
     IUFO: {x:900, y:1074},
@@ -2135,62 +2171,147 @@
   arrAirport.addEventListener('blur', ()=>refreshAirportField(arrAirport, arrAirportResolved, true));
 
   // ===== ATIS =====
-  document.getElementById('parseAtisBtn').addEventListener('click', ()=>{
-    const text = document.getElementById('atisPaste').value.toUpperCase();
-    const chips = document.getElementById('atisChips');
-    chips.innerHTML = '';
+  const atisPanels = {
+    departure: {
+      input: document.getElementById('departureAtisPaste'),
+      chips: document.getElementById('departureAtisChips'),
+      code: document.getElementById('departureAtisCode'),
+      status: document.getElementById('departureAtisStatus'),
+      airportInput: depAirport,
+      emptyText: 'Enter a departure airport'
+    },
+    arrival: {
+      input: document.getElementById('arrivalAtisPaste'),
+      chips: document.getElementById('arrivalAtisChips'),
+      code: document.getElementById('arrivalAtisCode'),
+      status: document.getElementById('arrivalAtisStatus'),
+      airportInput: arrAirport,
+      emptyText: 'Enter an arrival airport'
+    }
+  };
+
+  function parseAtisInto(panelKey){
+    const panel = atisPanels[panelKey];
+    if(!panel) return 0;
+    const text = panel.input.value.toUpperCase();
+    panel.chips.innerHTML = '';
     const patterns = {
-      'INFO':    /INFO(?:RMATION)?\s+([A-Z])/,
-      'RWY':     /(?:ACTIVE\s+)?RWY\s+(\d{1,2}[LRC]?)/,
-      'WIND':    /WIND\s+(\d{2,3}\/\d{1,3}|\d{3}\d{2}(?:G\d{2})?KT)/,
-      'ALTIM':   /(?:ALTIM(?:ETER)?|QNH)\s+([\d.]+)/,
+      'INFO':  /INFO(?:RMATION)?\s+([A-Z])/,
+      'RWY':   /(?:ACTIVE\s+)?RWY\s+(\d{1,2}[LRC]?)/,
+      'WIND':  /WIND\s+(\d{2,3}\/\d{1,3}|\d{3}\d{2}(?:G\d{2})?KT)/,
+      'ALTIM': /(?:ALTIM(?:ETER)?|QNH)\s+([\d.]+)/,
     };
     let found = 0;
     Object.entries(patterns).forEach(([label, re])=>{
-      const m = text.match(re);
-      if(m){
-        const chip = document.createElement('span');
-        chip.className = 'chip';
-        chip.textContent = `${label}: ${m[1]}`;
-        chips.appendChild(chip);
-        found++;
-      }
+      const match = text.match(re);
+      if(!match) return;
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.textContent = `${label}: ${match[1]}`;
+      panel.chips.appendChild(chip);
+      found++;
     });
-    if(found === 0){
+    if(found === 0 && text.trim()){
       const chip = document.createElement('span');
       chip.className = 'chip';
       chip.style.background = '#a5382c';
-      chip.textContent = 'No recognizable fields found — check the pasted text';
-      chips.appendChild(chip);
+      chip.textContent = 'No recognizable fields found';
+      panel.chips.appendChild(chip);
     }
+    return found;
+  }
+
+  document.querySelectorAll('.parse-atis-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>parseAtisInto(btn.dataset.atisPanel));
   });
+
+  function syncAtisAirportLabels(clearChanged=true){
+    Object.entries(atisPanels).forEach(([key, panel])=>{
+      const code = airportCode(panel.airportInput.value || '');
+      const previous = panel.code.dataset.airport || '';
+      panel.code.textContent = code || '----';
+      panel.code.dataset.airport = code;
+      if(clearChanged && previous && previous !== code){
+        panel.input.value = '';
+        panel.chips.innerHTML = '';
+      }
+      if(!code){
+        panel.status.textContent = panel.emptyText;
+      } else if(previous !== code){
+        panel.status.textContent = 'Ready to fetch';
+      }
+    });
+  }
+
+  depAirport.addEventListener('input', ()=>syncAtisAirportLabels());
+  depAirport.addEventListener('change', ()=>syncAtisAirportLabels());
+  arrAirport.addEventListener('input', ()=>syncAtisAirportLabels());
+  arrAirport.addEventListener('change', ()=>syncAtisAirportLabels());
+  syncAtisAirportLabels(false);
+
+  function atisReportText(entry){
+    if(!entry) return '';
+    if(entry.content) return String(entry.content);
+    return Array.isArray(entry.lines) ? entry.lines.join('\n') : '';
+  }
+
+  function showAtisResult(panelKey, airport, entry, fetchedAt){
+    const panel = atisPanels[panelKey];
+    panel.code.textContent = airport;
+    panel.code.dataset.airport = airport;
+    panel.chips.innerHTML = '';
+    if(!entry){
+      panel.input.value = '';
+      panel.status.textContent = 'No live ATIS available';
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.style.background = '#a5382c';
+      chip.textContent = 'NO LIVE ATIS';
+      panel.chips.appendChild(chip);
+      return;
+    }
+    panel.input.value = atisReportText(entry);
+    const info = entry.letter ? `Information ${String(entry.letter).toUpperCase()}` : 'Live report';
+    const fetched = fetchedAt ? new Date(fetchedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+    panel.status.textContent = fetched ? `${info} · fetched ${fetched}` : info;
+    parseAtisInto(panelKey);
+  }
 
   document.getElementById('fetchAtisBtn').addEventListener('click', async ()=>{
     const btn = document.getElementById('fetchAtisBtn');
     const orig = btn.textContent;
-    const airport = airportCode(depAirport.value || arrAirport.value || '');
-    if(!airport){
-      btn.textContent = 'Enter an airport first';
-      setTimeout(()=>{ btn.textContent = orig; }, 1800);
+    const departure = airportCode(depAirport.value || '');
+    const arrival = airportCode(arrAirport.value || '');
+    syncAtisAirportLabels(false);
+    if(!departure || !arrival){
+      btn.textContent = 'Enter departure and arrival airports';
+      setTimeout(()=>{ btn.textContent = orig; }, 2200);
       return;
     }
-    btn.textContent = 'Fetching…';
+    btn.disabled = true;
+    btn.textContent = 'Fetching both ATIS reports…';
+    Object.values(atisPanels).forEach(panel=>{ panel.status.textContent = 'Fetching…'; });
     try{
-      const res = await fetch(`/api/atis?airport=${encodeURIComponent(airport)}`);
+      const requested = [...new Set([departure, arrival])];
+      const res = await fetch(`/api/atis?airports=${encodeURIComponent(requested.join(','))}`);
       if(!res.ok) throw new Error(await res.text());
-      const { data } = await res.json();
-      if(!data.length){
-        btn.textContent = `No ATIS found for ${airport.toUpperCase()}`;
-      } else {
-        document.getElementById('atisPaste').value = data[0].content;
-        document.getElementById('parseAtisBtn').click();
-        btn.textContent = 'Fetched!';
-      }
-    }catch(e){
-      console.error('24FlightBrief: ATIS fetch failed', e);
-      btn.textContent = 'Fetch failed — backend not deployed yet?';
+      const payload = await res.json();
+      const data = Array.isArray(payload.data) ? payload.data : [];
+      const byAirport = new Map();
+      data.forEach(entry=>{
+        const code = String(entry.airport || '').toUpperCase();
+        if(code && !byAirport.has(code)) byAirport.set(code, entry);
+      });
+      showAtisResult('departure', departure, byAirport.get(departure), payload.fetchedAt);
+      showAtisResult('arrival', arrival, byAirport.get(arrival), payload.fetchedAt);
+      btn.textContent = 'Both ATIS reports updated';
+    }catch(error){
+      console.error('24FlightBrief: ATIS fetch failed', error);
+      Object.values(atisPanels).forEach(panel=>{ panel.status.textContent = 'Fetch failed'; });
+      btn.textContent = 'ATIS fetch failed';
+    }finally{
+      setTimeout(()=>{ btn.textContent = orig; btn.disabled = false; }, 2400);
     }
-    setTimeout(()=>{ btn.textContent = orig; }, 2200);
   });
 
   // ===== Crew & passengers (unlimited, freeform role) =====
@@ -2455,7 +2576,7 @@
     updateTotals();
     refreshSuggestion();
     refreshBothAirportFields();
-    document.getElementById('atisChips').innerHTML = '';
+    Object.values(atisPanels).forEach(panel=>{ panel.chips.innerHTML=''; panel.status.textContent=panel.emptyText; panel.code.textContent='----'; panel.code.dataset.airport=''; });
     document.querySelectorAll('.sigpad').forEach(c=>{ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); });
     document.body.classList.remove('filed');
     document.getElementById('editBtn').style.display = 'none';
