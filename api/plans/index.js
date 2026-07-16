@@ -33,11 +33,14 @@ module.exports = async (req, res) => {
         return;
       }
       const plans = await loadPlans(user.id);
-      const plan = { id: crypto.randomUUID(), name: name || 'Untitled plan', data, createdAt: Date.now() };
+      const plan = { id: crypto.randomUUID(), name: name || 'Untitled plan', data, createdAt: Date.now(), updatedAt: Date.now(), customs: { departure: { status: 'not-requested' }, arrival: { status: 'not-requested' } } };
+      const customsToken = crypto.randomBytes(24).toString('hex');
+      plan.customsToken = customsToken;
       plans.unshift(plan);
       // Keep the last 50 saved plans per user to avoid unbounded growth.
       await redisSet(`plans:${user.id}`, JSON.stringify(plans.slice(0, 50)));
-      res.status(201).json(plan);
+      await redisSet(`customs-token:${customsToken}`, JSON.stringify({ ownerId: user.id, planId: plan.id }));
+      res.status(201).json({ ...plan, customsUrl: `/customs.html?token=${customsToken}` });
       return;
     }
 
