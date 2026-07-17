@@ -222,6 +222,8 @@
     border-radius:3px;
     overflow:hidden;
   }
+  .flight-details-grid{overflow:visible;position:relative;z-index:12;}
+  .flight-details-grid .airport-field:focus-within{z-index:90;}
   .field{
     border-right:1px solid var(--rule);
     border-bottom:1px solid var(--rule);
@@ -272,6 +274,7 @@
     box-shadow:0 12px 25px rgba(22,35,43,.2);
   }
   .airport-menu.is-open{display:block;}
+  #ingameCallsignMenu{max-height:420px;}
   .airport-option{
     display:block;
     width:100%;
@@ -795,10 +798,18 @@
   body.wizard-enabled #manifest>.panel.wizard-active{display:block}
   body.wizard-enabled #reviewPage{display:none}
   body.wizard-enabled #reviewPage.wizard-active{display:block}
-  .review-brief-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 12px;padding:11px 13px;border:1.5px solid var(--ink);border-radius:5px;background:linear-gradient(100deg,#16232b,#24423c);color:#edf6f3;font-family:'JetBrains Mono',monospace}
+  #reviewManifest{
+    background:var(--paper);
+    background-image:
+      repeating-linear-gradient(180deg, rgba(22,35,43,.025) 0px, rgba(22,35,43,.025) 1px, transparent 1px, transparent 34px);
+    padding:34px 34px 28px;
+    position:relative;
+    overflow:hidden;
+  }
+  .review-brief-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 12px;padding:11px 13px;border:1.5px solid var(--ink);border-radius:3px;background:linear-gradient(100deg,#16232b,#24423c);color:#edf6f3;font-family:'JetBrains Mono',monospace;box-shadow:3px 3px 0 rgba(22,35,43,.2)}
   .review-brief-head strong{font-size:12px;letter-spacing:.08em;text-transform:uppercase}.review-brief-head span{font-size:10px;color:#bfd6cf;text-align:right}
   .review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .review-card{border:1px solid var(--rule-strong);border-top:3px solid var(--teal);background:rgba(255,255,255,.52);padding:0 14px 14px;border-radius:5px;position:relative;box-shadow:0 2px 0 rgba(22,35,43,.05)}
+  .review-card{border:1px solid var(--rule-strong);border-top:3px solid var(--teal);background:rgba(255,255,255,.74);padding:0 14px 14px;border-radius:2px;position:relative;box-shadow:3px 3px 0 rgba(22,35,43,.11)}
   .review-card-head{display:flex;align-items:center;gap:8px;margin:0 -14px 11px;padding:10px 14px 8px;border-bottom:1px solid var(--rule);background:rgba(238,244,242,.8)}
   .review-card-head .review-index{font:700 10px 'JetBrains Mono',monospace;color:var(--teal-dark)}
   .review-card h4{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
@@ -879,7 +890,7 @@
           <h3>Flight Details</h3>
           <div class="line"></div>
         </div>
-        <div class="grid">
+        <div class="grid flight-details-grid">
           <div class="field"><label>Callsign <span class="req-mark">*</span></label><input type="text" id="fdCallsign" data-required="1" placeholder="e.g. SBI412"></div>
           <div class="field airport-field"><label>In-Game Callsign <span class="req-mark">*</span></label><input type="text" id="fdIngameCallsign" data-required="1" autocomplete="off" spellcheck="false" placeholder="Search or select an active aircraft" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ingameCallsignMenu"><div class="airport-menu no-export" id="ingameCallsignMenu" role="listbox"></div><span class="callsign-status" id="callsignStatus" aria-live="polite">Loading active aircraft…</span></div>
           <div class="field"><label>Flight Rules <span class="req-mark">*</span></label>
@@ -1080,8 +1091,9 @@
           <h3>Performance</h3>
           <div class="line"></div>
         </div>
+        <div class="perf-note" id="aircraftRecognitionNote">Enter an Aircraft Type above in Flight Details to auto-fill stall speed from the ATC24 performance database.</div>
         <div class="perf-grid" style="grid-template-columns:1fr 1fr;">
-          <div class="field"><label>Stall Speed Vs (kt)</label><input type="number" id="perfVstall" placeholder="From PTFS wiki"></div>
+          <div class="field"><label>Stall Speed Vs (kt)</label><input type="number" id="perfVstall" placeholder="From ATC24 database"></div>
           <div class="field"><label>Aircraft Baseline Weight (kg)</label><input type="number" id="perfBaseWeight" placeholder="Optional — enables load adjustment"></div>
         </div>
         <div class="perf-note">ATC24 speeds are based on the aircraft stall speed and flap configuration. Passenger, cargo, and fuel weight are displayed for planning only and do not change speed in-game. <strong>V1</strong> is slightly below rotate, <strong>VR</strong> is near stall speed, and <strong>V2</strong> is slightly above rotate.</div>
@@ -1094,12 +1106,13 @@
         </div>
 
         <div class="sub-title"><h4>Computed Speeds</h4><div class="line-thin"></div></div>
-        <div class="perf-grid">
-          <div class="field"><label>V1</label><input type="text" id="outV1" readonly value="—"></div>
-          <div class="field"><label>VR</label><input type="text" id="outVR" readonly value="—"></div>
-          <div class="field"><label>V2</label><input type="text" id="outV2" readonly value="—"></div>
-          <div class="field"><label>Vref</label><input type="text" id="outVref" readonly value="—"></div>
-          <div class="field"><label>Vapp</label><input type="text" id="outVapp" readonly value="—"></div>
+        <div class="perf-grid" style="grid-template-columns:repeat(3,1fr);">
+          <div class="field"><label>V1</label><input type="text" id="outV1" readonly data-persist="1" value="—"></div>
+          <div class="field"><label>VR</label><input type="text" id="outVR" readonly data-persist="1" value="—"></div>
+          <div class="field"><label>V2</label><input type="text" id="outV2" readonly data-persist="1" value="—"></div>
+          <div class="field"><label>Vref</label><input type="text" id="outVref" readonly data-persist="1" value="—"></div>
+          <div class="field"><label>Vapp</label><input type="text" id="outVapp" readonly data-persist="1" value="—"></div>
+          <div class="field"><label>No-Flaps Landing</label><input type="text" id="outNoFlaps" readonly data-persist="1" value="—"></div>
         </div>
         <div class="perf-note" id="loadWarning"></div>
       </div>
@@ -1120,7 +1133,9 @@
       </div>
     </div>
 
-    <div class="sprocket">
+    <div class="sprocket"></div>
+
+    <div id="reviewManifest">
       <div class="panel" id="reviewPage">
         <div class="panel-head"><span class="panel-eyebrow">08</span><h3>Flight Plan Summary</h3><div class="line"></div></div>
         <div class="perf-note">Review the vital details below. Use Amend to return directly to a section. This summary is used for image and PDF exports.</div>
@@ -1181,18 +1196,206 @@
   soulsCount.addEventListener('input', updateSoulsWeight);
   soulsAvgWeight.addEventListener('input', updateSoulsWeight);
 
-  // ===== Performance (stall-speed formula, adjusted for cargo + pax load) =====
-  // Ratios below match the ratios used by the community PTFS/ATC24
-  // performance calculator (VR≈1.15xVs, V2=VR+4, Vref=1.3xVs, Vapp=Vref+5).
-  // V1 is an estimated ratio of VR since no confirmed source formula was found for it.
+  // ===== ATC24 aircraft directory: free-typed names/codes -> canonical shortcode =====
+  // Keys are every name ATC24 / 24data is known to use for a given aircraft;
+  // values are the shortcode the /createflightplan command and the performance
+  // database key off of. Sourced from the ATC24 aircraft type list.
+  const AIRCRAFT_CODE_MAP = {
+    "A10 Warthog":"A10","An 225":"A225","Airbus A320":"A320","A330 MRTT":"A332","Airbus A330":"A332",
+    "Airbus A340":"A345","Airbus A350":"A359","Airbus A380":"A388","Airbus Beluga":"A3ST","An22":"AN22",
+    "ATR72":"AT76","ATR72F":"AT76","B1 Lancer":"B1","B2 Spirit Bomber":"B2","B29 SuperFortress":"B29",
+    "Bell 412":"B412","Bell 412 Rescue":"B412","707AF1":"B703","Boeing 707":"B703","KC-707":"B703",
+    "Boeing 727":"B722","Boeing 727 Cargo":"B722","C40":"B738","Boeing 737":"B738","Boeing 737 Cargo":"B738",
+    "747AF1":"B742","Boeing 747":"B744","Boeing 747 Cargo":"B744","Boeing 757":"B752","Boeing 757 Cargo":"B752",
+    "C-32":"B752","KC767":"B762","Boeing 767":"B763","Boeing 767 Cargo":"B763","Boeing 777 Cargo":"B77L",
+    "Boeing 777":"B77W","Boeing 787":"B789","Balloon":"BALL","Airbus A220":"BCS1","KingAir 260":"BE20",
+    "DreamLifter":"BLCF","C130 Hercules":"C130","EC-18B":"C135","C17":"C17","Cessna 172":"C172",
+    "Cessna 172 Amphibian":"C172","Cessna 172 Student":"C172","Cessna 182":"C182","Cessna 182 Amphibian":"C182",
+    "Cessna Caravan":"C208","Cessna Caravan Amphibian":"C208","Cessna Caravan Cargo":"C208","KC130J":"C30J",
+    "Cessna 402":"C402","Concorde":"CONC","F4U Corsair":"CORS","Bombardier CRJ700":"CRJ7","Diamond DA50":"DA50",
+    "Bombardier Q400":"DH8D","DHC-6 Twin Otter":"DHC6","DHC-6 Twin Otter Amphibian":"DHC6","Fokker Dr1":"DR1",
+    "E190":"E190","Extra 300s":"E300","E-3 Sentry":"E3TF","H135":"EC35","Eurofighter Typhoon":"EUFI",
+    "F14":"F14","F15":"F15","F16":"F16","F/A-18 Super Hornet":"F18S","F22":"F22","F35":"F35","F4 Phantom":"F4",
+    "BaggageTruck":"GRND","BaggageTruckSmall":"GRND","Bus":"GRND","CateringTruck":"GRND","FireTruck":"GRND",
+    "FollowMeTruck":"GRND","FuelTruck":"GRND","FuelTruckSmall":"GRND","PushBackBig":"GRND","PushBackGreen":"GRND",
+    "PushBackSmall":"GRND","StairTruck":"GRND","StairTruck737":"GRND","Chinook":"H47","UH-60":"H60",
+    "UH-60 Coast Guard":"H60","Harrier":"HAR","Hawk T1":"HAWK","Hurricane":"HURI","Piper Cub":"J3",
+    "Piper Cub Amphibian":"J3","KC-1":"L101","Lockheed Tristar":"L101","Bombardier Learjet 45":"LJ45",
+    "English Electric Lightning":"LTNG","Douglas MD11":"MD11","Douglas MD11 Cargo":"MD11","Douglas MD90":"MD90",
+    "Mig-15":"MG15","Piper PA28181":"P28A","P38 Lightning":"P38","P51 Mustang":"P51","P8":"P8","Paratrike":"PARA",
+    "Sikorsky S92":"S92","Sikorsky S92 Coast Guard":"S92","Gripen":"SB39","Cirrus Vision":"SF50","Blimp":"SHIP",
+    "CaravanBlimp":"SHIP","Sled":"SLEI","SR71 BlackBird":"SR71","SU27":"SU27","SU57":"SU57","Derek Plane":"ULAC",
+    "Avro Vulcan":"VULC","Wright Brothers Plane":"WF","A6M Zero":"ZERO","Caproni Stipa":"ZZZZ",
+    "Might Walrus":"ZZZZ","Rescue Boat":"ZZZZ","UFO":"ZZZZ"
+  };
+  // Common informal/alternate names players type, mapped onto the same shortcodes above.
+  const AIRCRAFT_ALIASES = {
+    "737":"B738","737800":"B738","737 800":"B738","boeing737800":"B738","747":"B744","747400":"B744",
+    "jumbojet":"B744","757":"B752","767":"B763","777":"B77W","777300":"B77W","777cargo":"B77L","787":"B789",
+    "dreamliner":"B789","727":"B722","707":"B703","320":"A320","321":"A320","319":"A320","a321":"A320",
+    "a319":"A320","330":"A332","mrtt":"A332","340":"A345","350":"A359","350xwb":"A359","380":"A388",
+    "220":"BCS1","a220":"BCS1","e190":"E190","embraer190":"E190","e175":"E190","e170":"E190","erj190":"E190",
+    "q400":"DH8D","dash8":"DH8D","crj700":"CRJ7","crj":"CRJ7","atr72":"AT76","atr":"AT76","concorde":"CONC",
+    "md11":"MD11","md90":"MD90","c17":"C17","c130":"C130","hercules":"C130","kc130":"C30J","kc46":"B762",
+    "kc767":"B762","c135":"C135","p8":"P8","poseidon":"P8","e3":"E3TF","awacs":"E3TF","f14":"F14","tomcat":"F14",
+    "f15":"F15","strikeeagle":"F15","f16":"F16","viper":"F16","fallingfalcon":"F16","f18":"F18S","hornet":"F18S",
+    "superhornet":"F18S","f22":"F22","raptor":"F22","f35":"F35","lightning2":"F35","a10":"A10","warthog":"A10",
+    "b2":"B2","spirit":"B2","typhoon":"EUFI","eurofighter":"EUFI","su27":"SU27","flanker":"SU27","su57":"SU57",
+    "felon":"SU57","c172":"C172","cessna172":"C172","c182":"C182","cessna182":"C182","caravan":"C208",
+    "c208":"C208","c402":"C402","twinotter":"DHC6","learjet":"LJ45","lj45":"LJ45","p51":"P51","mustang":"P51",
+    "hurricane":"HURI","corsair":"CORS","zero":"ZERO","mig15":"MG15","p38":"P38","lightning":"LTNG","b29":"B29",
+    "superfortress":"B29","vulcan":"VULC","harrier":"HAR","f4":"F4","phantom":"F4","sr71":"SR71","blackbird":"SR71"
+  };
+  const AIRCRAFT_NORMALIZED = {};
+  Object.entries(AIRCRAFT_CODE_MAP).forEach(([name,code])=>{
+    AIRCRAFT_NORMALIZED[normalizeAircraftKey(name)] = { code, name };
+  });
+  Object.entries(AIRCRAFT_ALIASES).forEach(([alias,code])=>{
+    if(!AIRCRAFT_NORMALIZED[normalizeAircraftKey(alias)]){
+      const display = Object.keys(AIRCRAFT_CODE_MAP).find(n=>AIRCRAFT_CODE_MAP[n]===code) || code;
+      AIRCRAFT_NORMALIZED[normalizeAircraftKey(alias)] = { code, name: display };
+    }
+  });
+  // Also let an already-correct shortcode pass straight through.
+  new Set(Object.values(AIRCRAFT_CODE_MAP)).forEach(code=>{
+    const key = normalizeAircraftKey(code);
+    if(!AIRCRAFT_NORMALIZED[key]){
+      const display = Object.keys(AIRCRAFT_CODE_MAP).find(n=>AIRCRAFT_CODE_MAP[n]===code) || code;
+      AIRCRAFT_NORMALIZED[key] = { code, name: display };
+    }
+  });
+
+  function normalizeAircraftKey(str){
+    return String(str||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  }
+
+  // Resolves whatever a pilot typed into "Aircraft Type" to a canonical ATC24 shortcode.
+  // Returns {code, name, recognized}. Falls back to the raw text (uppercased) when unknown,
+  // so the /createflightplan command still gets *something* usable.
+  function resolveAircraftType(raw){
+    const trimmed = String(raw||'').trim();
+    if(!trimmed) return { code:'', name:'', recognized:false };
+    const key = normalizeAircraftKey(trimmed);
+    if(AIRCRAFT_NORMALIZED[key]) return { ...AIRCRAFT_NORMALIZED[key], recognized:true };
+    // fall back to a substring match (longest alias first) for things like "Boeing 777-300ER"
+    const aliasKeys = Object.keys(AIRCRAFT_NORMALIZED).sort((a,b)=>b.length-a.length);
+    for(const aliasKey of aliasKeys){
+      if(aliasKey.length >= 3 && key.includes(aliasKey)) return { ...AIRCRAFT_NORMALIZED[aliasKey], recognized:true };
+    }
+    return { code:trimmed.toUpperCase(), name:trimmed, recognized:false };
+  }
+
+  // ===== ATC24 performance database (stall speed + landing speed range by shortcode) =====
+  // Sourced directly from the ATC24 performance reference document. "Est." figures noted in
+  // the source document are included as-is since they're the best figures available.
+  const AIRCRAFT_PERFORMANCE = {
+    AT76:{name:"ATR-72",stall:91,vrefLow:91,vrefHigh:107},
+    BCS1:{name:"Airbus A220",stall:100,vrefLow:145,vrefHigh:145},
+    A320:{name:"Airbus A320",stall:88,vrefLow:121,vrefHigh:156},
+    A332:{name:"Airbus A330",stall:88,vrefLow:85,vrefHigh:135},
+    A345:{name:"Airbus A340",stall:118,vrefLow:119,vrefHigh:144},
+    A359:{name:"Airbus A350",stall:95,vrefLow:95,vrefHigh:145},
+    A388:{name:"Airbus A380",stall:94,vrefLow:144,vrefHigh:144},
+    B722:{name:"Boeing 727",stall:62,vrefLow:70,vrefHigh:117,noFlaps:90},
+    B738:{name:"Boeing 737",stall:108,vrefLow:113,vrefHigh:136,noFlaps:163},
+    B744:{name:"Boeing 747",stall:118,vrefLow:120,vrefHigh:144,noFlaps:174},
+    B752:{name:"Boeing 757",stall:112,vrefLow:113,vrefHigh:136,noFlaps:165},
+    B763:{name:"Boeing 767",stall:92,vrefLow:113,vrefHigh:136,noFlaps:164},
+    B77W:{name:"Boeing 777",stall:121,vrefLow:122,vrefHigh:149,noFlaps:179},
+    B77L:{name:"Boeing 777 Cargo",stall:121,vrefLow:122,vrefHigh:149,noFlaps:179},
+    B789:{name:"Boeing 787",stall:118,vrefLow:120,vrefHigh:144,noFlaps:173},
+    CRJ7:{name:"Bombardier CRJ700",stall:116,vrefLow:116,vrefHigh:141},
+    DH8D:{name:"Bombardier Q400",stall:115,vrefLow:115,vrefHigh:140},
+    CONC:{name:"Concorde",stall:80,vrefLow:120,vrefHigh:160},
+    E190:{name:"Embraer E190",stall:95,vrefLow:109,vrefHigh:133,noFlaps:159},
+    MD11:{name:"MD-11",stall:153,vrefLow:153,vrefHigh:178},
+    MD90:{name:"MD-90",stall:81,vrefLow:81,vrefHigh:106},
+    AN22:{name:"Antonov An-22",stall:104,vrefLow:110,vrefHigh:110,noFlaps:151},
+    A3ST:{name:"Airbus BelugaXL",stall:80,vrefLow:80,vrefHigh:105,noFlaps:116},
+    BLCF:{name:"Boeing Dreamlifter",stall:85,vrefLow:85,vrefHigh:110,noFlaps:123},
+    A225:{name:"Antonov AN-225 Mriya",stall:140,vrefLow:165,vrefHigh:165,noFlaps:203},
+    C208:{name:"Cessna Caravan",stall:65,vrefLow:65,vrefHigh:90,noFlaps:94},
+    DHC6:{name:"DHC-6 Twin Otter",stall:33,vrefLow:33,vrefHigh:58},
+    LJ45:{name:"Bombardier Learjet 45",stall:75,vrefLow:127,vrefHigh:127},
+    E300:{name:"Extra 300s",stall:30,vrefLow:79,vrefHigh:79},
+    P28A:{name:"Piper PA-28 Arrow",stall:60,vrefLow:65,vrefHigh:90},
+    J3:{name:"Piper Cub",stall:28,vrefLow:28,vrefHigh:53},
+    C172:{name:"Cessna 172",stall:40,vrefLow:45,vrefHigh:70},
+    C182:{name:"Cessna 182",stall:30,vrefLow:35,vrefHigh:60},
+    WF:{name:"Wright Flyer",stall:5,vrefLow:9,vrefHigh:9},
+    SF50:{name:"Cirrus Vision SF50",stall:56,vrefLow:84,vrefHigh:84},
+    C402:{name:"Cessna 402",stall:64,vrefLow:65,vrefHigh:92},
+    F14:{name:"F-14 Tomcat",stall:117,vrefLow:121,vrefHigh:168},
+    F15:{name:"F-15E Strike Eagle",stall:60,vrefLow:72,vrefHigh:84},
+    F16:{name:"F-16 Falcon",stall:71,vrefLow:85,vrefHigh:100},
+    F18S:{name:"F/A-18 Super Hornet",stall:92,vrefLow:117,vrefHigh:117},
+    F22:{name:"F-22 Raptor",stall:112,vrefLow:140,vrefHigh:169},
+    F35:{name:"F-35B",stall:51,vrefLow:0,vrefHigh:129},
+    A10:{name:"A-10 Warthog",stall:88,vrefLow:105,vrefHigh:120},
+    B2:{name:"B-2 Spirit",stall:134,vrefLow:160,vrefHigh:185},
+    EUFI:{name:"Eurofighter Typhoon",stall:96,vrefLow:115,vrefHigh:135},
+    HAWK:{name:"Hawk T1",stall:56,vrefLow:67,vrefHigh:80},
+    SU27:{name:"Sukhoi Su-27",stall:116,vrefLow:140,vrefHigh:160},
+    P8:{name:"Boeing P-8 Poseidon",stall:108,vrefLow:113,vrefHigh:136},
+    SU57:{name:"Sukhoi Su-57",stall:116,vrefLow:140,vrefHigh:160},
+    C17:{name:"Boeing C-17",stall:90,vrefLow:100,vrefHigh:119,noFlaps:144},
+    C135:{name:"Boeing EC-18B",stall:118,vrefLow:121,vrefHigh:145},
+    E3TF:{name:"E-3 Sentry",stall:118,vrefLow:121,vrefHigh:145},
+    P51:{name:"P-51 Mustang",stall:100,vrefLow:110,vrefHigh:135},
+    HURI:{name:"Hawker Hurricane",stall:60,vrefLow:72,vrefHigh:95},
+    CORS:{name:"F4U Corsair",stall:45,vrefLow:55,vrefHigh:80},
+    ZERO:{name:"A6M Zero",stall:35,vrefLow:45,vrefHigh:70},
+    DR1:{name:"Fokker Dr1",stall:35,vrefLow:45,vrefHigh:70},
+    MG15:{name:"MiG-15",stall:140,vrefLow:160,vrefHigh:185},
+    P38:{name:"P-38 Lightning",stall:50,vrefLow:60,vrefHigh:85},
+    B29:{name:"B-29",stall:55,vrefLow:65,vrefHigh:90},
+    VULC:{name:"Avro Vulcan",stall:120,vrefLow:145,vrefHigh:170},
+    HAR:{name:"Hawker Harrier",stall:0,vrefLow:0,vrefHigh:129},
+    F4:{name:"F-4 Phantom",stall:55,vrefLow:60,vrefHigh:70},
+    C130:{name:"C-130 Hercules",stall:89,vrefLow:129,vrefHigh:129,noFlaps:155},
+    LTNG:{name:"EE Lightning",stall:55,vrefLow:65,vrefHigh:90},
+    SR71:{name:"SR-71 Blackbird",stall:120,vrefLow:155,vrefHigh:155},
+    B762:{name:"KC-767 / KC-46",stall:92,vrefLow:113,vrefHigh:136,noFlaps:164},
+    C30J:{name:"KC-130",stall:89,vrefLow:129,vrefHigh:129,noFlaps:155}
+  };
+
+  // ===== Performance (aircraft-specific ATC24 data, with a generic stall-speed fallback) =====
+  // When the Aircraft Type (Flight Details) matches the ATC24 database, Vref/Vapp come directly
+  // from that aircraft's documented full-flaps landing speed range, and Vstall auto-fills.
+  // VR/V1/V2 use estimated ratios off Vs since the source document does not list them directly
+  // (VR≈1.15xVs, V1≈0.95xVR, V2≈1.05xVR). Unrecognized aircraft fall back to the same ratios
+  // for Vref/Vapp (Vref≈1.3xVs, Vapp≈Vref+3%) using whatever stall speed is entered manually.
   const perfVstall = document.getElementById('perfVstall');
   const perfBaseWeight = document.getElementById('perfBaseWeight');
   const loadWarning = document.getElementById('loadWarning');
+  const aircraftRecognitionNote = document.getElementById('aircraftRecognitionNote');
+  const fdAircraftInput = document.getElementById('fdAircraft');
+  let currentAircraftMatch = { code:'', name:'', recognized:false };
+  let vstallAutoFilled = false;
 
   function cargoWeightKg(){
     let wt = 0;
     cargoBody.querySelectorAll('.wt-input').forEach(inp=>{ wt += parseFloat(inp.value) || 0; });
     return unit === 'LB' ? wt * 0.45359237 : wt;
+  }
+
+  function refreshAircraftRecognition(){
+    currentAircraftMatch = resolveAircraftType(fdAircraftInput.value);
+    const perf = AIRCRAFT_PERFORMANCE[currentAircraftMatch.code];
+    if(currentAircraftMatch.recognized && perf){
+      aircraftRecognitionNote.textContent = `Recognized: ${perf.name} (${currentAircraftMatch.code}) — using ATC24 performance database.`;
+      if(!perfVstall.value.trim() || vstallAutoFilled){
+        perfVstall.value = perf.stall;
+        vstallAutoFilled = true;
+      }
+    } else if(currentAircraftMatch.recognized){
+      aircraftRecognitionNote.textContent = `Recognized as ${currentAircraftMatch.code}, but no performance data is on file for it — enter stall speed manually.`;
+    } else if(fdAircraftInput.value.trim()){
+      aircraftRecognitionNote.textContent = 'Aircraft type not recognized — enter stall speed manually and check the type before filing.';
+    } else {
+      aircraftRecognitionNote.textContent = 'Enter an Aircraft Type above in Flight Details to auto-fill stall speed from the ATC24 performance database.';
+    }
+    updatePerformance();
   }
 
   function updatePerformance(){
@@ -1204,21 +1407,32 @@
     document.getElementById('loadPax').value = paxKg.toFixed(0) + ' kg';
     document.getElementById('loadTotal').value = totalLoad.toFixed(0) + ' kg';
     loadWarning.textContent = 'Weight is informational only. ATC24 speed values do not change with passengers, cargo, or fuel.';
-    const outs = ['outV1','outVR','outV2','outVref','outVapp'];
+    const outs = ['outV1','outVR','outV2','outVref','outVapp','outNoFlaps'];
     if(!vs || vs <= 0){ outs.forEach(id=>document.getElementById(id).value = '—'); return; }
-    const vr = vs * 1.02;
-    const v1 = vr * 0.97;
+    const perf = AIRCRAFT_PERFORMANCE[currentAircraftMatch.code];
+    const vr = vs * 1.15;
+    const v1 = vr * 0.95;
     const v2 = vr * 1.05;
-    const vref = vs * 1.15;
-    const vapp = vref * 1.03;
+    let vref, vapp, noFlaps;
+    if(perf && perf.vrefHigh !== undefined){
+      vref = perf.vrefLow;
+      vapp = perf.vrefHigh;
+      noFlaps = perf.noFlaps;
+    } else {
+      vref = vs * 1.3;
+      vapp = vref * 1.03;
+      noFlaps = null;
+    }
     document.getElementById('outV1').value = Math.round(v1) + ' kt';
     document.getElementById('outVR').value = Math.round(vr) + ' kt';
     document.getElementById('outV2').value = Math.round(v2) + ' kt';
     document.getElementById('outVref').value = Math.round(vref) + ' kt';
     document.getElementById('outVapp').value = Math.round(vapp) + ' kt';
+    document.getElementById('outNoFlaps').value = noFlaps ? (Math.round(noFlaps) + ' kt') : '—';
   }
-  perfVstall.addEventListener('input', updatePerformance);
+  perfVstall.addEventListener('input', ()=>{ vstallAutoFilled = false; updatePerformance(); });
   perfBaseWeight.addEventListener('input', updatePerformance);
+  fdAircraftInput.addEventListener('input', refreshAircraftRecognition);
 
   // ===== Cruising altitude controls (rule logic is initialized after map coordinates) =====
   const flightRulesSel = document.getElementById('flightRules');
@@ -2056,10 +2270,60 @@
   document.addEventListener('mousedown', event=>{
     if(!ingameCallsignInput.closest('.airport-field').contains(event.target)) setCallsignMenuOpen(false);
   });
+
+  // Centers are chosen from the route corridor, while local frequencies are
+  // limited strictly to the departure and arrival airports.
+  const CENTER_AREAS = [
+    { airport:'IRCC', airports:['IRFD','IMLR','IGAR','ITRC','IBLT','IUFO'], anchor:AIRPORTS.IRFD },
+    { airport:'ICCC', airports:['ILAR','IPAP','IIAB','IBAR','IBRD','IHEN'], anchor:AIRPORTS.ILAR },
+    { airport:'IZCC', airports:['IZOL','IJAF','ISCM'], anchor:AIRPORTS.IZOL },
+    { airport:'IOCC', airports:['ITKO','IDCS'], anchor:AIRPORTS.ITKO },
+    { airport:'IPCC', airports:['IPPH','ILKL'], anchor:AIRPORTS.IPPH },
+    { airport:'IBCC', airports:['IBTH','ISKP'], anchor:AIRPORTS.IBTH },
+    { airport:'IGCC', airports:['IKFL','ITEY'], anchor:AIRPORTS.IKFL },
+    { airport:'ISCC', airports:['ISAU'], anchor:AIRPORTS.ISAU },
+  ];
+  const CENTER_CORRIDOR_CHART_PX = 210;
+  function centerForAirport(code){ return CENTER_AREAS.find(area => area.airports.includes(code)); }
+  function pointToSegmentDistance(point, start, end){
+    const dx=end.x-start.x, dy=end.y-start.y;
+    const lengthSq=dx*dx+dy*dy;
+    const t=lengthSq ? Math.max(0,Math.min(1,((point.x-start.x)*dx+(point.y-start.y)*dy)/lengthSq)) : 0;
+    return {distance:Math.hypot(point.x-(start.x+t*dx),point.y-(start.y+t*dy)), progress:t};
+  }
+  function routeChartNodes(){
+    const departure=AIRPORTS[airportCode(depAirport.value)], arrival=AIRPORTS[airportCode(arrAirport.value)];
+    if(!departure || !arrival) return [];
+    const fixes=routeType === 'waypoints'
+      ? [...waypointBody.querySelectorAll('.wp-input')].map(input=>WAYPOINTS[waypointKey(input.value)]).filter(Boolean)
+      : [];
+    return [departure,...fixes,arrival];
+  }
+  function centersAlongRoute(){
+    const nodes=routeChartNodes();
+    if(nodes.length<2) return [];
+    return CENTER_AREAS.map(area=>{
+      let nearest={distance:Infinity, order:Infinity};
+      for(let index=1;index<nodes.length;index++){
+        const result=pointToSegmentDistance(area.anchor,nodes[index-1],nodes[index]);
+        if(result.distance<nearest.distance) nearest={distance:result.distance,order:(index-1)+result.progress};
+      }
+      return {...area,...nearest};
+    }).filter(area=>area.distance<=CENTER_CORRIDOR_CHART_PX).sort((a,b)=>a.order-b.order);
+  }
   function relevantFrequencies(){
-    const airportCodes = [airportCode(depAirport.value), airportCode(arrAirport.value)].filter(Boolean);
-    const regions = new Set(airportCodes.map(code => VFR_AIRSPACE_BY_AIRPORT.get(code)?.id).filter(Boolean));
-    return FREQUENCIES.filter(item => airportCodes.includes(item.airport) || regions.has(item.region));
+    const departure=airportCode(depAirport.value), arrival=airportCode(arrAirport.value);
+    if(!departure && !arrival) return [];
+    const local=(airport)=>FREQUENCIES.filter(item=>item.airport===airport && item.position!=='CTR')
+      .sort((a,b)=>(a.position==='GND'?0:1)-(b.position==='GND'?0:1));
+    const centerCodes=[];
+    const addCenter=area=>{ if(area && !centerCodes.includes(area.airport)) centerCodes.push(area.airport); };
+    addCenter(centerForAirport(departure));
+    centersAlongRoute().forEach(addCenter);
+    addCenter(centerForAirport(arrival));
+    const centers=centerCodes.map(code=>FREQUENCIES.find(item=>item.airport===code && item.position==='CTR')).filter(Boolean);
+    const rows=[...local(departure),...centers,...local(arrival)];
+    return rows.filter((row,index)=>rows.findIndex(item=>item.label===row.label)===index);
   }
   function renderFrequencies(){
     const rows = relevantFrequencies();
@@ -2092,7 +2356,7 @@
         callsignStatus.className = 'callsign-status is-error';
         callsignStatus.textContent = `No active aircraft was found with the in-game callsign “${callsign}”.`;
       }
-      frequencyStatus.textContent = `Live controller status updated ${new Date(data.fetchedAt || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}. Green is online; red is offline.`;
+      frequencyStatus.textContent = `Departure/arrival Ground + Tower and Centers crossed en route. Updated ${new Date(data.fetchedAt || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}; green is online, red is offline.`;
       return checked?.valid === true;
     }catch(error){
       renderFrequencies();
@@ -2929,7 +3193,8 @@
     const callsign = document.getElementById('fdCallsign').value.trim() || 'N/A';
     const ingameCallsign = document.getElementById('fdIngameCallsign').value.trim() || callsign;
     const pilotUsername = document.getElementById('fdPilotUsername').value.trim() || 'N/A';
-    const aircraft = document.getElementById('fdAircraft').value.trim() || 'N/A';
+    const aircraftMatch = resolveAircraftType(document.getElementById('fdAircraft').value);
+    const aircraft = aircraftMatch.code || 'N/A';
     const rules = flightRulesSel.value || 'N/A';
     const dep = airportCommandName(depAirport.value) || 'N/A';
     const arr = airportCommandName(arrAirport.value) || 'N/A';
@@ -3152,7 +3417,7 @@
   function serializeForm(){
     const data = { fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, pilotSignatureEnabled:includePilotSignature.checked, unit, routeType, waypointLayerVisible, waypointRouteLineVisible };
     manifestEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{
-      if(el.readOnly) return;
+      if(el.readOnly && el.dataset.persist !== '1') return;
       data.fields[el.id] = el.value;
     });
     manifestEl.querySelectorAll('.remarks').forEach(el=>{ data.fields.__remarks = el.value; });
@@ -3245,7 +3510,7 @@
     validateWaypointInputs();
     renderRouteDiagram();
     renderRouteMap();
-    updatePerformance();
+    refreshAircraftRecognition();
     document.body.classList.remove('filed');
     document.getElementById('editBtn').style.display = 'none';
     document.getElementById('createPlanBtn').style.display = 'inline-flex';
