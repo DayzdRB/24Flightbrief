@@ -1,0 +1,51 @@
+--- /mnt/data/24Flightbrief-original/24Flightbrief-main/public/index.html	2026-07-17 23:32:02.000000000 +0000
++++ /mnt/data/24Flightbrief-work/24Flightbrief-main/public/index.html	2026-07-17 23:48:37.957490698 +0000
+@@ -2677,6 +2677,27 @@
+     return waypointInputValid;
+   }
+ 
++  function focusWaypointInput(input){
++    input.scrollIntoView({behavior:'smooth', block:'nearest'});
++    input.focus();
++    const end = input.value.length;
++    input.setSelectionRange(end, end);
++  }
++
++  function advanceToNextWaypoint(currentInput){
++    if(routeType !== 'waypoints' || !currentInput.value.trim()) return;
++
++    // Reuse the map-backed validation so Enter never advances past an unknown fix.
++    if(!validateWaypointInputs()) return;
++
++    const inputs = [...waypointBody.querySelectorAll('.wp-input')];
++    const currentIndex = inputs.indexOf(currentInput);
++    const nextEmpty = inputs.slice(currentIndex + 1).find(input=>!input.value.trim())
++      || inputs.slice(0, currentIndex).find(input=>!input.value.trim());
++
++    focusWaypointInput(nextEmpty || makeWaypointRow());
++  }
++
+   function makeWaypointRow(){
+     wpIdx++;
+     const tr = document.createElement('tr');
+@@ -2693,12 +2714,19 @@
+       renderRouteDiagram();
+       renderRouteMap();
+     });
+-    tr.querySelector('.wp-input').addEventListener('input', ()=>{
++    const waypointInput = tr.querySelector('.wp-input');
++    waypointInput.addEventListener('input', ()=>{
+       validateWaypointInputs();
+       renderRouteDiagram();
+       renderRouteMap();
+     });
++    waypointInput.addEventListener('keyup', event=>{
++      if(event.key === 'Enter' && !event.isComposing && !event.repeat){
++        advanceToNextWaypoint(waypointInput);
++      }
++    });
+     waypointBody.appendChild(tr);
++    return waypointInput;
+   }
+   function renumberWaypoints(){
+     [...waypointBody.children].forEach((tr,i)=>{ tr.querySelector('.num').textContent = i+1; });
