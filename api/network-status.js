@@ -35,10 +35,20 @@ module.exports = async (req, res) => {
   if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
 
   try {
-    const [aircraft, controllers] = await Promise.all([
-      cachedFeed(AIRCRAFT_CACHE_KEY, AIRCRAFT_REFRESH_MS, 'https://24data.ptfs.app/acft-data', data => data && typeof data === 'object' && !Array.isArray(data)),
-      cachedFeed(CONTROLLERS_CACHE_KEY, CONTROLLERS_REFRESH_MS, 'https://24data.ptfs.app/controllers', Array.isArray),
-    ]);
+    const aircraft = await cachedFeed(
+      AIRCRAFT_CACHE_KEY,
+      AIRCRAFT_REFRESH_MS,
+      'https://24data.ptfs.app/acft-data',
+      data => data && typeof data === 'object' && !Array.isArray(data)
+    );
+    // A controller-feed outage should not stop a pilot from filing a plan when
+    // their callsign has already been confirmed by the aircraft feed.
+    const controllers = await cachedFeed(
+      CONTROLLERS_CACHE_KEY,
+      CONTROLLERS_REFRESH_MS,
+      'https://24data.ptfs.app/controllers',
+      Array.isArray
+    ).catch(() => ({ fetchedAt: Date.now(), data: [] }));
 
     const requested = String(req.query?.callsign || '').trim();
     const normalized = requested.toUpperCase();
@@ -51,6 +61,7 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       fetchedAt: Math.min(aircraft.fetchedAt, controllers.fetchedAt),
       callsign: requested ? { requested, valid: Boolean(matchingCallsign), matchingCallsign } : null,
+      aircraftCallsigns: Object.keys(aircraft.data).sort((a, b) => a.localeCompare(b)),
       onlinePositions,
     });
   } catch (error) {
