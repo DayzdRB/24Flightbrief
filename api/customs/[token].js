@@ -74,6 +74,8 @@ module.exports = async (req, res) => {
       'outV2',
       'outVref',
       'outVapp',
+      'outCruise',
+      'outNoFlaps',
     ];
 
     for (const key of whitelist) {
@@ -82,6 +84,7 @@ module.exports = async (req, res) => {
       }
     }
 
+    plan.data.performanceVersion = Number(input.performanceVersion || 2);
     plan.updatedAt = Date.now();
     plans[index] = plan;
     await redisSet(`plans:${reference.ownerId}`, JSON.stringify(plans));

@@ -1091,12 +1091,12 @@
           <h3>Performance</h3>
           <div class="line"></div>
         </div>
-        <div class="perf-note" id="aircraftRecognitionNote">Enter an Aircraft Type above in Flight Details to auto-fill stall speed from the ATC24 performance database.</div>
+        <div class="perf-note" id="aircraftRecognitionNote">Enter an Aircraft Type above in Flight Details to auto-fill performance data from the ATC24 database.</div>
         <div class="perf-grid" style="grid-template-columns:1fr 1fr;">
-          <div class="field"><label>Stall Speed Vs (kt)</label><input type="number" id="perfVstall" placeholder="From ATC24 database"></div>
-          <div class="field"><label>Aircraft Baseline Weight (kg)</label><input type="number" id="perfBaseWeight" placeholder="Optional — enables load adjustment"></div>
+          <div class="field"><label>Stall / Liftoff Speed Vs (kt)</label><input type="text" inputmode="decimal" id="perfVstall" placeholder="From ATC24 database"></div>
+          <div class="field"><label>Aircraft Baseline Weight (kg)</label><input type="number" id="perfBaseWeight" placeholder="Optional — planning reference"></div>
         </div>
-        <div class="perf-note">ATC24 speeds are based on the aircraft stall speed and flap configuration. Passenger, cargo, and fuel weight are displayed for planning only and do not change speed in-game. <strong>V1</strong> is slightly below rotate, <strong>VR</strong> is near stall speed, and <strong>V2</strong> is slightly above rotate.</div>
+        <div class="perf-note">ATC24 speeds are based on the supplied aircraft database. <strong>VR equals the documented stall/liftoff speed</strong>; V1 is 5% below it and V2 is 5% above it. Cruise is estimated at 85% of documented top speed. Passenger, cargo, and fuel weight remain informational only.</div>
 
         <div class="sub-title"><h4>Load</h4><div class="line-thin"></div></div>
         <div class="perf-grid" style="grid-template-columns:repeat(3,1fr);">
@@ -1112,6 +1112,7 @@
           <div class="field"><label>V2</label><input type="text" id="outV2" readonly data-persist="1" value="—"></div>
           <div class="field"><label>Vref</label><input type="text" id="outVref" readonly data-persist="1" value="—"></div>
           <div class="field"><label>Vapp</label><input type="text" id="outVapp" readonly data-persist="1" value="—"></div>
+          <div class="field"><label>Cruise Speed</label><input type="text" id="outCruise" readonly data-persist="1" value="—"></div>
           <div class="field"><label>No-Flaps Landing</label><input type="text" id="outNoFlaps" readonly data-persist="1" value="—"></div>
         </div>
         <div class="perf-note" id="loadWarning"></div>
@@ -1174,6 +1175,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="/aircraft-data.js"></script>
 <script>
 (function(){
 
@@ -1196,181 +1198,22 @@
   soulsCount.addEventListener('input', updateSoulsWeight);
   soulsAvgWeight.addEventListener('input', updateSoulsWeight);
 
-  // ===== ATC24 aircraft directory: free-typed names/codes -> canonical shortcode =====
-  // Keys are every name ATC24 / 24data is known to use for a given aircraft;
-  // values are the shortcode the /createflightplan command and the performance
-  // database key off of. Sourced from the ATC24 aircraft type list.
-  const AIRCRAFT_CODE_MAP = {
-    "A10 Warthog":"A10","An 225":"A225","Airbus A320":"A320","A330 MRTT":"A332","Airbus A330":"A332",
-    "Airbus A340":"A345","Airbus A350":"A359","Airbus A380":"A388","Airbus Beluga":"A3ST","An22":"AN22",
-    "ATR72":"AT76","ATR72F":"AT76","B1 Lancer":"B1","B2 Spirit Bomber":"B2","B29 SuperFortress":"B29",
-    "Bell 412":"B412","Bell 412 Rescue":"B412","707AF1":"B703","Boeing 707":"B703","KC-707":"B703",
-    "Boeing 727":"B722","Boeing 727 Cargo":"B722","C40":"B738","Boeing 737":"B738","Boeing 737 Cargo":"B738",
-    "747AF1":"B742","Boeing 747":"B744","Boeing 747 Cargo":"B744","Boeing 757":"B752","Boeing 757 Cargo":"B752",
-    "C-32":"B752","KC767":"B762","Boeing 767":"B763","Boeing 767 Cargo":"B763","Boeing 777 Cargo":"B77L",
-    "Boeing 777":"B77W","Boeing 787":"B789","Balloon":"BALL","Airbus A220":"BCS1","KingAir 260":"BE20",
-    "DreamLifter":"BLCF","C130 Hercules":"C130","EC-18B":"C135","C17":"C17","Cessna 172":"C172",
-    "Cessna 172 Amphibian":"C172","Cessna 172 Student":"C172","Cessna 182":"C182","Cessna 182 Amphibian":"C182",
-    "Cessna Caravan":"C208","Cessna Caravan Amphibian":"C208","Cessna Caravan Cargo":"C208","KC130J":"C30J",
-    "Cessna 402":"C402","Concorde":"CONC","F4U Corsair":"CORS","Bombardier CRJ700":"CRJ7","Diamond DA50":"DA50",
-    "Bombardier Q400":"DH8D","DHC-6 Twin Otter":"DHC6","DHC-6 Twin Otter Amphibian":"DHC6","Fokker Dr1":"DR1",
-    "E190":"E190","Extra 300s":"E300","E-3 Sentry":"E3TF","H135":"EC35","Eurofighter Typhoon":"EUFI",
-    "F14":"F14","F15":"F15","F16":"F16","F/A-18 Super Hornet":"F18S","F22":"F22","F35":"F35","F4 Phantom":"F4",
-    "BaggageTruck":"GRND","BaggageTruckSmall":"GRND","Bus":"GRND","CateringTruck":"GRND","FireTruck":"GRND",
-    "FollowMeTruck":"GRND","FuelTruck":"GRND","FuelTruckSmall":"GRND","PushBackBig":"GRND","PushBackGreen":"GRND",
-    "PushBackSmall":"GRND","StairTruck":"GRND","StairTruck737":"GRND","Chinook":"H47","UH-60":"H60",
-    "UH-60 Coast Guard":"H60","Harrier":"HAR","Hawk T1":"HAWK","Hurricane":"HURI","Piper Cub":"J3",
-    "Piper Cub Amphibian":"J3","KC-1":"L101","Lockheed Tristar":"L101","Bombardier Learjet 45":"LJ45",
-    "English Electric Lightning":"LTNG","Douglas MD11":"MD11","Douglas MD11 Cargo":"MD11","Douglas MD90":"MD90",
-    "Mig-15":"MG15","Piper PA28181":"P28A","P38 Lightning":"P38","P51 Mustang":"P51","P8":"P8","Paratrike":"PARA",
-    "Sikorsky S92":"S92","Sikorsky S92 Coast Guard":"S92","Gripen":"SB39","Cirrus Vision":"SF50","Blimp":"SHIP",
-    "CaravanBlimp":"SHIP","Sled":"SLEI","SR71 BlackBird":"SR71","SU27":"SU27","SU57":"SU57","Derek Plane":"ULAC",
-    "Avro Vulcan":"VULC","Wright Brothers Plane":"WF","A6M Zero":"ZERO","Caproni Stipa":"ZZZZ",
-    "Might Walrus":"ZZZZ","Rescue Boat":"ZZZZ","UFO":"ZZZZ"
-  };
-  // Common informal/alternate names players type, mapped onto the same shortcodes above.
-  const AIRCRAFT_ALIASES = {
-    "737":"B738","737800":"B738","737 800":"B738","boeing737800":"B738","747":"B744","747400":"B744",
-    "jumbojet":"B744","757":"B752","767":"B763","777":"B77W","777300":"B77W","777cargo":"B77L","787":"B789",
-    "dreamliner":"B789","727":"B722","707":"B703","320":"A320","321":"A320","319":"A320","a321":"A320",
-    "a319":"A320","330":"A332","mrtt":"A332","340":"A345","350":"A359","350xwb":"A359","380":"A388",
-    "220":"BCS1","a220":"BCS1","e190":"E190","embraer190":"E190","e175":"E190","e170":"E190","erj190":"E190",
-    "q400":"DH8D","dash8":"DH8D","crj700":"CRJ7","crj":"CRJ7","atr72":"AT76","atr":"AT76","concorde":"CONC",
-    "md11":"MD11","md90":"MD90","c17":"C17","c130":"C130","hercules":"C130","kc130":"C30J","kc46":"B762",
-    "kc767":"B762","c135":"C135","p8":"P8","poseidon":"P8","e3":"E3TF","awacs":"E3TF","f14":"F14","tomcat":"F14",
-    "f15":"F15","strikeeagle":"F15","f16":"F16","viper":"F16","fallingfalcon":"F16","f18":"F18S","hornet":"F18S",
-    "superhornet":"F18S","f22":"F22","raptor":"F22","f35":"F35","lightning2":"F35","a10":"A10","warthog":"A10",
-    "b2":"B2","spirit":"B2","typhoon":"EUFI","eurofighter":"EUFI","su27":"SU27","flanker":"SU27","su57":"SU57",
-    "felon":"SU57","c172":"C172","cessna172":"C172","c182":"C182","cessna182":"C182","caravan":"C208",
-    "c208":"C208","c402":"C402","twinotter":"DHC6","learjet":"LJ45","lj45":"LJ45","p51":"P51","mustang":"P51",
-    "hurricane":"HURI","corsair":"CORS","zero":"ZERO","mig15":"MG15","p38":"P38","lightning":"LTNG","b29":"B29",
-    "superfortress":"B29","vulcan":"VULC","harrier":"HAR","f4":"F4","phantom":"F4","sr71":"SR71","blackbird":"SR71"
-  };
-  const AIRCRAFT_NORMALIZED = {};
-  Object.entries(AIRCRAFT_CODE_MAP).forEach(([name,code])=>{
-    AIRCRAFT_NORMALIZED[normalizeAircraftKey(name)] = { code, name };
-  });
-  Object.entries(AIRCRAFT_ALIASES).forEach(([alias,code])=>{
-    if(!AIRCRAFT_NORMALIZED[normalizeAircraftKey(alias)]){
-      const display = Object.keys(AIRCRAFT_CODE_MAP).find(n=>AIRCRAFT_CODE_MAP[n]===code) || code;
-      AIRCRAFT_NORMALIZED[normalizeAircraftKey(alias)] = { code, name: display };
-    }
-  });
-  // Also let an already-correct shortcode pass straight through.
-  new Set(Object.values(AIRCRAFT_CODE_MAP)).forEach(code=>{
-    const key = normalizeAircraftKey(code);
-    if(!AIRCRAFT_NORMALIZED[key]){
-      const display = Object.keys(AIRCRAFT_CODE_MAP).find(n=>AIRCRAFT_CODE_MAP[n]===code) || code;
-      AIRCRAFT_NORMALIZED[key] = { code, name: display };
-    }
-  });
+  // ===== ATC24 aircraft directory and performance calculations =====
+  const {
+    PERFORMANCE_VERSION,
+    normalizeAircraftKey,
+    resolveAircraftType,
+    getPerformanceForAircraft,
+    performanceFields
+  } = window.ATC24Aircraft;
 
-  function normalizeAircraftKey(str){
-    return String(str||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  }
-
-  // Resolves whatever a pilot typed into "Aircraft Type" to a canonical ATC24 shortcode.
-  // Returns {code, name, recognized}. Falls back to the raw text (uppercased) when unknown,
-  // so the /createflightplan command still gets *something* usable.
-  function resolveAircraftType(raw){
-    const trimmed = String(raw||'').trim();
-    if(!trimmed) return { code:'', name:'', recognized:false };
-    const key = normalizeAircraftKey(trimmed);
-    if(AIRCRAFT_NORMALIZED[key]) return { ...AIRCRAFT_NORMALIZED[key], recognized:true };
-    // fall back to a substring match (longest alias first) for things like "Boeing 777-300ER"
-    const aliasKeys = Object.keys(AIRCRAFT_NORMALIZED).sort((a,b)=>b.length-a.length);
-    for(const aliasKey of aliasKeys){
-      if(aliasKey.length >= 3 && key.includes(aliasKey)) return { ...AIRCRAFT_NORMALIZED[aliasKey], recognized:true };
-    }
-    return { code:trimmed.toUpperCase(), name:trimmed, recognized:false };
-  }
-
-  // ===== ATC24 performance database (stall speed + landing speed range by shortcode) =====
-  // Sourced directly from the ATC24 performance reference document. "Est." figures noted in
-  // the source document are included as-is since they're the best figures available.
-  const AIRCRAFT_PERFORMANCE = {
-    AT76:{name:"ATR-72",stall:91,vrefLow:91,vrefHigh:107},
-    BCS1:{name:"Airbus A220",stall:100,vrefLow:145,vrefHigh:145},
-    A320:{name:"Airbus A320",stall:88,vrefLow:121,vrefHigh:156},
-    A332:{name:"Airbus A330",stall:88,vrefLow:85,vrefHigh:135},
-    A345:{name:"Airbus A340",stall:118,vrefLow:119,vrefHigh:144},
-    A359:{name:"Airbus A350",stall:95,vrefLow:95,vrefHigh:145},
-    A388:{name:"Airbus A380",stall:94,vrefLow:144,vrefHigh:144},
-    B722:{name:"Boeing 727",stall:62,vrefLow:70,vrefHigh:117,noFlaps:90},
-    B738:{name:"Boeing 737",stall:108,vrefLow:113,vrefHigh:136,noFlaps:163},
-    B744:{name:"Boeing 747",stall:118,vrefLow:120,vrefHigh:144,noFlaps:174},
-    B752:{name:"Boeing 757",stall:112,vrefLow:113,vrefHigh:136,noFlaps:165},
-    B763:{name:"Boeing 767",stall:92,vrefLow:113,vrefHigh:136,noFlaps:164},
-    B77W:{name:"Boeing 777",stall:121,vrefLow:122,vrefHigh:149,noFlaps:179},
-    B77L:{name:"Boeing 777 Cargo",stall:121,vrefLow:122,vrefHigh:149,noFlaps:179},
-    B789:{name:"Boeing 787",stall:118,vrefLow:120,vrefHigh:144,noFlaps:173},
-    CRJ7:{name:"Bombardier CRJ700",stall:116,vrefLow:116,vrefHigh:141},
-    DH8D:{name:"Bombardier Q400",stall:115,vrefLow:115,vrefHigh:140},
-    CONC:{name:"Concorde",stall:80,vrefLow:120,vrefHigh:160},
-    E190:{name:"Embraer E190",stall:95,vrefLow:109,vrefHigh:133,noFlaps:159},
-    MD11:{name:"MD-11",stall:153,vrefLow:153,vrefHigh:178},
-    MD90:{name:"MD-90",stall:81,vrefLow:81,vrefHigh:106},
-    AN22:{name:"Antonov An-22",stall:104,vrefLow:110,vrefHigh:110,noFlaps:151},
-    A3ST:{name:"Airbus BelugaXL",stall:80,vrefLow:80,vrefHigh:105,noFlaps:116},
-    BLCF:{name:"Boeing Dreamlifter",stall:85,vrefLow:85,vrefHigh:110,noFlaps:123},
-    A225:{name:"Antonov AN-225 Mriya",stall:140,vrefLow:165,vrefHigh:165,noFlaps:203},
-    C208:{name:"Cessna Caravan",stall:65,vrefLow:65,vrefHigh:90,noFlaps:94},
-    DHC6:{name:"DHC-6 Twin Otter",stall:33,vrefLow:33,vrefHigh:58},
-    LJ45:{name:"Bombardier Learjet 45",stall:75,vrefLow:127,vrefHigh:127},
-    E300:{name:"Extra 300s",stall:30,vrefLow:79,vrefHigh:79},
-    P28A:{name:"Piper PA-28 Arrow",stall:60,vrefLow:65,vrefHigh:90},
-    J3:{name:"Piper Cub",stall:28,vrefLow:28,vrefHigh:53},
-    C172:{name:"Cessna 172",stall:40,vrefLow:45,vrefHigh:70},
-    C182:{name:"Cessna 182",stall:30,vrefLow:35,vrefHigh:60},
-    WF:{name:"Wright Flyer",stall:5,vrefLow:9,vrefHigh:9},
-    SF50:{name:"Cirrus Vision SF50",stall:56,vrefLow:84,vrefHigh:84},
-    C402:{name:"Cessna 402",stall:64,vrefLow:65,vrefHigh:92},
-    F14:{name:"F-14 Tomcat",stall:117,vrefLow:121,vrefHigh:168},
-    F15:{name:"F-15E Strike Eagle",stall:60,vrefLow:72,vrefHigh:84},
-    F16:{name:"F-16 Falcon",stall:71,vrefLow:85,vrefHigh:100},
-    F18S:{name:"F/A-18 Super Hornet",stall:92,vrefLow:117,vrefHigh:117},
-    F22:{name:"F-22 Raptor",stall:112,vrefLow:140,vrefHigh:169},
-    F35:{name:"F-35B",stall:51,vrefLow:0,vrefHigh:129},
-    A10:{name:"A-10 Warthog",stall:88,vrefLow:105,vrefHigh:120},
-    B2:{name:"B-2 Spirit",stall:134,vrefLow:160,vrefHigh:185},
-    EUFI:{name:"Eurofighter Typhoon",stall:96,vrefLow:115,vrefHigh:135},
-    HAWK:{name:"Hawk T1",stall:56,vrefLow:67,vrefHigh:80},
-    SU27:{name:"Sukhoi Su-27",stall:116,vrefLow:140,vrefHigh:160},
-    P8:{name:"Boeing P-8 Poseidon",stall:108,vrefLow:113,vrefHigh:136},
-    SU57:{name:"Sukhoi Su-57",stall:116,vrefLow:140,vrefHigh:160},
-    C17:{name:"Boeing C-17",stall:90,vrefLow:100,vrefHigh:119,noFlaps:144},
-    C135:{name:"Boeing EC-18B",stall:118,vrefLow:121,vrefHigh:145},
-    E3TF:{name:"E-3 Sentry",stall:118,vrefLow:121,vrefHigh:145},
-    P51:{name:"P-51 Mustang",stall:100,vrefLow:110,vrefHigh:135},
-    HURI:{name:"Hawker Hurricane",stall:60,vrefLow:72,vrefHigh:95},
-    CORS:{name:"F4U Corsair",stall:45,vrefLow:55,vrefHigh:80},
-    ZERO:{name:"A6M Zero",stall:35,vrefLow:45,vrefHigh:70},
-    DR1:{name:"Fokker Dr1",stall:35,vrefLow:45,vrefHigh:70},
-    MG15:{name:"MiG-15",stall:140,vrefLow:160,vrefHigh:185},
-    P38:{name:"P-38 Lightning",stall:50,vrefLow:60,vrefHigh:85},
-    B29:{name:"B-29",stall:55,vrefLow:65,vrefHigh:90},
-    VULC:{name:"Avro Vulcan",stall:120,vrefLow:145,vrefHigh:170},
-    HAR:{name:"Hawker Harrier",stall:0,vrefLow:0,vrefHigh:129},
-    F4:{name:"F-4 Phantom",stall:55,vrefLow:60,vrefHigh:70},
-    C130:{name:"C-130 Hercules",stall:89,vrefLow:129,vrefHigh:129,noFlaps:155},
-    LTNG:{name:"EE Lightning",stall:55,vrefLow:65,vrefHigh:90},
-    SR71:{name:"SR-71 Blackbird",stall:120,vrefLow:155,vrefHigh:155},
-    B762:{name:"KC-767 / KC-46",stall:92,vrefLow:113,vrefHigh:136,noFlaps:164},
-    C30J:{name:"KC-130",stall:89,vrefLow:129,vrefHigh:129,noFlaps:155}
-  };
-
-  // ===== Performance (aircraft-specific ATC24 data, with a generic stall-speed fallback) =====
-  // When the Aircraft Type (Flight Details) matches the ATC24 database, Vref/Vapp come directly
-  // from that aircraft's documented full-flaps landing speed range, and Vstall auto-fills.
-  // VR/V1/V2 use estimated ratios off Vs since the source document does not list them directly
-  // (VR≈1.15xVs, V1≈0.95xVR, V2≈1.05xVR). Unrecognized aircraft fall back to the same ratios
-  // for Vref/Vapp (Vref≈1.3xVs, Vapp≈Vref+3%) using whatever stall speed is entered manually.
   const perfVstall = document.getElementById('perfVstall');
   const perfBaseWeight = document.getElementById('perfBaseWeight');
   const loadWarning = document.getElementById('loadWarning');
   const aircraftRecognitionNote = document.getElementById('aircraftRecognitionNote');
   const fdAircraftInput = document.getElementById('fdAircraft');
-  let currentAircraftMatch = { code:'', name:'', recognized:false };
+  let currentAircraftMatch = { code:'', name:'', recognized:false, rawKey:'' };
+  let currentAircraftPerformance = null;
   let vstallAutoFilled = false;
 
   function cargoWeightKg(){
@@ -1379,27 +1222,43 @@
     return unit === 'LB' ? wt * 0.45359237 : wt;
   }
 
-  function refreshAircraftRecognition(){
-    currentAircraftMatch = resolveAircraftType(fdAircraftInput.value);
-    const perf = AIRCRAFT_PERFORMANCE[currentAircraftMatch.code];
-    if(currentAircraftMatch.recognized && perf){
-      aircraftRecognitionNote.textContent = `Recognized: ${perf.name} (${currentAircraftMatch.code}) — using ATC24 performance database.`;
-      if(!perfVstall.value.trim() || vstallAutoFilled){
-        perfVstall.value = perf.stall;
+  function refreshAircraftRecognition(options = {}){
+    const preserveExisting = options.preserveExisting === true;
+    const rawAircraft = fdAircraftInput.value;
+    currentAircraftMatch = resolveAircraftType(rawAircraft);
+    currentAircraftPerformance = getPerformanceForAircraft(rawAircraft, currentAircraftMatch);
+
+    if(currentAircraftMatch.recognized && currentAircraftPerformance){
+      const fuzzyText = currentAircraftMatch.fuzzy ? ' (corrected from a close spelling)' : '';
+      aircraftRecognitionNote.textContent = `Recognized: ${currentAircraftPerformance.name} (${currentAircraftMatch.code})${fuzzyText} — performance fields populated from the ATC24 database.`;
+      const fields = performanceFields(rawAircraft, null);
+      if(!preserveExisting || !perfVstall.value.trim() || vstallAutoFilled){
+        perfVstall.value = fields.perfVstall;
         vstallAutoFilled = true;
       }
     } else if(currentAircraftMatch.recognized){
-      aircraftRecognitionNote.textContent = `Recognized as ${currentAircraftMatch.code}, but no performance data is on file for it — enter stall speed manually.`;
-    } else if(fdAircraftInput.value.trim()){
-      aircraftRecognitionNote.textContent = 'Aircraft type not recognized — enter stall speed manually and check the type before filing.';
+      aircraftRecognitionNote.textContent = `Recognized as ${currentAircraftMatch.code}, but the supplied document has no performance figures for this type.`;
+      if(vstallAutoFilled && !preserveExisting){
+        perfVstall.value = '';
+        vstallAutoFilled = false;
+      }
+    } else if(rawAircraft.trim()){
+      aircraftRecognitionNote.textContent = 'Aircraft type not recognized — check the name before filing. The command will use the typed value in uppercase.';
+      if(vstallAutoFilled && !preserveExisting){
+        perfVstall.value = '';
+        vstallAutoFilled = false;
+      }
     } else {
-      aircraftRecognitionNote.textContent = 'Enter an Aircraft Type above in Flight Details to auto-fill stall speed from the ATC24 performance database.';
+      aircraftRecognitionNote.textContent = 'Enter an Aircraft Type above in Flight Details to auto-fill performance data from the ATC24 database.';
+      if(vstallAutoFilled && !preserveExisting){
+        perfVstall.value = '';
+        vstallAutoFilled = false;
+      }
     }
     updatePerformance();
   }
 
   function updatePerformance(){
-    const vs = parseFloat(perfVstall.value);
     const cargoKg = cargoWeightKg();
     const paxKg = paxWeightKg();
     const totalLoad = cargoKg + paxKg;
@@ -1407,32 +1266,20 @@
     document.getElementById('loadPax').value = paxKg.toFixed(0) + ' kg';
     document.getElementById('loadTotal').value = totalLoad.toFixed(0) + ' kg';
     loadWarning.textContent = 'Weight is informational only. ATC24 speed values do not change with passengers, cargo, or fuel.';
-    const outs = ['outV1','outVR','outV2','outVref','outVapp','outNoFlaps'];
-    if(!vs || vs <= 0){ outs.forEach(id=>document.getElementById(id).value = '—'); return; }
-    const perf = AIRCRAFT_PERFORMANCE[currentAircraftMatch.code];
-    const vr = vs * 1.15;
-    const v1 = vr * 0.95;
-    const v2 = vr * 1.05;
-    let vref, vapp, noFlaps;
-    if(perf && perf.vrefHigh !== undefined){
-      vref = perf.vrefLow;
-      vapp = perf.vrefHigh;
-      noFlaps = perf.noFlaps;
-    } else {
-      vref = vs * 1.3;
-      vapp = vref * 1.03;
-      noFlaps = null;
-    }
-    document.getElementById('outV1').value = Math.round(v1) + ' kt';
-    document.getElementById('outVR').value = Math.round(vr) + ' kt';
-    document.getElementById('outV2').value = Math.round(v2) + ' kt';
-    document.getElementById('outVref').value = Math.round(vref) + ' kt';
-    document.getElementById('outVapp').value = Math.round(vapp) + ' kt';
-    document.getElementById('outNoFlaps').value = noFlaps ? (Math.round(noFlaps) + ' kt') : '—';
+
+    const fields = performanceFields(fdAircraftInput.value, perfVstall.value);
+    document.getElementById('outV1').value = fields.outV1;
+    document.getElementById('outVR').value = fields.outVR;
+    document.getElementById('outV2').value = fields.outV2;
+    document.getElementById('outVref').value = fields.outVref;
+    document.getElementById('outVapp').value = fields.outVapp;
+    document.getElementById('outCruise').value = fields.outCruise;
+    document.getElementById('outNoFlaps').value = fields.outNoFlaps;
   }
+
   perfVstall.addEventListener('input', ()=>{ vstallAutoFilled = false; updatePerformance(); });
   perfBaseWeight.addEventListener('input', updatePerformance);
-  fdAircraftInput.addEventListener('input', refreshAircraftRecognition);
+  fdAircraftInput.addEventListener('input', ()=>refreshAircraftRecognition());
 
   // ===== Cruising altitude controls (rule logic is initialized after map coordinates) =====
   const flightRulesSel = document.getElementById('flightRules');
@@ -3415,7 +3262,7 @@
   // Serialize / load the whole form, used for saving to an account
   // ===============================================================
   function serializeForm(){
-    const data = { fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, pilotSignatureEnabled:includePilotSignature.checked, unit, routeType, waypointLayerVisible, waypointRouteLineVisible };
+    const data = { performanceVersion:PERFORMANCE_VERSION, fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, pilotSignatureEnabled:includePilotSignature.checked, unit, routeType, waypointLayerVisible, waypointRouteLineVisible };
     manifestEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{
       if(el.readOnly && el.dataset.persist !== '1') return;
       data.fields[el.id] = el.value;
@@ -3510,7 +3357,7 @@
     validateWaypointInputs();
     renderRouteDiagram();
     renderRouteMap();
-    refreshAircraftRecognition();
+    refreshAircraftRecognition({preserveExisting:true});
     document.body.classList.remove('filed');
     document.getElementById('editBtn').style.display = 'none';
     document.getElementById('createPlanBtn').style.display = 'inline-flex';
@@ -3646,7 +3493,7 @@
       ['Route',1,[['Departure',value('depAirport')],['Arrival',value('arrAirport')],['Cruise',value('cruiseAlt')],['Distance',routeDistanceNm() === null ? '—' : `${routeDistanceNm().toFixed(1)} NM`],['Route',waypointText]]],
       ['People',2,[['Crew',[...crewBody.querySelectorAll('tr')].map(r=>[...r.querySelectorAll('input')].map(x=>x.value).filter(Boolean).join(': ')).filter(Boolean).join(', ')||'—'],['Souls',value('soulsCount')],['Passenger weight',value('soulsWeightTotal')]]],
       ['Cargo',4,[['Items',cargoRows.join('; ')||'No cargo listed'],['Cargo weight',document.getElementById('loadCargo').value||'0 kg']]],
-      ['Performance',5,[['Stall',value('perfVstall')+' kt'],['V1',value('outV1')],['Rotate',value('outVR')],['V2',value('outV2')],['Vref',value('outVref')],['Approach',value('outVapp')]]],
+      ['Performance',5,[['Stall',value('perfVstall') === 'N/A' ? 'N/A' : value('perfVstall')+' kt'],['V1',value('outV1')],['Rotate',value('outVR')],['V2',value('outV2')],['Vref',value('outVref')],['Approach',value('outVapp')],['Cruise',value('outCruise')],['No-flaps landing',value('outNoFlaps')]]],
       ['Remarks & Customs',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['Departure customs',currentCustoms?.departure?.status||'Not requested'],['Arrival customs',currentCustoms?.arrival?.status||'Not requested'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—']]]
     ];
     const grid=document.getElementById('reviewGrid'); grid.innerHTML='';

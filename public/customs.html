@@ -181,6 +181,8 @@ textarea{min-height:125px;resize:vertical}
                 <div class="field"><label for="outV2">V2</label><input id="outV2"></div>
                 <div class="field"><label for="outVref">Vref</label><input id="outVref"></div>
                 <div class="field"><label for="outVapp">Approach</label><input id="outVapp"></div>
+                <div class="field"><label for="outCruise">Cruise speed</label><input id="outCruise"></div>
+                <div class="field"><label for="outNoFlaps">No-flaps landing</label><input id="outNoFlaps"></div>
               </div>
             </div>
           </section>
@@ -236,6 +238,7 @@ textarea{min-height:125px;resize:vertical}
 </div>
 <p class="footer-note">Inspection links expose a specific saved plan. Share them only with the intended customs agent.</p>
 
+<script src="/aircraft-data.js"></script>
 <script>
 const token = new URLSearchParams(location.search).get('token');
 const $ = id => document.getElementById(id);
@@ -255,6 +258,22 @@ function esc(value){
 
 function field(id){
   return plan?.data?.fields?.[id] || '';
+}
+
+function ensurePerformanceFields(){
+  if(!plan?.data) return;
+  const fields = plan.data.fields || (plan.data.fields = {});
+  const required = ['outV1','outVR','outV2','outVref','outVapp','outCruise','outNoFlaps'];
+  const needsRefresh = Number(plan.data.performanceVersion || 0) < ATC24Aircraft.PERFORMANCE_VERSION
+    || required.some(id => !String(fields[id] || '').trim());
+  if(!needsRefresh) return;
+
+  const calculated = ATC24Aircraft.performanceFields(fields.fdAircraft || '', fields.perfVstall || '');
+  if(!String(fields.perfVstall || '').trim() && calculated.perfVstall){
+    fields.perfVstall = calculated.perfVstall;
+  }
+  required.forEach(id => { fields[id] = calculated[id]; });
+  plan.data.performanceVersion = ATC24Aircraft.PERFORMANCE_VERSION;
 }
 
 function readableStatus(status){
@@ -344,11 +363,12 @@ function loadPhaseState(){
 }
 
 function fill(){
+  ensurePerformanceFields();
   $('planTitle').textContent = plan.name || field('fdCallsign') || 'Flight plan inspection';
   $('callsign').value = field('fdCallsign');
   $('pilot').value = field('fdPilotUsername');
   $('aircraft').value = field('fdAircraft');
-  ['depAirport','arrAirport','cruiseAlt','perfVstall','outV1','outVR','outV2','outVref','outVapp'].forEach(id => {
+  ['depAirport','arrAirport','cruiseAlt','perfVstall','outV1','outVR','outV2','outVref','outVapp','outCruise','outNoFlaps'].forEach(id => {
     $(id).value = field(id);
   });
   $('agentLabel').textContent = `Signed in as ${plan.agent?.username || 'Discord user'}`;
@@ -411,7 +431,7 @@ async function submit(decision){
   }
 
   const amendments = {};
-  ['depAirport','arrAirport','cruiseAlt','perfVstall','outV1','outVR','outV2','outVref','outVapp'].forEach(id => {
+  ['depAirport','arrAirport','cruiseAlt','perfVstall','outV1','outVR','outV2','outVref','outVapp','outCruise','outNoFlaps'].forEach(id => {
     amendments[id] = $(id).value;
   });
 
@@ -433,6 +453,7 @@ async function submit(decision){
         })),
         remarks:$('remarks').value,
         signature,
+        performanceVersion:ATC24Aircraft.PERFORMANCE_VERSION,
         amendments
       })
     });
