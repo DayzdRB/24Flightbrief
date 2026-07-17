@@ -3022,6 +3022,33 @@
   // ===============================================================
   let currentUser = null;
   let currentCustoms = null;
+  let currentPlanId = null;
+  let currentCustomsToken = null;
+
+  function showCustomsLink(token){
+    const box = document.getElementById('customsLinkBox');
+    const button = document.getElementById('customsLinkBtn');
+    const input = document.getElementById('customsUrl');
+    currentCustomsToken = token || null;
+    if(!currentCustomsToken){
+      input.value = '';
+      box.style.display = 'none';
+      button.style.display = 'none';
+      return;
+    }
+    input.value = new URL(`/customs.html?token=${encodeURIComponent(currentCustomsToken)}`, window.location.origin).href;
+    box.style.display = 'block';
+    button.style.display = 'inline-flex';
+  }
+
+  function markPlanLoaded(plan){
+    currentPlanId = plan?.id || null;
+    currentCustoms = plan?.customs || null;
+    showCustomsLink(plan?.customsToken || null);
+    document.getElementById('savePlanBtn').textContent = currentPlanId
+      ? 'Update saved plan'
+      : 'Save to my account';
+  }
 
   async function refreshAccountStatus(){
     try{
@@ -3170,25 +3197,40 @@
   document.getElementById('savePlanBtn').addEventListener('click', async ()=>{
     if(!validateRequired()) return;
     if(!currentUser){ flashBtn('savePlanBtn', 'Log in first'); return; }
+
+    const saveButton = document.getElementById('savePlanBtn');
+    const updating = Boolean(currentPlanId);
+    saveButton.disabled = true;
+    saveButton.textContent = updating ? 'Updating…' : 'Saving…';
+
     try{
-      const res = await fetch('/api/plans', {
-        method:'POST',
+      const endpoint = updating
+        ? `/api/plans/${encodeURIComponent(currentPlanId)}`
+        : '/api/plans';
+      const res = await fetch(endpoint, {
+        method: updating ? 'PUT' : 'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ name: document.getElementById('fdCallsign').value || 'Untitled plan', data: serializeForm() })
+        body: JSON.stringify({
+          name: document.getElementById('fdCallsign').value || 'Untitled plan',
+          data: serializeForm()
+        })
       });
       if(!res.ok) throw new Error('save failed');
+
       const saved = await res.json();
-      if(saved.customsUrl){
-        const fullUrl = new URL(saved.customsUrl, window.location.origin).href;
-        document.getElementById('customsUrl').value = fullUrl;
-        document.getElementById('customsLinkBox').style.display = 'block';
-        document.getElementById('customsLinkBtn').style.display = 'inline-flex';
-      }
+      currentPlanId = saved.id || currentPlanId;
+      currentCustoms = saved.customs || currentCustoms;
+      showCustomsLink(saved.customsToken || currentCustomsToken);
       await saveRobloxUsername();
-      flashBtn('savePlanBtn', 'Saved!');
+      saveButton.textContent = updating ? 'Updated!' : 'Saved!';
     }catch(e){
       console.error('24FlightBrief: save failed', e);
-      flashBtn('savePlanBtn', 'Save failed');
+      saveButton.textContent = 'Save failed';
+    }finally{
+      saveButton.disabled = false;
+      setTimeout(()=>{
+        saveButton.textContent = currentPlanId ? 'Update saved plan' : 'Save to my account';
+      }, 1500);
     }
   });
 
@@ -3207,12 +3249,18 @@
         const loadBtn = document.createElement('button');
         loadBtn.className = 'btn-ghost btn-small';
         loadBtn.textContent = 'Load';
-        loadBtn.addEventListener('click', ()=>{ currentCustoms = p.customs || null; loadFormData(p.data); buildReview(); document.getElementById('plansPanel').style.display = 'none'; });
+        loadBtn.addEventListener('click', ()=>{
+          markPlanLoaded(p);
+          loadFormData(p.data);
+          buildReview();
+          document.getElementById('plansPanel').style.display = 'none';
+        });
         const delBtn = document.createElement('button');
         delBtn.className = 'btn-ghost btn-small';
         delBtn.textContent = 'Delete';
         delBtn.addEventListener('click', async ()=>{
           await fetch(`/api/plans/${p.id}`, { method:'DELETE' }).catch(()=>{});
+          if(currentPlanId === p.id) markPlanLoaded(null);
           loadPlansList();
         });
         const btnWrap = document.createElement('span');
