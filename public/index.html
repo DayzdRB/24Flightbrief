@@ -795,12 +795,16 @@
   body.wizard-enabled #manifest>.panel.wizard-active{display:block}
   body.wizard-enabled #reviewPage{display:none}
   body.wizard-enabled #reviewPage.wizard-active{display:block}
+  .review-brief-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 12px;padding:11px 13px;border:1.5px solid var(--ink);border-radius:5px;background:linear-gradient(100deg,#16232b,#24423c);color:#edf6f3;font-family:'JetBrains Mono',monospace}
+  .review-brief-head strong{font-size:12px;letter-spacing:.08em;text-transform:uppercase}.review-brief-head span{font-size:10px;color:#bfd6cf;text-align:right}
   .review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .review-card{border:1px solid var(--rule);background:rgba(255,255,255,.36);padding:14px;border-radius:5px;position:relative}
-  .review-card h4{margin:0 0 9px;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
-  .review-card dl{margin:0;display:grid;grid-template-columns:130px 1fr;gap:5px 10px;font-size:11px}
-  .review-card dt{font-weight:700;color:var(--ink-soft)} .review-card dd{margin:0;word-break:break-word}
-  .review-edit{position:absolute;right:10px;top:9px;border:0;background:transparent;text-decoration:underline;cursor:pointer;color:var(--ink-soft);font-size:10px}
+  .review-card{border:1px solid var(--rule-strong);border-top:3px solid var(--teal);background:rgba(255,255,255,.52);padding:0 14px 14px;border-radius:5px;position:relative;box-shadow:0 2px 0 rgba(22,35,43,.05)}
+  .review-card-head{display:flex;align-items:center;gap:8px;margin:0 -14px 11px;padding:10px 14px 8px;border-bottom:1px solid var(--rule);background:rgba(238,244,242,.8)}
+  .review-card-head .review-index{font:700 10px 'JetBrains Mono',monospace;color:var(--teal-dark)}
+  .review-card h4{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+  .review-card dl{margin:0;display:grid;grid-template-columns:130px 1fr;gap:6px 10px;font-size:11px}
+  .review-card dt{font-weight:700;color:var(--ink-soft);text-transform:uppercase;font-size:9.5px;letter-spacing:.04em} .review-card dd{margin:0;word-break:break-word;font-weight:600}
+  .review-edit{position:absolute;right:10px;top:9px;border:0;background:transparent;text-decoration:underline;cursor:pointer;color:var(--ink-soft);font-size:10px;z-index:1}
   .autosave-state{font-size:10px;color:#b8c8c4;margin-left:auto}
   .customs-link-box{margin:12px 0;padding:12px;border:1px dashed var(--rule-strong);background:rgba(255,255,255,.28);font-size:11px;display:none}
   .customs-link-box input{width:100%;margin-top:7px;padding:8px;border:1px solid var(--rule);background:#fff;font:11px monospace}
@@ -877,7 +881,7 @@
         </div>
         <div class="grid">
           <div class="field"><label>Callsign <span class="req-mark">*</span></label><input type="text" id="fdCallsign" data-required="1" placeholder="e.g. SBI412"></div>
-          <div class="field"><label>In-Game Callsign (if different)</label><input type="text" id="fdIngameCallsign" placeholder="Defaults to Callsign"><span class="callsign-status" id="callsignStatus" aria-live="polite">Enter your in-game callsign to verify it is currently active.</span></div>
+          <div class="field airport-field"><label>In-Game Callsign <span class="req-mark">*</span></label><input type="text" id="fdIngameCallsign" data-required="1" autocomplete="off" spellcheck="false" placeholder="Search or select an active aircraft" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ingameCallsignMenu"><div class="airport-menu no-export" id="ingameCallsignMenu" role="listbox"></div><span class="callsign-status" id="callsignStatus" aria-live="polite">Loading active aircraft…</span></div>
           <div class="field"><label>Flight Rules <span class="req-mark">*</span></label>
             <select class="rules-select" id="flightRules" data-required="1">
               <option value="">—</option>
@@ -1120,6 +1124,7 @@
       <div class="panel" id="reviewPage">
         <div class="panel-head"><span class="panel-eyebrow">08</span><h3>Flight Plan Summary</h3><div class="line"></div></div>
         <div class="perf-note">Review the vital details below. Use Amend to return directly to a section. This summary is used for image and PDF exports.</div>
+        <div class="review-brief-head" id="reviewBriefHead"><strong>Ready for review</strong><span>Complete the flight details to generate the final brief.</span></div>
         <div class="review-grid" id="reviewGrid"></div>
 
         <div class="summary-signature" id="summarySignature">
@@ -1911,6 +1916,7 @@
   const callsignStatus = document.getElementById('callsignStatus');
   const callsignInput = document.getElementById('fdCallsign');
   const ingameCallsignInput = document.getElementById('fdIngameCallsign');
+  const ingameCallsignMenu = document.getElementById('ingameCallsignMenu');
 
   // The enroute chart is 2,048 px wide and is calibrated at 80 game studs per
   // chart pixel. Change this one value if the official chart receives a new scale.
@@ -1979,6 +1985,77 @@
   ];
 
   let latestOnlinePositions = new Set();
+  let activeAircraftCallsigns = [];
+  let callsignMenuOpen = false;
+  let callsignMenuActiveIndex = -1;
+
+  function callsignMatches(){
+    const query = ingameCallsignInput.value.trim().toUpperCase();
+    const matches = query
+      ? activeAircraftCallsigns.filter(callsign => callsign.toUpperCase().includes(query))
+      : activeAircraftCallsigns;
+    return matches.slice(0, 80);
+  }
+  function setCallsignMenuOpen(open){
+    callsignMenuOpen = open === true;
+    ingameCallsignMenu.classList.toggle('is-open', callsignMenuOpen);
+    ingameCallsignInput.setAttribute('aria-expanded', String(callsignMenuOpen));
+    if(!callsignMenuOpen) callsignMenuActiveIndex = -1;
+  }
+  function chooseCallsign(callsign){
+    ingameCallsignInput.value = callsign;
+    setCallsignMenuOpen(false);
+    scheduleNetworkRefresh();
+    ingameCallsignInput.dispatchEvent(new Event('change', {bubbles:true}));
+  }
+  function renderCallsignMenu(){
+    const matches = callsignMatches();
+    callsignMenuActiveIndex = Math.min(callsignMenuActiveIndex, matches.length - 1);
+    ingameCallsignMenu.innerHTML = '';
+    if(!matches.length){
+      const empty = document.createElement('div');
+      empty.className = 'airport-option-empty';
+      empty.textContent = activeAircraftCallsigns.length ? 'No matching active aircraft' : 'No active aircraft reported yet';
+      ingameCallsignMenu.appendChild(empty);
+      return;
+    }
+    matches.forEach((callsign, index)=>{
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'airport-option' + (index === callsignMenuActiveIndex ? ' is-active' : '');
+      option.setAttribute('role', 'option');
+      option.setAttribute('aria-selected', String(index === callsignMenuActiveIndex));
+      option.innerHTML = '<span class="airport-option-name"></span><span class="airport-option-code">ACTIVE AIRCRAFT</span>';
+      option.querySelector('.airport-option-name').textContent = callsign;
+      option.addEventListener('mousedown', event=>event.preventDefault());
+      option.addEventListener('click', ()=>chooseCallsign(callsign));
+      ingameCallsignMenu.appendChild(option);
+    });
+  }
+  ingameCallsignInput.addEventListener('focus', ()=>{ renderCallsignMenu(); setCallsignMenuOpen(true); });
+  ingameCallsignInput.addEventListener('click', ()=>{ renderCallsignMenu(); setCallsignMenuOpen(true); });
+  ingameCallsignInput.addEventListener('input', ()=>{ callsignMenuActiveIndex=-1; renderCallsignMenu(); setCallsignMenuOpen(true); });
+  ingameCallsignInput.addEventListener('keydown', event=>{
+    const matches = callsignMatches();
+    if(event.key === 'ArrowDown' || event.key === 'ArrowUp'){
+      event.preventDefault();
+      if(!callsignMenuOpen){ renderCallsignMenu(); setCallsignMenuOpen(true); }
+      if(matches.length){
+        callsignMenuActiveIndex = (callsignMenuActiveIndex + (event.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length;
+        renderCallsignMenu();
+        ingameCallsignMenu.querySelector('.is-active')?.scrollIntoView({block:'nearest'});
+      }
+    } else if(event.key === 'Enter' && callsignMenuOpen && callsignMenuActiveIndex >= 0 && matches[callsignMenuActiveIndex]){
+      event.preventDefault();
+      chooseCallsign(matches[callsignMenuActiveIndex]);
+    } else if(event.key === 'Escape'){
+      setCallsignMenuOpen(false);
+    }
+  });
+  ingameCallsignInput.addEventListener('blur', ()=>setTimeout(()=>setCallsignMenuOpen(false), 0));
+  document.addEventListener('mousedown', event=>{
+    if(!ingameCallsignInput.closest('.airport-field').contains(event.target)) setCallsignMenuOpen(false);
+  });
   function relevantFrequencies(){
     const airportCodes = [airportCode(depAirport.value), airportCode(arrAirport.value)].filter(Boolean);
     const regions = new Set(airportCodes.map(code => VFR_AIRSPACE_BY_AIRPORT.get(code)?.id).filter(Boolean));
@@ -1999,11 +2076,15 @@
       if(!res.ok) throw new Error('Network status unavailable');
       const data = await res.json();
       latestOnlinePositions = new Set(data.onlinePositions || []);
+      activeAircraftCallsigns = Array.isArray(data.aircraftCallsigns) ? data.aircraftCallsigns : [];
+      if(callsignMenuOpen) renderCallsignMenu();
       renderFrequencies();
       const checked = data.callsign;
       if(!callsign){
         callsignStatus.className = 'callsign-status';
-        callsignStatus.textContent = 'Enter your in-game callsign to verify it is currently active.';
+        callsignStatus.textContent = activeAircraftCallsigns.length
+          ? `${activeAircraftCallsigns.length} active aircraft available — type or select your callsign.`
+          : 'No active aircraft are currently reported by ATC24.';
       } else if(checked?.valid){
         callsignStatus.className = 'callsign-status is-valid';
         callsignStatus.textContent = `Verified: ${checked.matchingCallsign} is active in-game.`;
@@ -3291,6 +3372,10 @@
   function buildReview(){
     const waypointText=[...waypointBody.querySelectorAll('.wp-input')].map(x=>x.value.trim()).filter(Boolean).join(' → ') || ({direct:'GPS Direct',rdv:'Radar Vectors'}[routeType] || '—');
     const cargoRows=[...cargoBody.querySelectorAll('tr')].map(tr=>{ const x=tr.querySelectorAll('input'); return x[0]?.value.trim()?`${x[0].value.trim()} (${x[3]?.value||'0'} pcs, ${x[4]?.value||'0'} ${unit})`:''; }).filter(Boolean);
+    const reviewBriefHead = document.getElementById('reviewBriefHead');
+    const briefNo = document.getElementById('manifestNo').value.trim() || 'UNNUMBERED BRIEF';
+    const routeNm = routeDistanceNm();
+    reviewBriefHead.innerHTML = `<strong>${briefNo}</strong><span>${airportCode(depAirport.value) || '----'} → ${airportCode(arrAirport.value) || '----'}${routeNm === null ? '' : ` · ${routeNm.toFixed(1)} NM`}</span>`;
     const cards=[
       ['Flight Details',0,[['Callsign',value('fdCallsign')],['Pilot',value('fdPilotUsername')],['Aircraft',value('fdAircraft')],['Rules',value('flightRules')],['Date',value('flightDate')]]],
       ['Route',1,[['Departure',value('depAirport')],['Arrival',value('arrAirport')],['Cruise',value('cruiseAlt')],['Distance',routeDistanceNm() === null ? '—' : `${routeDistanceNm().toFixed(1)} NM`],['Route',waypointText]]],
@@ -3300,7 +3385,7 @@
       ['Remarks & Customs',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['Departure customs',currentCustoms?.departure?.status||'Not requested'],['Arrival customs',currentCustoms?.arrival?.status||'Not requested'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—']]]
     ];
     const grid=document.getElementById('reviewGrid'); grid.innerHTML='';
-    cards.forEach(([title,step,rows])=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><h4>${title}</h4><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
+    cards.forEach(([title,step,rows], index)=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><div class="review-card-head"><span class="review-index">${String(index + 1).padStart(2,'0')}</span><h4>${title}</h4></div><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
   }
   let autosaveTimer;
   function scheduleAutosave(){
