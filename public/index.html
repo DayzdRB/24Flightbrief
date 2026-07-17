@@ -222,6 +222,8 @@
     border-radius:3px;
     overflow:hidden;
   }
+  .flight-details-grid{overflow:visible;position:relative;z-index:12;}
+  .flight-details-grid .airport-field:focus-within{z-index:90;}
   .field{
     border-right:1px solid var(--rule);
     border-bottom:1px solid var(--rule);
@@ -272,6 +274,7 @@
     box-shadow:0 12px 25px rgba(22,35,43,.2);
   }
   .airport-menu.is-open{display:block;}
+  #ingameCallsignMenu{max-height:420px;}
   .airport-option{
     display:block;
     width:100%;
@@ -795,10 +798,12 @@
   body.wizard-enabled #manifest>.panel.wizard-active{display:block}
   body.wizard-enabled #reviewPage{display:none}
   body.wizard-enabled #reviewPage.wizard-active{display:block}
-  .review-brief-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 12px;padding:11px 13px;border:1.5px solid var(--ink);border-radius:5px;background:linear-gradient(100deg,#16232b,#24423c);color:#edf6f3;font-family:'JetBrains Mono',monospace}
+  #reviewPage{position:relative;overflow:hidden;border:1.5px solid var(--ink);border-radius:6px;padding:24px;background-color:#f4f0e5;background-image:linear-gradient(rgba(47,75,68,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(47,75,68,.035) 1px,transparent 1px);background-size:100% 27px,27px 100%;box-shadow:inset 0 0 0 5px rgba(255,255,255,.48),0 6px 16px rgba(22,35,43,.12)}
+  #reviewPage .panel-head{padding-bottom:11px;border-bottom:2px solid var(--ink);margin-bottom:9px} #reviewPage .panel-head .line{display:none}
+  .review-brief-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 12px;padding:11px 13px;border:1.5px solid var(--ink);border-radius:3px;background:linear-gradient(100deg,#16232b,#24423c);color:#edf6f3;font-family:'JetBrains Mono',monospace;box-shadow:3px 3px 0 rgba(22,35,43,.2)}
   .review-brief-head strong{font-size:12px;letter-spacing:.08em;text-transform:uppercase}.review-brief-head span{font-size:10px;color:#bfd6cf;text-align:right}
   .review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  .review-card{border:1px solid var(--rule-strong);border-top:3px solid var(--teal);background:rgba(255,255,255,.52);padding:0 14px 14px;border-radius:5px;position:relative;box-shadow:0 2px 0 rgba(22,35,43,.05)}
+  .review-card{border:1px solid var(--rule-strong);border-top:3px solid var(--teal);background:rgba(255,255,255,.74);padding:0 14px 14px;border-radius:2px;position:relative;box-shadow:3px 3px 0 rgba(22,35,43,.11)}
   .review-card-head{display:flex;align-items:center;gap:8px;margin:0 -14px 11px;padding:10px 14px 8px;border-bottom:1px solid var(--rule);background:rgba(238,244,242,.8)}
   .review-card-head .review-index{font:700 10px 'JetBrains Mono',monospace;color:var(--teal-dark)}
   .review-card h4{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
@@ -879,7 +884,7 @@
           <h3>Flight Details</h3>
           <div class="line"></div>
         </div>
-        <div class="grid">
+        <div class="grid flight-details-grid">
           <div class="field"><label>Callsign <span class="req-mark">*</span></label><input type="text" id="fdCallsign" data-required="1" placeholder="e.g. SBI412"></div>
           <div class="field airport-field"><label>In-Game Callsign <span class="req-mark">*</span></label><input type="text" id="fdIngameCallsign" data-required="1" autocomplete="off" spellcheck="false" placeholder="Search or select an active aircraft" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ingameCallsignMenu"><div class="airport-menu no-export" id="ingameCallsignMenu" role="listbox"></div><span class="callsign-status" id="callsignStatus" aria-live="polite">Loading active aircraft…</span></div>
           <div class="field"><label>Flight Rules <span class="req-mark">*</span></label>
@@ -2056,10 +2061,60 @@
   document.addEventListener('mousedown', event=>{
     if(!ingameCallsignInput.closest('.airport-field').contains(event.target)) setCallsignMenuOpen(false);
   });
+
+  // Centers are chosen from the route corridor, while local frequencies are
+  // limited strictly to the departure and arrival airports.
+  const CENTER_AREAS = [
+    { airport:'IRCC', airports:['IRFD','IMLR','IGAR','ITRC','IBLT','IUFO'], anchor:AIRPORTS.IRFD },
+    { airport:'ICCC', airports:['ILAR','IPAP','IIAB','IBAR','IBRD','IHEN'], anchor:AIRPORTS.ILAR },
+    { airport:'IZCC', airports:['IZOL','IJAF','ISCM'], anchor:AIRPORTS.IZOL },
+    { airport:'IOCC', airports:['ITKO','IDCS'], anchor:AIRPORTS.ITKO },
+    { airport:'IPCC', airports:['IPPH','ILKL'], anchor:AIRPORTS.IPPH },
+    { airport:'IBCC', airports:['IBTH','ISKP'], anchor:AIRPORTS.IBTH },
+    { airport:'IGCC', airports:['IKFL','ITEY'], anchor:AIRPORTS.IKFL },
+    { airport:'ISCC', airports:['ISAU'], anchor:AIRPORTS.ISAU },
+  ];
+  const CENTER_CORRIDOR_CHART_PX = 210;
+  function centerForAirport(code){ return CENTER_AREAS.find(area => area.airports.includes(code)); }
+  function pointToSegmentDistance(point, start, end){
+    const dx=end.x-start.x, dy=end.y-start.y;
+    const lengthSq=dx*dx+dy*dy;
+    const t=lengthSq ? Math.max(0,Math.min(1,((point.x-start.x)*dx+(point.y-start.y)*dy)/lengthSq)) : 0;
+    return {distance:Math.hypot(point.x-(start.x+t*dx),point.y-(start.y+t*dy)), progress:t};
+  }
+  function routeChartNodes(){
+    const departure=AIRPORTS[airportCode(depAirport.value)], arrival=AIRPORTS[airportCode(arrAirport.value)];
+    if(!departure || !arrival) return [];
+    const fixes=routeType === 'waypoints'
+      ? [...waypointBody.querySelectorAll('.wp-input')].map(input=>WAYPOINTS[waypointKey(input.value)]).filter(Boolean)
+      : [];
+    return [departure,...fixes,arrival];
+  }
+  function centersAlongRoute(){
+    const nodes=routeChartNodes();
+    if(nodes.length<2) return [];
+    return CENTER_AREAS.map(area=>{
+      let nearest={distance:Infinity, order:Infinity};
+      for(let index=1;index<nodes.length;index++){
+        const result=pointToSegmentDistance(area.anchor,nodes[index-1],nodes[index]);
+        if(result.distance<nearest.distance) nearest={distance:result.distance,order:(index-1)+result.progress};
+      }
+      return {...area,...nearest};
+    }).filter(area=>area.distance<=CENTER_CORRIDOR_CHART_PX).sort((a,b)=>a.order-b.order);
+  }
   function relevantFrequencies(){
-    const airportCodes = [airportCode(depAirport.value), airportCode(arrAirport.value)].filter(Boolean);
-    const regions = new Set(airportCodes.map(code => VFR_AIRSPACE_BY_AIRPORT.get(code)?.id).filter(Boolean));
-    return FREQUENCIES.filter(item => airportCodes.includes(item.airport) || regions.has(item.region));
+    const departure=airportCode(depAirport.value), arrival=airportCode(arrAirport.value);
+    if(!departure && !arrival) return [];
+    const local=(airport)=>FREQUENCIES.filter(item=>item.airport===airport && item.position!=='CTR')
+      .sort((a,b)=>(a.position==='GND'?0:1)-(b.position==='GND'?0:1));
+    const centerCodes=[];
+    const addCenter=area=>{ if(area && !centerCodes.includes(area.airport)) centerCodes.push(area.airport); };
+    addCenter(centerForAirport(departure));
+    centersAlongRoute().forEach(addCenter);
+    addCenter(centerForAirport(arrival));
+    const centers=centerCodes.map(code=>FREQUENCIES.find(item=>item.airport===code && item.position==='CTR')).filter(Boolean);
+    const rows=[...local(departure),...centers,...local(arrival)];
+    return rows.filter((row,index)=>rows.findIndex(item=>item.label===row.label)===index);
   }
   function renderFrequencies(){
     const rows = relevantFrequencies();
@@ -2092,7 +2147,7 @@
         callsignStatus.className = 'callsign-status is-error';
         callsignStatus.textContent = `No active aircraft was found with the in-game callsign “${callsign}”.`;
       }
-      frequencyStatus.textContent = `Live controller status updated ${new Date(data.fetchedAt || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}. Green is online; red is offline.`;
+      frequencyStatus.textContent = `Departure/arrival Ground + Tower and Centers crossed en route. Updated ${new Date(data.fetchedAt || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}; green is online, red is offline.`;
       return checked?.valid === true;
     }catch(error){
       renderFrequencies();
