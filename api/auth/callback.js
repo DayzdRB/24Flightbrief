@@ -18,14 +18,67 @@ module.exports = async (req, res) => {
     return res.status(500).send('Discord OAuth is not configured on the server yet.');
   }
 
-  const requestUrl = new URL(req.url, `https://${req.headers.host}`);
-  const code = requestUrl.searchParams.get('code');
-  const state = requestUrl.searchParams.get('state');
-  const cookies = parseCookies(req);
+const requestUrl = new URL(req.url, `https://${req.headers.host}`);
 
-  if (!code || !state || state !== cookies.ffb_oauth_state) {
-    return res.status(400).send('Invalid or expired login attempt. Please try logging in again.');
-  }
+const firstValue = value => {
+  if (Array.isArray(value)) return value[0];
+  return value;
+};
+
+const code =
+  firstValue(req.query?.code) ||
+  requestUrl.searchParams.get('code');
+
+const state =
+  firstValue(req.query?.state) ||
+  requestUrl.searchParams.get('state');
+
+const discordError =
+  firstValue(req.query?.error) ||
+  requestUrl.searchParams.get('error');
+
+const parsedCookies = parseCookies(req);
+const cookies = {
+  ...parsedCookies,
+  ...(req.cookies || {}),
+};
+
+const storedState = cookies.ffb_oauth_state;
+
+console.log('Discord OAuth callback validation:', {
+  host: req.headers.host,
+  hasCode: Boolean(code),
+  hasState: Boolean(state),
+  hasStoredState: Boolean(storedState),
+  stateMatches: Boolean(state && storedState && state === storedState),
+  discordError: discordError || null,
+});
+
+if (discordError) {
+  return res
+    .status(400)
+    .send(`Discord authorization failed: ${discordError}`);
+}
+
+if (!code) {
+  return res.status(400).send('Discord did not return an authorization code.');
+}
+
+if (!state) {
+  return res.status(400).send('Discord did not return the OAuth state value.');
+}
+
+if (!storedState) {
+  return res.status(400).send(
+    'The OAuth state cookie was not returned by the browser.'
+  );
+}
+
+if (state !== storedState) {
+  return res.status(400).send(
+    'The OAuth state cookie did not match the Discord callback.'
+  );
+}
 
   try {
     const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
