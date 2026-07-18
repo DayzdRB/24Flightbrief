@@ -452,6 +452,30 @@
   .navigation-radar .map-waypoint-label{fill:#7fe0c2;fill-opacity:.85;}
   .map-pannable{cursor:grab;touch-action:none;}
   .map-pannable.is-panning{cursor:grabbing;}
+  .map-pannable.is-measuring{cursor:crosshair;}
+  #mapDistanceLayer,#navigationDistanceLayer{pointer-events:none;}
+  .distance-tool-line{stroke:#ffcf5c;stroke-width:2;stroke-dasharray:6 5;}
+  .distance-tool-point{fill:#ffcf5c;stroke:#16232b;stroke-width:1.5;vector-effect:non-scaling-stroke;}
+  .distance-tool-heading{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+    fill:#ffd06f;
+    paint-order:stroke;
+    stroke:#16232b;
+    stroke-width:4px;
+    stroke-linejoin:round;
+  }
+  .distance-tool-distance{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+    fill:#0b1418;
+    paint-order:stroke;
+    stroke:#ffd06f;
+    stroke-width:5px;
+    stroke-linejoin:round;
+  }
   .map-zoom-controls{
     position:absolute;
     top:10px;
@@ -477,11 +501,12 @@
   }
   .map-zoom-btn:active{transform:translateY(1px);}
   .map-zoom-controls.dark .map-zoom-btn{background:#182329;color:#dfece7;border-color:#33474f;}
-  .map-airport-dot{
-    fill:rgba(238,244,242,.72);
+  .map-airport-pin{
+    fill:rgba(238,244,242,.9);
     stroke:rgba(22,35,43,.88);
-    stroke-width:2.5;
+    stroke-width:1.5;
     vector-effect:non-scaling-stroke;
+    pointer-events:none;
   }
   .map-airport-label{
     display:none;
@@ -493,9 +518,10 @@
     stroke:#16232b;
     stroke-width:5px;
     stroke-linejoin:round;
+    pointer-events:none;
   }
-  .map-airport-dot.is-dep{fill:#1b7f72;stroke:#f4f8f7;}
-  .map-airport-dot.is-arr{fill:#a5382c;stroke:#f4f8f7;}
+  .map-airport-pin.is-dep{fill:#1b7f72;stroke:#f4f8f7;}
+  .map-airport-pin.is-arr{fill:#a5382c;stroke:#f4f8f7;}
   .map-airport-label.is-dep,.map-airport-label.is-arr{display:block;font-size:23px;}
   .map-route-casing{
     fill:none;
@@ -1442,6 +1468,7 @@
         <div class="route-map-toolbar no-export">
           <button class="map-layer-toggle active" id="waypointLayerToggle" type="button" aria-pressed="true">Waypoints</button>
           <button class="map-layer-toggle" id="routeLineToggle" type="button" aria-pressed="false">Route line</button>
+          <button class="map-layer-toggle" id="mapDistanceToggle" type="button" aria-pressed="false" title="Click twice on the map to measure a distance">Distance tool</button>
         </div>
         <div class="route-map-wrap">
           <div class="map-zoom-controls" data-zoom-target="routeMapSvg">
@@ -1457,6 +1484,7 @@
             <g class="map-waypoint-layer" id="mapWaypointLayer"></g>
             <g id="mapRouteMarkers"></g>
             <g id="mapAirports"></g>
+            <g id="mapDistanceLayer"></g>
           </svg>
         </div>
         <div class="perf-note">The map uses 24RC’s vector coast, boundaries, airport grounds, and runway SVGs. Named fixes are rendered from normalized coordinates above the route line. In Waypoints mode, the line starts hidden; use Route line to show the connecting track without hiding selected fixes or airports. The Waypoints control hides only chart fix symbols and names. <a class="airport-chart-link" href="EnrouteChart.png" target="_blank" rel="noopener">Open the full chart</a>.</div>
@@ -1674,12 +1702,14 @@
               <button type="button" class="map-zoom-btn" data-zoom="reset" aria-label="Reset view" title="Reset view">&#8634;</button>
             </div>
             <button type="button" class="map-layer-toggle dark" id="navigationWaypointToggle" style="position:absolute;top:10px;left:10px;z-index:5;" aria-pressed="true">Waypoints</button>
+            <button type="button" class="map-layer-toggle dark" id="navigationDistanceToggle" style="position:absolute;top:44px;left:10px;z-index:5;" aria-pressed="false" title="Click twice on the map to measure a distance">Distance tool</button>
             <svg id="navigationRadarSvg" class="map-pannable" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Live ATC24 aircraft radar">
               <image class="navigation-map-coast" href="maps/coast.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
               <image class="navigation-map-coast" href="maps/boundaries.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
               <g class="navigation-map-assets" id="navigationMapAssets"></g>
               <g class="map-waypoint-layer" id="navigationWaypointLayer"></g>
               <g id="navigationDestinationLayer"></g><g id="navigationRouteLayer"></g><g id="navigationAircraftLayer"></g>
+              <g id="navigationDistanceLayer"></g>
             </svg>
             <div class="navigation-empty" id="navigationEmpty"><strong>No live data yet</strong>Save a flight plan, then select Navigate with Flight Plan.</div>
           </div>
@@ -2948,6 +2978,15 @@
       zoomIn: ()=>{ const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.4); },
       zoomOut: ()=>{ const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1 / 1.4); },
       reset: ()=>{ view.x = base.x; view.y = base.y; view.w = base.w; view.h = base.h; apply(); },
+      // Ratio of the current viewBox width to the base (fully-zoomed-out) width.
+      // 1 at the default view, shrinking as the user zooms in. Multiplying a
+      // shape's user-space size by this value keeps its ON-SCREEN size constant
+      // regardless of zoom level -- the same trick 24RC uses to keep aircraft
+      // data-block text a fixed screen size instead of scaling with the map.
+      getScale: ()=> view.w / base.w,
+      // Converts a client (mouse/touch) coordinate into this SVG's user space,
+      // accounting for the current pan/zoom -- used by the distance tool.
+      screenToSvg: (clientX, clientY)=> screenToSvg(clientX, clientY),
     };
   }
 
@@ -2983,7 +3022,7 @@
     [[dep, 'is-dep'], [arr, 'is-arr']].forEach(([code, state])=>{
       const pos = mapPoint(AIRPORTS[code]);
       if(!code || !pos) return;
-      airportsSvg += `<circle class="map-airport-dot ${state}" cx="${pos.x}" cy="${pos.y}" r="20"/>`;
+      airportsSvg += `<circle class="map-airport-pin ${state}" cx="${pos.x}" cy="${pos.y}" r="3.5"/>`;
       airportsSvg += `<text class="map-airport-label ${state}" x="${pos.x}" y="${pos.y - 26}" text-anchor="middle">${code}</text>`;
     });
     mapAirportsG.innerHTML = airportsSvg;
@@ -3103,6 +3142,117 @@
       : `Route distance: ${nm.toFixed(1)} NM <span>Calculated from the planned route.</span>`;
     return nm;
   }
+
+  // ===== Distance tool (ported from 24RC's DistanceTool component) =====
+  // 24RC lets a controller click twice on the scope to drop a ruler between two
+  // points, showing the heading off each end and the distance in NM. The same
+  // idea is reproduced here for our SVG maps: click the toggle button, click
+  // once on the map to plant the start point, move the mouse to preview the
+  // line live, then click again to lock the end point. A third click (or
+  // toggling the button off) clears it. We trigger from a button rather than
+  // 24RC's double-click gesture because double-click is already used here to
+  // zoom the map.
+  const RAD = Math.PI / 180;
+  function svgHeading(p1, p2){
+    const degrees = (Math.atan2(p2.y - p1.y, p2.x - p1.x) / RAD) + 90;
+    return ((degrees % 360) + 360) % 360;
+  }
+  function svgOppHeading(hdg){ return (hdg + 180) % 360; }
+  function svgPadHeading(hdg){ return String(Math.round(hdg)).padStart(3, '0'); }
+  function svgVector(radius, degrees){
+    const radians = (degrees - 90) * RAD;
+    return { x: radius * Math.cos(radians), y: radius * Math.sin(radians) };
+  }
+  function studsToNm(studDistance){
+    return (studDistance / MAP_VIEWBOX_WIDTH) * MAP_STUDS_PER_NORMALIZED_UNIT / STUDS_PER_NAUTICAL_MILE;
+  }
+
+  function attachDistanceTool(svg, layer, controller, toggleBtn){
+    let active = false;
+    let start = null;
+    let end = null;
+    let locked = false;
+
+    function scale(){ return controller && controller.getScale ? controller.getScale() : 1; }
+
+    function render(){
+      if(!start || !end){ layer.innerHTML = ''; return; }
+      const s = scale();
+      const distNm = studsToNm(Math.hypot(end.x - start.x, end.y - start.y));
+      const hdg = svgHeading(start, end);
+      const opp = svgOppHeading(hdg);
+
+      const startTxtOffset = svgVector(20 * s, opp);
+      const endTxtOffset = svgVector(20 * s, hdg);
+      const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+      const midOffset = svgVector(11 * s, hdg + 90);
+
+      // Keep the distance label right-side-up no matter which way the line runs.
+      let textAngle = hdg;
+      if(textAngle > 90 && textAngle <= 270) textAngle -= 180;
+
+      layer.innerHTML = `
+        <line class="distance-tool-line" x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" vector-effect="non-scaling-stroke"/>
+        <circle class="distance-tool-point" cx="${start.x}" cy="${start.y}" r="4"/>
+        <circle class="distance-tool-point" cx="${end.x}" cy="${end.y}" r="4"/>
+        <g transform="translate(${start.x + startTxtOffset.x} ${start.y + startTxtOffset.y}) scale(${s})"><text class="distance-tool-heading" text-anchor="middle" dominant-baseline="middle">${svgPadHeading(hdg)}</text></g>
+        <g transform="translate(${end.x + endTxtOffset.x} ${end.y + endTxtOffset.y}) scale(${s})"><text class="distance-tool-heading" text-anchor="middle" dominant-baseline="middle">${svgPadHeading(opp)}</text></g>
+        <g transform="translate(${mid.x + midOffset.x} ${mid.y + midOffset.y}) scale(${s}) rotate(${textAngle})"><text class="distance-tool-distance" text-anchor="middle" dominant-baseline="middle">${distNm.toFixed(1)} NM</text></g>
+      `;
+    }
+
+    function clearMeasurement(){
+      start = null; end = null; locked = false;
+      layer.innerHTML = '';
+      svg.removeEventListener('pointermove', onMove);
+    }
+
+    function setActive(next){
+      active = next;
+      toggleBtn.classList.toggle('active', active);
+      toggleBtn.setAttribute('aria-pressed', String(active));
+      svg.classList.toggle('is-measuring', active);
+      if(!active) clearMeasurement();
+    }
+
+    function onMove(e){
+      if(!start || locked) return;
+      end = controller.screenToSvg(e.clientX, e.clientY);
+      render();
+    }
+
+    svg.addEventListener('click', (e)=>{
+      if(!active) return;
+      const p = controller.screenToSvg(e.clientX, e.clientY);
+      if(!start){
+        start = p; end = p; locked = false;
+        svg.addEventListener('pointermove', onMove);
+      } else if(!locked){
+        end = p; locked = true;
+        svg.removeEventListener('pointermove', onMove);
+      } else {
+        clearMeasurement();
+      }
+      render();
+    });
+
+    toggleBtn.addEventListener('click', ()=> setActive(!active));
+
+    return { setActive, clear: clearMeasurement };
+  }
+
+  attachDistanceTool(
+    document.getElementById('routeMapSvg'),
+    document.getElementById('mapDistanceLayer'),
+    mapPanZoomControllers.routeMapSvg,
+    document.getElementById('mapDistanceToggle')
+  );
+  attachDistanceTool(
+    document.getElementById('navigationRadarSvg'),
+    document.getElementById('navigationDistanceLayer'),
+    mapPanZoomControllers.navigationRadarSvg,
+    document.getElementById('navigationDistanceToggle')
+  );
 
   const FREQUENCIES = [
     { airport:'IRCC', position:'CTR', label:'IRCC', frequency:'124.850', region:'rockford' },
@@ -4957,10 +5107,18 @@
       const fl=escapeSvgText(item.flightLevel||'FL000');
       const speed=`${Math.max(0,Math.round(Number(item.groundSpeed)||0))} KT`;
       const width=Math.max(174,Math.min(330,74+String(item.callsign||'').length*14));
-      const labelX=pos.x>MAP_VIEWBOX_MIN_X+MAP_VIEWBOX_WIDTH*.72?pos.x-width-35:pos.x+30;
-      const labelY=Math.max(MAP_VIEWBOX_MIN_Y+8,Math.min(MAP_VIEWBOX_MIN_Y+MAP_VIEWBOX_HEIGHT-65,pos.y-27));
+      const labelXAbs=pos.x>MAP_VIEWBOX_MIN_X+MAP_VIEWBOX_WIDTH*.72?pos.x-width-35:pos.x+30;
+      const labelYAbs=Math.max(MAP_VIEWBOX_MIN_Y+8,Math.min(MAP_VIEWBOX_MIN_Y+MAP_VIEWBOX_HEIGHT-65,pos.y-27));
       const boxClass=`navigation-label-box${own?' own':''}${warning?' warning':''}`;
-      return `<g class="${iconClass}" transform="translate(${pos.x} ${pos.y}) rotate(${Number(item.heading)||0})"><image href="${aircraftIconPath(item.aircraftType)}" x="${-size/2}" y="${-size/2}" width="${size}" height="${size}"/></g><g><rect class="${boxClass}" x="${labelX}" y="${labelY}" width="${width}" height="58" rx="5"/><text class="navigation-label-text" x="${labelX+10}" y="${labelY+22}">${callsign}</text><text class="navigation-label-meta" x="${labelX+10}" y="${labelY+45}">${fl} · ${speed}</text></g>`;
+      // Data block is drawn in coordinates local to the aircraft position, then
+      // wrapped in a group that's translated to the aircraft and scaled by the
+      // inverse of the current zoom. That keeps the callsign/altitude/speed tag
+      // a constant, readable size on screen no matter how far the map is
+      // zoomed in or out -- ported from how 24RC keeps its data blocks legible
+      // when many aircraft are on frequency, instead of scaling with the map.
+      const labelScale=mapPanZoomControllers.navigationRadarSvg?mapPanZoomControllers.navigationRadarSvg.getScale():1;
+      const labelX=labelXAbs-pos.x, labelY=labelYAbs-pos.y;
+      return `<g class="${iconClass}" transform="translate(${pos.x} ${pos.y}) rotate(${Number(item.heading)||0})"><image href="${aircraftIconPath(item.aircraftType)}" x="${-size/2}" y="${-size/2}" width="${size}" height="${size}"/></g><g transform="translate(${pos.x} ${pos.y}) scale(${labelScale})"><rect class="${boxClass}" x="${labelX}" y="${labelY}" width="${width}" height="58" rx="5"/><text class="navigation-label-text" x="${labelX+10}" y="${labelY+22}">${callsign}</text><text class="navigation-label-meta" x="${labelX+10}" y="${labelY+45}">${fl} · ${speed}</text></g>`;
     }).join('');
   }
 
