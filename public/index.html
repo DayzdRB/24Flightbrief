@@ -1064,6 +1064,32 @@
   .settings-danger{margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:space-between;gap:15px;}
   .settings-danger strong{display:block;color:#dce7e4;font-size:12px;}
   .settings-danger span{display:block;margin-top:3px;color:#7f938d;font-size:10.5px;}
+  .settings-toggle-field{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 15px;}
+  .settings-toggle-copy label{margin:0 0 4px;}
+  .settings-toggle-copy span{display:block;color:#81958f;font-size:10.5px;line-height:1.45;}
+  .toggle-switch{position:relative;display:inline-flex;align-items:center;flex:0 0 auto;cursor:pointer;}
+  .toggle-switch input{position:absolute;opacity:0;pointer-events:none;}
+  .toggle-track{width:46px;height:25px;position:relative;border-radius:999px;background:#34443f;border:1px solid rgba(255,255,255,.13);transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;}
+  .toggle-track::after{content:"";position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#dce6e3;box-shadow:0 2px 6px rgba(0,0,0,.34);transition:transform .2s ease,background .2s ease;}
+  .toggle-switch input:checked + .toggle-track{background:#176c60;border-color:#48a994;box-shadow:0 0 0 3px rgba(55,167,145,.1);}
+  .toggle-switch input:checked + .toggle-track::after{transform:translateX(21px);background:#fff;}
+  .toggle-switch input:focus-visible + .toggle-track{outline:2px solid #7ed0bc;outline-offset:3px;}
+
+  /* ===== Startup loading screen ===== */
+  body.startup-loading{overflow:hidden;}
+  .startup-screen{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:radial-gradient(circle at 50% 38%,#16322f 0,#0c171b 36%,#070d10 76%);opacity:1;visibility:visible;transition:opacity .42s ease,visibility .42s ease;}
+  .startup-screen::before{content:"";position:absolute;inset:0;opacity:.18;background-image:linear-gradient(rgba(126,208,188,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(126,208,188,.08) 1px,transparent 1px);background-size:38px 38px;mask-image:linear-gradient(to bottom,transparent,black 30%,black 70%,transparent);}
+  .startup-screen.complete{opacity:0;visibility:hidden;pointer-events:none;}
+  .startup-panel{position:relative;width:min(420px,calc(100vw - 42px));padding:34px 32px 30px;text-align:center;border:1px solid rgba(126,208,188,.18);border-radius:18px;background:rgba(8,17,20,.82);box-shadow:0 30px 90px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);backdrop-filter:blur(14px);}
+  .startup-mark{width:78px;height:78px;margin:0 auto 18px;display:grid;place-items:center;border-radius:20px;background:linear-gradient(145deg,#1b7f72,#22433e);border:1px solid rgba(255,255,255,.14);box-shadow:0 15px 35px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.16);color:#fff;font:800 38px 'Big Shoulders Stencil',sans-serif;letter-spacing:.02em;}
+  .startup-panel h1{margin:0;color:#f1f7f5;font:700 29px 'Big Shoulders Stencil',sans-serif;letter-spacing:.06em;text-transform:uppercase;}
+  .startup-panel p{margin:8px 0 22px;color:#879b95;font:10px 'JetBrains Mono',monospace;letter-spacing:.11em;text-transform:uppercase;}
+  .startup-progress{height:4px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.08);}
+  .startup-progress-bar{display:block;width:10%;height:100%;border-radius:inherit;background:linear-gradient(90deg,#287f70,#7ed0bc);box-shadow:0 0 14px rgba(126,208,188,.42);transition:width .5s cubic-bezier(.22,.61,.36,1);}
+  .startup-status{min-height:17px;margin-top:13px;color:#9eb0ab;font-size:10.5px;}
+  .startup-enter{display:none;margin:16px auto 0;}
+  .startup-enter.visible{display:inline-flex;}
+  @media(prefers-reduced-motion:reduce){.startup-screen,.startup-progress-bar,.toggle-track,.toggle-track::after{transition:none;}}
 
   @media(max-width:850px){
     .site-header-inner{gap:10px;}
@@ -1093,7 +1119,18 @@
 
 </style>
 </head>
-<body>
+<body class="startup-loading">
+
+  <div class="startup-screen no-export" id="startupScreen" role="status" aria-live="polite" aria-label="Loading 24FlightBrief">
+    <div class="startup-panel">
+      <div class="startup-mark" aria-hidden="true">24</div>
+      <h1>24FlightBrief</h1>
+      <p>Preparing your flight desk</p>
+      <div class="startup-progress" aria-hidden="true"><span class="startup-progress-bar" id="startupProgressBar"></span></div>
+      <div class="startup-status" id="startupStatus">Loading navigation systems…</div>
+      <button class="btn-primary startup-enter" type="button" id="startupEnterBtn">Enter Flight Desk</button>
+    </div>
+  </div>
 
   <header class="site-header no-export">
     <div class="site-header-inner">
@@ -1513,6 +1550,13 @@
             <div class="settings-field"><label for="settingsDefaultCallsign">Default callsign</label><input id="settingsDefaultCallsign" maxlength="24" placeholder="e.g. SBI412"></div>
             <div class="settings-field"><label for="settingsDefaultRules">Default flight rules</label><select id="settingsDefaultRules"><option value="">No default</option><option value="IFR">IFR</option><option value="VFR">VFR</option></select></div>
             <div class="settings-field full"><label for="settingsDefaultAltitude">Default cruise altitude</label><input id="settingsDefaultAltitude" maxlength="12" placeholder="e.g. FL250"></div>
+            <div class="settings-field full settings-toggle-field">
+              <div class="settings-toggle-copy"><label for="settingsStartupSound">Startup sound</label><span>Play the aircraft cabin chime when the loading screen completes.</span></div>
+              <label class="toggle-switch" aria-label="Toggle startup sound">
+                <input id="settingsStartupSound" type="checkbox" checked>
+                <span class="toggle-track" aria-hidden="true"></span>
+              </label>
+            </div>
           </div>
           <div class="settings-actions"><button class="btn-primary" type="button" id="saveSettingsBtn">Save settings</button></div>
           <div class="settings-danger">
@@ -1542,6 +1586,116 @@
     try{ return JSON.parse(localStorage.getItem(LOCAL_SETTINGS_KEY) || '{}') || {}; }
     catch(error){ return {}; }
   }
+
+  function startupSoundEnabled(){
+    return readLocalSettings().startupSound !== false;
+  }
+  function hideStartupScreen(delay=350){
+    window.setTimeout(()=>{
+      document.getElementById('startupScreen')?.classList.add('complete');
+      document.body.classList.remove('startup-loading');
+    }, delay);
+  }
+  async function playCabinChime(){
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if(!AudioContextClass) throw new Error('Web Audio is unavailable');
+    const context = new AudioContextClass();
+    try{
+      await context.resume();
+      if(context.state !== 'running') throw new Error('Audio permission required');
+
+      const master=context.createGain();
+      const compressor=context.createDynamicsCompressor();
+      master.gain.setValueAtTime(.0001,context.currentTime);
+      master.gain.exponentialRampToValueAtTime(.42,context.currentTime+.025);
+      master.gain.exponentialRampToValueAtTime(.0001,context.currentTime+1.02);
+      master.connect(compressor);
+      compressor.connect(context.destination);
+
+      const tone=(frequency,start,duration,volume,type='sine')=>{
+        const oscillator=context.createOscillator();
+        const gain=context.createGain();
+        oscillator.type=type;
+        oscillator.frequency.setValueAtTime(frequency,context.currentTime+start);
+        gain.gain.setValueAtTime(.0001,context.currentTime+start);
+        gain.gain.exponentialRampToValueAtTime(volume,context.currentTime+start+.018);
+        gain.gain.exponentialRampToValueAtTime(.0001,context.currentTime+start+duration);
+        oscillator.connect(gain);
+        gain.connect(master);
+        oscillator.start(context.currentTime+start);
+        oscillator.stop(context.currentTime+start+duration+.04);
+      };
+
+      // Two-note cabin chime with quiet harmonics for a fuller bell sound.
+      tone(880,0,.34,.78);
+      tone(1760,.015,.27,.12,'triangle');
+      tone(659.25,.42,.46,.82);
+      tone(1318.5,.435,.36,.11,'triangle');
+
+      await new Promise(resolve=>window.setTimeout(resolve,1120));
+      await context.close();
+    }catch(error){
+      context.close().catch(()=>{});
+      throw error;
+    }
+  }
+  function initStartupScreen(){
+    const screen=document.getElementById('startupScreen');
+    const bar=document.getElementById('startupProgressBar');
+    const status=document.getElementById('startupStatus');
+    const enterButton=document.getElementById('startupEnterBtn');
+    if(!screen || !bar || !status || !enterButton){
+      document.body.classList.remove('startup-loading');
+      return;
+    }
+
+    const minimumDuration=2800;
+    const started=performance.now();
+    const setStage=(delay,width,message)=>window.setTimeout(()=>{
+      if(screen.classList.contains('complete')) return;
+      bar.style.width=width;
+      status.textContent=message;
+    },delay);
+
+    requestAnimationFrame(()=>{bar.style.width='24%';});
+    setStage(650,'52%','Loading navigation data…');
+    setStage(1350,'76%','Checking saved flight data…');
+    setStage(2050,'92%','Preparing your flight desk…');
+
+    const finish=async()=>{
+      const remaining=Math.max(0,minimumDuration-(performance.now()-started));
+      await new Promise(resolve=>window.setTimeout(resolve,remaining));
+      bar.style.width='100%';
+      status.textContent='Flight desk ready';
+
+      if(!startupSoundEnabled()){
+        hideStartupScreen(650);
+        return;
+      }
+
+      // Browsers block startup audio without a user gesture. The entry button
+      // provides that gesture, so the chime works consistently.
+      enterButton.textContent='Enter Flight Desk';
+      enterButton.classList.add('visible');
+      enterButton.focus({preventScroll:true});
+    };
+
+    enterButton.addEventListener('click',async()=>{
+      enterButton.disabled=true;
+      status.textContent='Welcome aboard';
+      try{
+        await playCabinChime();
+      }catch(error){
+        console.warn('Startup chime could not play:',error);
+      }
+      hideStartupScreen(180);
+    },{once:true});
+
+    if(document.readyState === 'complete') finish();
+    else window.addEventListener('load',finish,{once:true});
+  }
+  initStartupScreen();
+
   function updateDraftStatus(){
     const hasDraft = Boolean(localStorage.getItem(AUTOSAVE_KEY));
     document.getElementById('homeDraftStatus').textContent = hasDraft ? 'Draft available' : 'None saved';
@@ -1589,9 +1743,14 @@
     document.getElementById('settingsDefaultCallsign').value = settings.defaultCallsign || '';
     document.getElementById('settingsDefaultRules').value = settings.defaultRules || '';
     document.getElementById('settingsDefaultAltitude').value = settings.defaultAltitude || '';
+    document.getElementById('settingsStartupSound').checked = settings.startupSound !== false;
     const formUsername = document.getElementById('fdPilotUsername')?.value?.trim();
     document.getElementById('settingsRobloxUsername').value = formUsername || settings.robloxUsername || '';
   }
+  document.getElementById('settingsStartupSound').addEventListener('change',event=>{
+    const settings=readLocalSettings();
+    localStorage.setItem(LOCAL_SETTINGS_KEY,JSON.stringify({...settings,startupSound:event.currentTarget.checked}));
+  });
   document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
     const button=document.getElementById('saveSettingsBtn');
     const robloxUsername=document.getElementById('settingsRobloxUsername').value.trim();
@@ -1599,7 +1758,8 @@
       robloxUsername,
       defaultCallsign:document.getElementById('settingsDefaultCallsign').value.trim(),
       defaultRules:document.getElementById('settingsDefaultRules').value,
-      defaultAltitude:document.getElementById('settingsDefaultAltitude').value.trim()
+      defaultAltitude:document.getElementById('settingsDefaultAltitude').value.trim(),
+      startupSound:document.getElementById('settingsStartupSound').checked
     };
     localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(localSettings));
     document.getElementById('fdPilotUsername').value=robloxUsername;
