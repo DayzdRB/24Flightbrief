@@ -414,7 +414,7 @@
     justify-content:flex-end;
     gap:8px;
     max-width:750px;
-    margin:0 0 7px;
+    margin:0 auto 7px;
   }
   .map-layer-toggle{
     border:1.5px solid var(--ink);
@@ -436,7 +436,7 @@
     border-radius:6px;
     overflow:hidden;
     background:#d3ebfc;
-    aspect-ratio:963.55 / 920.03;
+    aspect-ratio:1 / 1;
   }
   .route-map-wrap svg{display:block;width:100%;height:100%;}
   .map-chart-base,.map-waypoint-layer,.map-airport-assets{pointer-events:none;}
@@ -1158,7 +1158,7 @@
   .navigation-map-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 16px;color:#eaf2f0;border-bottom:1px solid rgba(255,255,255,.13);background:#16262e}
   .navigation-map-head h2{margin:0;font-size:17px}.navigation-map-head p{margin:3px 0 0;color:#aebfc2;font-size:11px}
   .navigation-live{display:flex;align-items:center;gap:7px;font:700 10px 'JetBrains Mono',monospace;text-transform:uppercase}.navigation-live::before{content:'';width:8px;height:8px;border-radius:50%;background:#80d6a8;box-shadow:0 0 0 5px rgba(128,214,168,.12)}
-  .navigation-radar{position:relative;aspect-ratio:963.55/920.03;background:#101b22;overflow:hidden}
+  .navigation-radar{position:relative;aspect-ratio:1/1;background:#101b22;overflow:hidden}
   .navigation-radar svg{width:100%;height:100%;display:block}.navigation-map-assets image{filter:invert(88%);opacity:.42}.navigation-map-coast{filter:invert(83%);opacity:.58}
   .navigation-route-casing{fill:none;stroke:#071015;stroke-width:15;stroke-linecap:round;stroke-linejoin:round;opacity:.65}
   .navigation-route-line{fill:none;stroke:#7be1ba;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:18 11}
@@ -1410,9 +1410,9 @@
           <button class="map-layer-toggle" id="routeLineToggle" type="button" aria-pressed="false">Route line</button>
         </div>
         <div class="route-map-wrap">
-          <svg id="routeMapSvg" viewBox="0 0 963.55 920.03" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ATC24 SVG route map" xmlns="http://www.w3.org/2000/svg">
-            <image class="map-chart-base" href="maps/coast.svg" x="0" y="0" width="963.55" height="920.03" preserveAspectRatio="none"></image>
-            <image class="map-chart-base" href="maps/boundaries.svg" x="0" y="0" width="963.55" height="920.03" preserveAspectRatio="none"></image>
+          <svg id="routeMapSvg" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ATC24 SVG route map" xmlns="http://www.w3.org/2000/svg">
+            <image class="map-chart-base" href="maps/coast.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
+            <image class="map-chart-base" href="maps/boundaries.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
             <g class="map-airport-assets" id="mapAirportAssets"></g>
             <g id="mapRouteLine"></g>
             <g class="map-waypoint-layer" id="mapWaypointLayer"></g>
@@ -1629,9 +1629,9 @@
         <section class="navigation-map-card">
           <div class="navigation-map-head"><div><h2 id="navigationTitle">Awaiting saved flight</h2><p id="navigationStatus">The aircraft feed will appear here.</p></div><span class="navigation-live" id="navigationFeedSource">Offline</span></div>
           <div class="navigation-radar">
-            <svg id="navigationRadarSvg" viewBox="0 0 963.55 920.03" role="img" aria-label="Live ATC24 aircraft radar">
-              <image class="navigation-map-coast" href="maps/coast.svg" x="0" y="0" width="963.55" height="920.03" preserveAspectRatio="none"></image>
-              <image class="navigation-map-coast" href="maps/boundaries.svg" x="0" y="0" width="963.55" height="920.03" preserveAspectRatio="none"></image>
+            <svg id="navigationRadarSvg" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Live ATC24 aircraft radar">
+              <image class="navigation-map-coast" href="maps/coast.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
+              <image class="navigation-map-coast" href="maps/boundaries.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
               <g class="navigation-map-assets" id="navigationMapAssets"></g>
               <g id="navigationDestinationLayer"></g><g id="navigationRouteLayer"></g><g id="navigationAircraftLayer"></g>
             </svg>
@@ -2573,11 +2573,128 @@
 
   const SOURCE_CHART_WIDTH = 2048;
   const SOURCE_CHART_HEIGHT = 1692;
-  const MAP_VIEWBOX_WIDTH = 963.55;
-  const MAP_VIEWBOX_HEIGHT = 920.03;
-  Object.values(AIRPORTS).forEach(point=>{ point.x/=SOURCE_CHART_WIDTH; point.y/=SOURCE_CHART_HEIGHT; });
-  Object.values(WAYPOINTS).forEach(point=>{ point.x/=SOURCE_CHART_WIDTH; point.y/=SOURCE_CHART_HEIGHT; });
-  function mapPoint(point){ return point ? {x:point.x*MAP_VIEWBOX_WIDTH,y:point.y*MAP_VIEWBOX_HEIGHT} : null; }
+  const SOURCE_CHART_Y_OFFSET = 205;
+  const MAP_VIEWBOX_MIN_X = -600;
+  const MAP_VIEWBOX_MIN_Y = -600;
+  const MAP_VIEWBOX_WIDTH = 1200;
+  const MAP_VIEWBOX_HEIGHT = 1200;
+  const MAP_STUDS_PER_NORMALIZED_UNIT = 120000;
+  const AIRPORT_24RC_WORLD = {
+  "IBLT": {
+    "x": -112.42348,
+    "y": 175.072285
+  },
+  "IBRD": {
+    "x": -14.467565,
+    "y": -390.367375
+  },
+  "IBTH": {
+    "x": 57.460665,
+    "y": -45.01966
+  },
+  "IDCS": {
+    "x": -49.096175,
+    "y": -449.251725
+  },
+  "IGAR": {
+    "x": -163.0148,
+    "y": 237.1695
+  },
+  "IHEN": {
+    "x": 172.10066,
+    "y": 413.3113
+  },
+  "IIAB": {
+    "x": 231.05755,
+    "y": 400.2777
+  },
+  "IJAF": {
+    "x": 461.00185,
+    "y": 2.210354
+  },
+  "IKFL": {
+    "x": -432.4824,
+    "y": -14.9787
+  },
+  "ILAR": {
+    "x": 213.9305,
+    "y": 326.4279
+  },
+  "ILKL": {
+    "x": 225.811545,
+    "y": -165.576955
+  },
+  "IMLR": {
+    "x": -194.5003,
+    "y": 147.33638
+  },
+  "IPAP": {
+    "x": 316.6137,
+    "y": 342.84025
+  },
+  "IPPH": {
+    "x": 181.04765,
+    "y": -202.79785
+  },
+  "IRFD": {
+    "x": -27.77425,
+    "y": 207.58105
+  },
+  "ISAU": {
+    "x": -460.9203,
+    "y": 277.16592
+  },
+  "ISCM": {
+    "x": 360.664835,
+    "y": -50.4849
+  },
+  "ISKP": {
+    "x": 254.535345,
+    "y": 131.88911
+  },
+  "ITEY": {
+    "x": -415.46236,
+    "y": -92.70916
+  },
+  "ITKO": {
+    "x": -80.26445,
+    "y": -322.03345
+  },
+  "ITRC": {
+    "x": -19.976435,
+    "y": 303.05971
+  },
+  "IUFO": {
+    "x": 88.39283,
+    "y": -44.250435
+  },
+  "IZOL": {
+    "x": 447.2162,
+    "y": 36.8371
+  }
+};
+
+  // Normalize the legacy chart positions into 24RC's square, origin-centered world.
+  Object.values(AIRPORTS).forEach(point=>{
+    point.x /= SOURCE_CHART_WIDTH;
+    point.y = (point.y + SOURCE_CHART_Y_OFFSET) / SOURCE_CHART_WIDTH;
+  });
+  Object.values(WAYPOINTS).forEach(point=>{
+    point.x /= SOURCE_CHART_WIDTH;
+    point.y = (point.y + SOURCE_CHART_Y_OFFSET) / SOURCE_CHART_WIDTH;
+  });
+  Object.entries(AIRPORT_24RC_WORLD).forEach(([code,point])=>{
+    AIRPORTS[code] = {
+      x:(point.x - MAP_VIEWBOX_MIN_X) / MAP_VIEWBOX_WIDTH,
+      y:(point.y - MAP_VIEWBOX_MIN_Y) / MAP_VIEWBOX_HEIGHT
+    };
+  });
+  function mapPoint(point){
+    return point ? {
+      x:MAP_VIEWBOX_MIN_X + point.x*MAP_VIEWBOX_WIDTH,
+      y:MAP_VIEWBOX_MIN_Y + point.y*MAP_VIEWBOX_HEIGHT
+    } : null;
+  }
 
   const AIRPORT_SVG_ASSETS = {
     "IBLT": ["GROUND.svg", "RWY_NE.svg", "RWY_SW.svg"],
@@ -2605,7 +2722,7 @@
     "IZOL": ["GROUND.svg", "RWY_NW.svg", "RWY_SE.svg"]
   };
   function mapAssetMarkup(cssClass=''){
-    return Object.entries(AIRPORT_SVG_ASSETS).flatMap(([airport,files])=>files.map(file=>`<image class="${cssClass}" href="maps/${airport}/${file}" x="0" y="0" width="${MAP_VIEWBOX_WIDTH}" height="${MAP_VIEWBOX_HEIGHT}" preserveAspectRatio="none"/>`)).join('');
+    return Object.entries(AIRPORT_SVG_ASSETS).flatMap(([airport,files])=>files.map(file=>`<image class="${cssClass}" href="maps/${airport}/${file}" x="${MAP_VIEWBOX_MIN_X}" y="${MAP_VIEWBOX_MIN_Y}" width="${MAP_VIEWBOX_WIDTH}" height="${MAP_VIEWBOX_HEIGHT}" preserveAspectRatio="none"/>`)).join('');
   }
 
   const VFR_AIRSPACE_GROUPS = [
@@ -2758,9 +2875,7 @@
   const ingameCallsignInput = document.getElementById('fdIngameCallsign');
   const ingameCallsignMenu = document.getElementById('ingameCallsignMenu');
 
-  // The enroute chart is 2,048 px wide and is calibrated at 80 game studs per
-  // chart pixel. Change this one value if the official chart receives a new scale.
-  const CHART_STUDS_PER_PIXEL = 80;
+  // 24RC draws aircraft at game position / 100 in a 1,200-unit square map.
   const STUDS_PER_NAUTICAL_MILE = 3307.14286;
 
   function routeDistanceNm(){
@@ -2773,9 +2888,9 @@
           .filter(Boolean)
       : [];
     const nodes = [dep, ...fixes, arr];
-    let pixels = 0;
-    for(let i=1;i<nodes.length;i++) pixels += Math.hypot((nodes[i].x-nodes[i-1].x)*SOURCE_CHART_WIDTH,(nodes[i].y-nodes[i-1].y)*SOURCE_CHART_HEIGHT);
-    return (pixels * CHART_STUDS_PER_PIXEL) / STUDS_PER_NAUTICAL_MILE;
+    let studs = 0;
+    for(let i=1;i<nodes.length;i++) studs += Math.hypot(nodes[i].x-nodes[i-1].x,nodes[i].y-nodes[i-1].y) * MAP_STUDS_PER_NORMALIZED_UNIT;
+    return studs / STUDS_PER_NAUTICAL_MILE;
   }
 
   function updateRouteDistance(){
@@ -4622,13 +4737,13 @@
 
     const dest=data.destination?.mapPosition ? {...data.destination,mapPosition:mapPoint(data.destination.mapPosition)} : data.destination;
     destinationLayer.innerHTML=dest?.mapPosition
-      ? `<circle class="navigation-destination-ring" cx="${dest.mapPosition.x}" cy="${dest.mapPosition.y}" r="${Math.max(28,Number(dest.arrivalLandingRadiusMap)||60)}"/>`
+      ? `<circle class="navigation-destination-ring" cx="${dest.mapPosition.x}" cy="${dest.mapPosition.y}" r="${Math.max(28,(Number(dest.arrivalLandingRadiusMap)||.05)*MAP_VIEWBOX_WIDTH)}"/>`
       : '';
 
     const warningCallsigns=new Set((data.trafficAdvisories||[]).filter(item=>item.level==='warning').map(item=>item.callsign));
     const aircraft=[...(data.aircraft?[data.aircraft]:[]),...(data.nearbyAircraft||[])];
     aircraftLayer.innerHTML=aircraft.filter(item=>{
-      const p=mapPoint(item.mapPosition); item.mapPosition=p; return p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>-70&&p.x<1035&&p.y>-70&&p.y<990;
+      const p=mapPoint(item.mapPosition); item.mapPosition=p; return p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>MAP_VIEWBOX_MIN_X-70&&p.x<MAP_VIEWBOX_MIN_X+MAP_VIEWBOX_WIDTH+70&&p.y>MAP_VIEWBOX_MIN_Y-70&&p.y<MAP_VIEWBOX_MIN_Y+MAP_VIEWBOX_HEIGHT+70;
     }).map(item=>{
       const pos=item.mapPosition;
       const own=item.callsign===data.matchingCallsign;
@@ -4639,8 +4754,8 @@
       const fl=escapeSvgText(item.flightLevel||'FL000');
       const speed=`${Math.max(0,Math.round(Number(item.groundSpeed)||0))} KT`;
       const width=Math.max(174,Math.min(330,74+String(item.callsign||'').length*14));
-      const labelX=pos.x>760?pos.x-width-35:pos.x+30;
-      const labelY=Math.max(8,Math.min(855,pos.y-27));
+      const labelX=pos.x>MAP_VIEWBOX_MIN_X+MAP_VIEWBOX_WIDTH*.72?pos.x-width-35:pos.x+30;
+      const labelY=Math.max(MAP_VIEWBOX_MIN_Y+8,Math.min(MAP_VIEWBOX_MIN_Y+MAP_VIEWBOX_HEIGHT-65,pos.y-27));
       const boxClass=`navigation-label-box${own?' own':''}${warning?' warning':''}`;
       return `<g class="${iconClass}" transform="translate(${pos.x} ${pos.y}) rotate(${Number(item.heading)||0})"><image href="${aircraftIconPath(item.aircraftType)}" x="${-size/2}" y="${-size/2}" width="${size}" height="${size}"/></g><g><rect class="${boxClass}" x="${labelX}" y="${labelY}" width="${width}" height="58" rx="5"/><text class="navigation-label-text" x="${labelX+10}" y="${labelY+22}">${callsign}</text><text class="navigation-label-meta" x="${labelX+10}" y="${labelY+45}">${fl} · ${speed}</text></g>`;
     }).join('');
