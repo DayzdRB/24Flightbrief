@@ -1221,9 +1221,9 @@
   .navigation-live{display:flex;align-items:center;gap:7px;font:700 10px 'JetBrains Mono',monospace;text-transform:uppercase}.navigation-live::before{content:'';width:8px;height:8px;border-radius:50%;background:#80d6a8;box-shadow:0 0 0 5px rgba(128,214,168,.12)}
   .navigation-radar{position:relative;aspect-ratio:1/1;background:#101b22;overflow:hidden}
   .navigation-radar svg{width:100%;height:100%;display:block}.navigation-map-assets image{filter:invert(88%);opacity:.42}.navigation-map-coast{filter:invert(83%);opacity:.58}
-  .navigation-route-casing{fill:none;stroke:#071015;stroke-width:15;stroke-linecap:round;stroke-linejoin:round;opacity:.65}
-  .navigation-route-line{fill:none;stroke:#7be1ba;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:18 11}
-  .navigation-route-node{fill:#f5f4e9;stroke:#174d3d;stroke-width:5}.navigation-route-node.next{fill:#ffd06f;stroke:#5e4106;stroke-width:7}
+  .navigation-route-casing{fill:none;stroke:#071015;stroke-width:15;stroke-linecap:round;stroke-linejoin:round;opacity:.65;vector-effect:non-scaling-stroke}
+  .navigation-route-line{fill:none;stroke:#7be1ba;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:18 11;vector-effect:non-scaling-stroke}
+  .navigation-route-node{fill:#f5f4e9;stroke:#174d3d;stroke-width:5;vector-effect:non-scaling-stroke}.navigation-route-node.next{fill:#ffd06f;stroke:#5e4106;stroke-width:7}
   .navigation-route-label{font:800 24px 'JetBrains Mono',monospace;fill:#f5f4e9;stroke:#0c151a;stroke-width:7;paint-order:stroke}
   .navigation-destination-ring{fill:rgba(255,208,111,.08);stroke:#ffd06f;stroke-width:5;stroke-dasharray:15 11}
   .navigation-aircraft image{filter:drop-shadow(0 3px 3px rgba(0,0,0,.7))}.navigation-aircraft.own image{filter:brightness(0) saturate(100%) invert(79%) sepia(30%) saturate(896%) hue-rotate(103deg) brightness(93%) contrast(87%) drop-shadow(0 0 8px rgba(123,225,186,.85))}.navigation-aircraft.emergency image{filter:brightness(0) saturate(100%) invert(37%) sepia(90%) saturate(1800%) hue-rotate(337deg) brightness(92%) contrast(90%)}
@@ -1473,7 +1473,7 @@
         <div class="route-map-toolbar no-export">
           <button class="map-layer-toggle active" id="waypointLayerToggle" type="button" aria-pressed="true">Waypoints</button>
           <button class="map-layer-toggle" id="routeLineToggle" type="button" aria-pressed="false">Route line</button>
-          <button class="map-layer-toggle" id="mapDistanceToggle" type="button" aria-pressed="false" title="Click twice on the map to measure a distance">Distance tool</button>
+          <button class="map-layer-toggle" id="mapDistanceToggle" type="button" aria-pressed="false" title="Double-click the map to start or clear a measurement">Distance tool</button>
         </div>
         <div class="route-map-wrap">
           <div class="map-zoom-controls" data-zoom-target="routeMapSvg">
@@ -1707,7 +1707,7 @@
               <button type="button" class="map-zoom-btn" data-zoom="reset" aria-label="Reset view" title="Reset view">&#8634;</button>
             </div>
             <button type="button" class="map-layer-toggle dark" id="navigationWaypointToggle" style="position:absolute;top:10px;left:10px;z-index:5;" aria-pressed="true">Waypoints</button>
-            <button type="button" class="map-layer-toggle dark" id="navigationDistanceToggle" style="position:absolute;top:44px;left:10px;z-index:5;" aria-pressed="false" title="Click twice on the map to measure a distance">Distance tool</button>
+            <button type="button" class="map-layer-toggle dark" id="navigationDistanceToggle" style="position:absolute;top:44px;left:10px;z-index:5;" aria-pressed="false" title="Double-click the map to start or clear a measurement">Distance tool</button>
             <svg id="navigationRadarSvg" class="map-pannable" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Live ATC24 aircraft radar">
               <image class="navigation-map-coast" href="maps/coast.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
               <image class="navigation-map-coast" href="maps/boundaries.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
@@ -2839,7 +2839,7 @@
   function waypointLayerMarkup(){
     return Object.entries(WAYPOINTS).map(([code,p])=>{
       const q = mapPoint(p);
-      return `<g class="map-waypoint-point"><circle class="map-waypoint-dot" cx="${q.x}" cy="${q.y}" r="2.4"/><text class="map-waypoint-label" x="${q.x+4}" y="${q.y-3}" font-size="7">${code}</text></g>`;
+      return `<g class="map-waypoint-point" data-x="${q.x}" data-y="${q.y}" transform="translate(${q.x} ${q.y})"><circle class="map-waypoint-dot" cx="0" cy="0" r="2.4"/><text class="map-waypoint-label" x="4" y="-3" font-size="7">${code}</text></g>`;
     }).join('');
   }
   mapWaypointLayer.innerHTML = waypointLayerMarkup();
@@ -2867,21 +2867,19 @@
   setNavigationWaypointLayerVisible(true);
 
   // ===== Map pan & zoom =====
-  // Works purely in the SVG's own world-coordinate viewBox (-600..600 studs/100,
-  // the same normalized space used for airports/waypoints/aircraft), so every
-  // layer -- basemap, waypoints, route, aircraft -- scales and pans together.
-  function attachMapPanZoom(svg, {minZoom = 1, maxZoom = 14} = {}){
+  // The basemap still uses a normal SVG viewBox, while overlay listeners resize
+  // route graphics, labels, rulers, and aircraft whenever the view changes.
+  function attachMapPanZoom(svg, {minZoom = 1, maxZoom = 32} = {}){
     const base = {x: MAP_VIEWBOX_MIN_X, y: MAP_VIEWBOX_MIN_Y, w: MAP_VIEWBOX_WIDTH, h: MAP_VIEWBOX_HEIGHT};
     const view = {...base};
+    const changeListeners = new Set();
 
-    // Right-click is used for nothing on these maps (dragging pans with any
-    // button/touch already), so suppress the browser's native context menu
-    // while inside the map. Left/right click text-selection "highlighting" of
-    // aircraft/waypoint labels is handled separately via user-select:none.
     svg.addEventListener('contextmenu', e => e.preventDefault());
 
     function apply(){
       svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
+      const scale = view.w / base.w;
+      changeListeners.forEach(listener=>listener(scale, {...view}));
     }
 
     function clamp(){
@@ -2908,6 +2906,7 @@
     }
 
     function zoomAt(clientX, clientY, factor){
+      if(!Number.isFinite(factor) || factor <= 0 || factor === 1) return;
       const before = screenToSvg(clientX, clientY);
       view.w /= factor;
       view.h /= factor;
@@ -2921,7 +2920,9 @@
 
     svg.addEventListener('wheel', (e)=>{
       e.preventDefault();
-      const factor = e.deltaY < 0 ? 1.22 : 1/1.22;
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 120 : 1;
+      const delta = e.deltaY * unit;
+      const factor = Math.max(0.55, Math.min(1.85, Math.exp(-delta * 0.0045)));
       zoomAt(e.clientX, e.clientY, factor);
     }, {passive: false});
 
@@ -2978,26 +2979,21 @@
     svg.addEventListener('pointercancel', endPointer);
     svg.addEventListener('pointerleave', (e)=>{ if(pointers.size <= 1) endPointer(e); });
 
-    svg.addEventListener('dblclick', (e)=>{
-      e.preventDefault();
-      zoomAt(e.clientX, e.clientY, 1.6);
-    });
-
+    // Double-click is intentionally reserved for the distance ruler. Wheel,
+    // pinch, and the +/- controls handle zooming without gesture conflicts.
     apply();
 
     return {
-      zoomIn: ()=>{ const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.4); },
-      zoomOut: ()=>{ const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1 / 1.4); },
+      zoomIn: ()=>{ const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.8); },
+      zoomOut: ()=>{ const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1 / 1.8); },
       reset: ()=>{ view.x = base.x; view.y = base.y; view.w = base.w; view.h = base.h; apply(); },
-      // Ratio of the current viewBox width to the base (fully-zoomed-out) width.
-      // 1 at the default view, shrinking as the user zooms in. Multiplying a
-      // shape's user-space size by this value keeps its ON-SCREEN size constant
-      // regardless of zoom level -- the same trick 24RC uses to keep aircraft
-      // data-block text a fixed screen size instead of scaling with the map.
       getScale: ()=> view.w / base.w,
-      // Converts a client (mouse/touch) coordinate into this SVG's user space,
-      // accounting for the current pan/zoom -- used by the distance tool.
       screenToSvg: (clientX, clientY)=> screenToSvg(clientX, clientY),
+      onChange: (listener)=>{
+        changeListeners.add(listener);
+        listener(view.w / base.w, {...view});
+        return ()=>changeListeners.delete(listener);
+      },
     };
   }
 
@@ -3005,6 +3001,70 @@
     routeMapSvg: attachMapPanZoom(document.getElementById('routeMapSvg')),
     navigationRadarSvg: attachMapPanZoom(document.getElementById('navigationRadarSvg')),
   };
+
+  function setAnchoredScale(root, selector, scale){
+    root.querySelectorAll(selector).forEach(node=>{
+      const x = Number(node.dataset.x);
+      const y = Number(node.dataset.y);
+      if(!Number.isFinite(x) || !Number.isFinite(y)) return;
+      node.setAttribute('transform', `translate(${x} ${y}) scale(${scale})`);
+    });
+  }
+
+  function updateRouteMapOverlayScale(scale){
+    const svg = document.getElementById('routeMapSvg');
+    const lineScale = Math.max(.34, Math.pow(scale, .28));
+    const markerScale = Math.pow(scale, 1.12);
+    const chartWaypointScale = Math.pow(scale, .80);
+    setAnchoredScale(svg, '.map-route-marker, .map-airport-marker', markerScale);
+    setAnchoredScale(svg, '.map-waypoint-point', chartWaypointScale);
+    svg.querySelectorAll('.map-route-casing').forEach(node=>node.style.strokeWidth = `${9 * lineScale}px`);
+    svg.querySelectorAll('.map-route-line').forEach(node=>node.style.strokeWidth = `${5 * lineScale}px`);
+    svg.querySelectorAll('[data-base-dash]').forEach(node=>{
+      const dash = String(node.dataset.baseDash || '').split(/\s+/).map(Number);
+      if(dash.length && dash.every(Number.isFinite)){
+        node.style.strokeDasharray = dash.map(value=>`${value * lineScale}px`).join(' ');
+      }
+    });
+    svg.querySelectorAll('.map-route-waypoint').forEach(node=>node.style.strokeWidth = `${5 * lineScale}px`);
+    svg.querySelectorAll('.map-airport-pin').forEach(node=>node.style.strokeWidth = `${1.5 * lineScale}px`);
+  }
+
+  function updateNavigationOverlayScale(scale){
+    const svg = document.getElementById('navigationRadarSvg');
+    const lineScale = Math.max(.34, Math.pow(scale, .28));
+    const markerScale = Math.pow(scale, 1.10);
+    const chartWaypointScale = Math.pow(scale, .80);
+    const aircraftScale = Math.pow(scale, .82);
+    setAnchoredScale(svg, '.navigation-route-marker', markerScale);
+    setAnchoredScale(svg, '.map-waypoint-point', chartWaypointScale);
+    svg.querySelectorAll('.navigation-route-casing').forEach(node=>node.style.strokeWidth = `${15 * lineScale}px`);
+    svg.querySelectorAll('.navigation-route-line').forEach(node=>{
+      node.style.strokeWidth = `${7 * lineScale}px`;
+      node.style.strokeDasharray = `${18 * lineScale}px ${11 * lineScale}px`;
+    });
+    svg.querySelectorAll('.navigation-route-node').forEach(node=>{
+      node.style.strokeWidth = `${(node.classList.contains('next') ? 7 : 5) * lineScale}px`;
+    });
+    svg.querySelectorAll('.navigation-aircraft').forEach(node=>{
+      const x = Number(node.dataset.x);
+      const y = Number(node.dataset.y);
+      const heading = Number(node.dataset.heading) || 0;
+      if(Number.isFinite(x) && Number.isFinite(y)){
+        node.setAttribute('transform', `translate(${x} ${y}) rotate(${heading}) scale(${aircraftScale})`);
+      }
+    });
+    svg.querySelectorAll('.navigation-aircraft-label').forEach(node=>{
+      const x = Number(node.dataset.x);
+      const y = Number(node.dataset.y);
+      if(Number.isFinite(x) && Number.isFinite(y)){
+        node.setAttribute('transform', `translate(${x} ${y}) scale(${scale})`);
+      }
+    });
+  }
+
+  mapPanZoomControllers.routeMapSvg.onChange(updateRouteMapOverlayScale);
+  mapPanZoomControllers.navigationRadarSvg.onChange(updateNavigationOverlayScale);
   document.querySelectorAll('.map-zoom-controls').forEach(panel=>{
     const controller = mapPanZoomControllers[panel.dataset.zoomTarget];
     if(!controller) return;
@@ -3033,8 +3093,7 @@
     [[dep, 'is-dep'], [arr, 'is-arr']].forEach(([code, state])=>{
       const pos = mapPoint(AIRPORTS[code]);
       if(!code || !pos) return;
-      airportsSvg += `<circle class="map-airport-pin ${state}" cx="${pos.x}" cy="${pos.y}" r="3.5"/>`;
-      airportsSvg += `<text class="map-airport-label ${state}" x="${pos.x}" y="${pos.y - 26}" text-anchor="middle">${code}</text>`;
+      airportsSvg += `<g class="map-airport-marker" data-x="${pos.x}" data-y="${pos.y}" transform="translate(${pos.x} ${pos.y})"><circle class="map-airport-pin ${state}" cx="0" cy="0" r="3.5"/><text class="map-airport-label ${state}" x="0" y="-26" text-anchor="middle">${code}</text></g>`;
     });
     mapAirportsG.innerHTML = airportsSvg;
 
@@ -3064,24 +3123,24 @@
       const showLine = routeType !== 'waypoints' || waypointRouteLineVisible;
       if(showLine){
         const points = nodes.map(pos=>`${pos.x},${pos.y}`).join(' ');
-        const dashAttr = dash !== 'none' ? ` stroke-dasharray="${dash}"` : '';
+        const dashAttr = dash !== 'none' ? ` data-base-dash="${dash}" stroke-dasharray="${dash}"` : '';
         routeLineSvg += `<polyline class="map-route-casing" points="${points}"${dashAttr}/>`;
         routeLineSvg += `<polyline class="map-route-line" points="${points}" stroke="${stroke}"${dashAttr}/>`;
       }
 
       routeFixes.forEach(fix=>{
-        routeMarkerSvg += `<circle class="map-route-waypoint" cx="${fix.x}" cy="${fix.y}" r="14"/>`;
-        routeMarkerSvg += `<text class="map-route-waypoint-label" x="${fix.x}" y="${fix.y - 21}" text-anchor="middle">${fix.code}</text>`;
+        routeMarkerSvg += `<g class="map-route-marker" data-x="${fix.x}" data-y="${fix.y}" transform="translate(${fix.x} ${fix.y})"><circle class="map-route-waypoint" cx="0" cy="0" r="14"/><text class="map-route-waypoint-label" x="0" y="-21" text-anchor="middle">${fix.code}</text></g>`;
       });
 
       if(label){
         const midX = (depPos.x + arrPos.x) / 2;
         const midY = (depPos.y + arrPos.y) / 2;
-        routeMarkerSvg += `<text class="map-route-label" x="${midX}" y="${midY - 28}" text-anchor="middle">${label}</text>`;
+        routeMarkerSvg += `<g class="map-route-marker" data-x="${midX}" data-y="${midY}" transform="translate(${midX} ${midY})"><text class="map-route-label" x="0" y="-28" text-anchor="middle">${label}</text></g>`;
       }
     }
     mapRouteLineG.innerHTML = routeLineSvg;
     mapRouteMarkersG.innerHTML = routeMarkerSvg;
+    updateRouteMapOverlayScale(mapPanZoomControllers.routeMapSvg.getScale());
     updateRouteDistance();
   }
 
@@ -3154,22 +3213,19 @@
     return nm;
   }
 
-  // ===== Distance tool (ported from 24RC's DistanceTool component) =====
-  // 24RC lets a controller click twice on the scope to drop a ruler between two
-  // points, showing the heading off each end and the distance in NM. The same
-  // idea is reproduced here for our SVG maps: click the toggle button, click
-  // once on the map to plant the start point, move the mouse to preview the
-  // line live, then click again to lock the end point. A third click (or
-  // toggling the button off) clears it. We trigger from a button rather than
-  // 24RC's double-click gesture because double-click is already used here to
-  // zoom the map.
+  // ===== Distance tool =====
+  // Double-click plants the first point, cursor movement previews the ruler, a
+  // single click locks the endpoint, and another double-click clears it.
   const RAD = Math.PI / 180;
   function svgHeading(p1, p2){
     const degrees = (Math.atan2(p2.y - p1.y, p2.x - p1.x) / RAD) + 90;
     return ((degrees % 360) + 360) % 360;
   }
+  function svgQuantizeHeading(hdg, increment = 5){
+    return (Math.round(hdg / increment) * increment + 360) % 360;
+  }
   function svgOppHeading(hdg){ return (hdg + 180) % 360; }
-  function svgPadHeading(hdg){ return String(Math.round(hdg)).padStart(3, '0'); }
+  function svgPadHeading(hdg){ return String(Math.round(hdg) % 360).padStart(3, '0'); }
   function svgVector(radius, degrees){
     const radians = (degrees - 90) * RAD;
     return { x: radius * Math.cos(radians), y: radius * Math.sin(radians) };
@@ -3183,6 +3239,7 @@
     let start = null;
     let end = null;
     let locked = false;
+    let singleClickTimer = null;
 
     function scale(){ return controller && controller.getScale ? controller.getScale() : 1; }
 
@@ -3190,22 +3247,22 @@
       if(!start || !end){ layer.innerHTML = ''; return; }
       const s = scale();
       const distNm = studsToNm(Math.hypot(end.x - start.x, end.y - start.y));
-      const hdg = svgHeading(start, end);
+      const rawHeading = svgHeading(start, end);
+      const hdg = svgQuantizeHeading(rawHeading);
       const opp = svgOppHeading(hdg);
 
       const startTxtOffset = svgVector(20 * s, opp);
       const endTxtOffset = svgVector(20 * s, hdg);
       const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-      const midOffset = svgVector(11 * s, hdg + 90);
+      const midOffset = svgVector(11 * s, rawHeading + 90);
 
-      // Keep the distance label right-side-up no matter which way the line runs.
-      let textAngle = hdg;
+      let textAngle = rawHeading;
       if(textAngle > 90 && textAngle <= 270) textAngle -= 180;
 
       layer.innerHTML = `
         <line class="distance-tool-line" x1="${start.x}" y1="${start.y}" x2="${end.x}" y2="${end.y}" vector-effect="non-scaling-stroke"/>
-        <circle class="distance-tool-point" cx="${start.x}" cy="${start.y}" r="4"/>
-        <circle class="distance-tool-point" cx="${end.x}" cy="${end.y}" r="4"/>
+        <circle class="distance-tool-point" cx="${start.x}" cy="${start.y}" r="${4 * s}"/>
+        <circle class="distance-tool-point" cx="${end.x}" cy="${end.y}" r="${4 * s}"/>
         <g transform="translate(${start.x + startTxtOffset.x} ${start.y + startTxtOffset.y}) scale(${s})"><text class="distance-tool-heading" text-anchor="middle" dominant-baseline="middle">${svgPadHeading(hdg)}</text></g>
         <g transform="translate(${end.x + endTxtOffset.x} ${end.y + endTxtOffset.y}) scale(${s})"><text class="distance-tool-heading" text-anchor="middle" dominant-baseline="middle">${svgPadHeading(opp)}</text></g>
         <g transform="translate(${mid.x + midOffset.x} ${mid.y + midOffset.y}) scale(${s}) rotate(${textAngle})"><text class="distance-tool-distance" text-anchor="middle" dominant-baseline="middle">${distNm.toFixed(1)} NM</text></g>
@@ -3213,17 +3270,27 @@
     }
 
     function clearMeasurement(){
+      if(singleClickTimer){ clearTimeout(singleClickTimer); singleClickTimer = null; }
       start = null; end = null; locked = false;
       layer.innerHTML = '';
       svg.removeEventListener('pointermove', onMove);
     }
 
-    function setActive(next){
-      active = next;
+    function setActive(next, {clear = true} = {}){
+      active = next === true;
       toggleBtn.classList.toggle('active', active);
       toggleBtn.setAttribute('aria-pressed', String(active));
       svg.classList.toggle('is-measuring', active);
-      if(!active) clearMeasurement();
+      if(!active && clear) clearMeasurement();
+    }
+
+    function beginMeasurement(point){
+      setActive(true, {clear:false});
+      start = point;
+      end = point;
+      locked = false;
+      svg.addEventListener('pointermove', onMove);
+      render();
     }
 
     function onMove(e){
@@ -3233,21 +3300,46 @@
     }
 
     svg.addEventListener('click', (e)=>{
-      if(!active) return;
+      if(!active || !start || locked || e.button !== 0) return;
       const p = controller.screenToSvg(e.clientX, e.clientY);
-      if(!start){
-        start = p; end = p; locked = false;
-        svg.addEventListener('pointermove', onMove);
-      } else if(!locked){
-        end = p; locked = true;
+      if(singleClickTimer) clearTimeout(singleClickTimer);
+      singleClickTimer = setTimeout(()=>{
+        end = p;
+        locked = true;
         svg.removeEventListener('pointermove', onMove);
-      } else {
-        clearMeasurement();
-      }
-      render();
+        singleClickTimer = null;
+        render();
+      }, 220);
     });
 
-    toggleBtn.addEventListener('click', ()=> setActive(!active));
+    svg.addEventListener('dblclick', (e)=>{
+      if(e.button !== 0) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if(singleClickTimer){ clearTimeout(singleClickTimer); singleClickTimer = null; }
+      if(start){
+        clearMeasurement();
+        setActive(false, {clear:false});
+        return;
+      }
+      beginMeasurement(controller.screenToSvg(e.clientX, e.clientY));
+    }, true);
+
+    // Do not begin a pan when placing the endpoint.
+    svg.addEventListener('pointerdown', (e)=>{
+      if(active && start && !locked && e.button === 0) e.stopImmediatePropagation();
+    }, true);
+
+    toggleBtn.addEventListener('click', ()=>{
+      if(active){
+        clearMeasurement();
+        setActive(false, {clear:false});
+      } else {
+        setActive(true, {clear:false});
+      }
+    });
+
+    if(controller && controller.onChange) controller.onChange(()=>render());
 
     return { setActive, clear: clearMeasurement };
   }
@@ -5095,7 +5187,8 @@
     }
     nodes.forEach(node=>{
       const isNext=node.code===nextCode;
-      routeSvg+=`<circle class="navigation-route-node${isNext?' next':''}" cx="${node.mapPosition.x}" cy="${node.mapPosition.y}" r="${isNext?17:12}"/><text class="navigation-route-label" x="${node.mapPosition.x}" y="${node.mapPosition.y-23}" text-anchor="middle">${escapeSvgText(node.code)}</text>`;
+      const x=node.mapPosition.x, y=node.mapPosition.y;
+      routeSvg+=`<g class="navigation-route-marker" data-x="${x}" data-y="${y}" transform="translate(${x} ${y})"><circle class="navigation-route-node${isNext?' next':''}" cx="0" cy="0" r="${isNext?17:12}"/><text class="navigation-route-label" x="0" y="-23" text-anchor="middle">${escapeSvgText(node.code)}</text></g>`;
     });
     routeLayer.innerHTML=routeSvg;
 
@@ -5117,32 +5210,22 @@
       const fl=escapeSvgText(item.flightLevel||'FL000');
       const speed=`${Math.max(0,Math.round(Number(item.groundSpeed)||0))} KT`;
 
-      // Icon size: a fixed world-space size (mapScale below) so the aircraft
-      // stays proportional to the taxiways/runways under it once you're
-      // zoomed in close, rather than the old fixed 38-48 unit icon that scaled
-      // 1:1 with the map and ended up several times larger than the airport
-      // itself at close zoom. A small floor (that shrinks as you zoom in,
-      // via mapScale) keeps aircraft visible as more than a speck at the
-      // full, zoomed-out view; realistic size takes over once you're zoomed
-      // in far enough that it's bigger than the floor anyway.
-      const mapScale=mapPanZoomControllers.navigationRadarSvg?mapPanZoomControllers.navigationRadarSvg.getScale():1;
-      const realisticSize=own?1.9:1.3;
-      const sizeFloor=own?7.5:6;
-      const size=Math.max(realisticSize, sizeFloor*mapScale);
+      // Aircraft are rendered at one base size and continuously rescaled by
+      // the pan/zoom controller. The exponent lets icons grow gently as the map
+      // zooms in instead of jumping between a floor and a realistic-size cap.
+      const size=own?8.5:7;
+      const heading=Number(item.heading)||0;
 
-      // Data block is drawn in coordinates local to the aircraft position, then
-      // wrapped in a group that's translated to the aircraft and scaled by the
-      // inverse of the current zoom. That keeps the callsign/altitude/speed tag
-      // a constant, readable size on screen no matter how far the map is
-      // zoomed in or out -- ported from how 24RC keeps its data blocks legible
-      // when many aircraft are on frequency, instead of scaling with the map.
+      // Data blocks remain a constant screen size and are updated on every zoom
+      // event rather than waiting for the next network refresh.
       const estWidth=Math.max(140,Math.min(280,60+String(item.callsign||'').length*11));
       const labelXAbs=pos.x>MAP_VIEWBOX_MIN_X+MAP_VIEWBOX_WIDTH*.72?pos.x-estWidth-6:pos.x+22;
       const labelYAbs=Math.max(MAP_VIEWBOX_MIN_Y+8,Math.min(MAP_VIEWBOX_MIN_Y+MAP_VIEWBOX_HEIGHT-55,pos.y-18));
       const textClass=own?' own':warning?' warning':'';
       const labelX=labelXAbs-pos.x, labelY=labelYAbs-pos.y;
-      return `<g class="${iconClass}" transform="translate(${pos.x} ${pos.y}) rotate(${Number(item.heading)||0})"><image href="${aircraftIconPath(item.aircraftType)}" x="${-size/2}" y="${-size/2}" width="${size}" height="${size}"/></g><g transform="translate(${pos.x} ${pos.y}) scale(${mapScale})"><text class="navigation-label-text${textClass}" x="${labelX}" y="${labelY}">${callsign}</text><text class="navigation-label-meta${textClass}" x="${labelX}" y="${labelY+21}">${fl} · ${speed}</text></g>`;
+      return `<g class="${iconClass}" data-x="${pos.x}" data-y="${pos.y}" data-heading="${heading}" transform="translate(${pos.x} ${pos.y}) rotate(${heading})"><image href="${aircraftIconPath(item.aircraftType)}" x="${-size/2}" y="${-size/2}" width="${size}" height="${size}"/></g><g class="navigation-aircraft-label" data-x="${pos.x}" data-y="${pos.y}" transform="translate(${pos.x} ${pos.y})"><text class="navigation-label-text${textClass}" x="${labelX}" y="${labelY}">${callsign}</text><text class="navigation-label-meta${textClass}" x="${labelX}" y="${labelY+21}">${fl} · ${speed}</text></g>`;
     }).join('');
+    updateNavigationOverlayScale(mapPanZoomControllers.navigationRadarSvg.getScale());
   }
 
   function renderTrafficAdvisories(data){
