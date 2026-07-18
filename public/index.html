@@ -450,7 +450,8 @@
   .map-waypoint-label{fill:#546762;font-family:'JetBrains Mono',monospace;}
   .navigation-radar .map-waypoint-dot{fill:#7fe0c2;fill-opacity:.85;}
   .navigation-radar .map-waypoint-label{fill:#7fe0c2;fill-opacity:.85;}
-  .map-pannable{cursor:grab;touch-action:none;}
+  .map-pannable{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-moz-user-select:none;-webkit-touch-callout:none;}
+  .map-pannable *{user-select:none;-webkit-user-select:none;-moz-user-select:none;}
   .map-pannable.is-panning{cursor:grabbing;}
   .map-pannable.is-measuring{cursor:crosshair;}
   #mapDistanceLayer,#navigationDistanceLayer{pointer-events:none;}
@@ -1226,8 +1227,12 @@
   .navigation-route-label{font:800 24px 'JetBrains Mono',monospace;fill:#f5f4e9;stroke:#0c151a;stroke-width:7;paint-order:stroke}
   .navigation-destination-ring{fill:rgba(255,208,111,.08);stroke:#ffd06f;stroke-width:5;stroke-dasharray:15 11}
   .navigation-aircraft image{filter:drop-shadow(0 3px 3px rgba(0,0,0,.7))}.navigation-aircraft.own image{filter:brightness(0) saturate(100%) invert(79%) sepia(30%) saturate(896%) hue-rotate(103deg) brightness(93%) contrast(87%) drop-shadow(0 0 8px rgba(123,225,186,.85))}.navigation-aircraft.emergency image{filter:brightness(0) saturate(100%) invert(37%) sepia(90%) saturate(1800%) hue-rotate(337deg) brightness(92%) contrast(90%)}
-  .navigation-label-box{fill:rgba(8,17,22,.88);stroke:#9bb0b5;stroke-width:2}.navigation-label-box.own{stroke:#7be1ba;stroke-width:4}.navigation-label-box.warning{stroke:#ff7569;stroke-width:4}
-  .navigation-label-text{font:800 21px 'JetBrains Mono',monospace;fill:#f6faf9}.navigation-label-meta{font:700 17px 'JetBrains Mono',monospace;fill:#bad0d2}
+  .navigation-label-text{font:800 21px 'JetBrains Mono',monospace;fill:#f6faf9;paint-order:stroke;stroke:#0b1418;stroke-width:4px;stroke-linejoin:round;}
+  .navigation-label-text.own{fill:#7be1ba}
+  .navigation-label-text.warning{fill:#ff7569}
+  .navigation-label-meta{font:700 17px 'JetBrains Mono',monospace;fill:#bad0d2;paint-order:stroke;stroke:#0b1418;stroke-width:4px;stroke-linejoin:round;}
+  .navigation-label-meta.own{fill:#bdf3da}
+  .navigation-label-meta.warning{fill:#ffc2ba}
   .navigation-attribution{padding:7px 12px;background:#0e181e;color:#8fa2a6;font-size:9px;text-align:right}.navigation-attribution a{color:#b8cfca}
   .navigation-side{display:grid;gap:14px}.navigation-side-card{background:var(--paper);color:var(--ink);padding:16px}
   .navigation-side-card h3{margin:0 0 12px;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
@@ -2868,6 +2873,12 @@
   function attachMapPanZoom(svg, {minZoom = 1, maxZoom = 14} = {}){
     const base = {x: MAP_VIEWBOX_MIN_X, y: MAP_VIEWBOX_MIN_Y, w: MAP_VIEWBOX_WIDTH, h: MAP_VIEWBOX_HEIGHT};
     const view = {...base};
+
+    // Right-click is used for nothing on these maps (dragging pans with any
+    // button/touch already), so suppress the browser's native context menu
+    // while inside the map. Left/right click text-selection "highlighting" of
+    // aircraft/waypoint labels is handled separately via user-select:none.
+    svg.addEventListener('contextmenu', e => e.preventDefault());
 
     function apply(){
       svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
@@ -5102,23 +5113,35 @@
       const own=item.callsign===data.matchingCallsign;
       const warning=warningCallsigns.has(item.callsign);
       const iconClass=`navigation-aircraft${own?' own':''}${item.isEmergencyOccuring?' emergency':''}`;
-      const size=own?48:38;
       const callsign=escapeSvgText(item.callsign);
       const fl=escapeSvgText(item.flightLevel||'FL000');
       const speed=`${Math.max(0,Math.round(Number(item.groundSpeed)||0))} KT`;
-      const width=Math.max(174,Math.min(330,74+String(item.callsign||'').length*14));
-      const labelXAbs=pos.x>MAP_VIEWBOX_MIN_X+MAP_VIEWBOX_WIDTH*.72?pos.x-width-35:pos.x+30;
-      const labelYAbs=Math.max(MAP_VIEWBOX_MIN_Y+8,Math.min(MAP_VIEWBOX_MIN_Y+MAP_VIEWBOX_HEIGHT-65,pos.y-27));
-      const boxClass=`navigation-label-box${own?' own':''}${warning?' warning':''}`;
+
+      // Icon size: a fixed world-space size (mapScale below) so the aircraft
+      // stays proportional to the taxiways/runways under it once you're
+      // zoomed in close, rather than the old fixed 38-48 unit icon that scaled
+      // 1:1 with the map and ended up several times larger than the airport
+      // itself at close zoom. A small floor (that shrinks as you zoom in,
+      // via mapScale) keeps aircraft visible as more than a speck at the
+      // full, zoomed-out view; realistic size takes over once you're zoomed
+      // in far enough that it's bigger than the floor anyway.
+      const mapScale=mapPanZoomControllers.navigationRadarSvg?mapPanZoomControllers.navigationRadarSvg.getScale():1;
+      const realisticSize=own?1.9:1.3;
+      const sizeFloor=own?7.5:6;
+      const size=Math.max(realisticSize, sizeFloor*mapScale);
+
       // Data block is drawn in coordinates local to the aircraft position, then
       // wrapped in a group that's translated to the aircraft and scaled by the
       // inverse of the current zoom. That keeps the callsign/altitude/speed tag
       // a constant, readable size on screen no matter how far the map is
       // zoomed in or out -- ported from how 24RC keeps its data blocks legible
       // when many aircraft are on frequency, instead of scaling with the map.
-      const labelScale=mapPanZoomControllers.navigationRadarSvg?mapPanZoomControllers.navigationRadarSvg.getScale():1;
+      const estWidth=Math.max(140,Math.min(280,60+String(item.callsign||'').length*11));
+      const labelXAbs=pos.x>MAP_VIEWBOX_MIN_X+MAP_VIEWBOX_WIDTH*.72?pos.x-estWidth-6:pos.x+22;
+      const labelYAbs=Math.max(MAP_VIEWBOX_MIN_Y+8,Math.min(MAP_VIEWBOX_MIN_Y+MAP_VIEWBOX_HEIGHT-55,pos.y-18));
+      const textClass=own?' own':warning?' warning':'';
       const labelX=labelXAbs-pos.x, labelY=labelYAbs-pos.y;
-      return `<g class="${iconClass}" transform="translate(${pos.x} ${pos.y}) rotate(${Number(item.heading)||0})"><image href="${aircraftIconPath(item.aircraftType)}" x="${-size/2}" y="${-size/2}" width="${size}" height="${size}"/></g><g transform="translate(${pos.x} ${pos.y}) scale(${labelScale})"><rect class="${boxClass}" x="${labelX}" y="${labelY}" width="${width}" height="58" rx="5"/><text class="navigation-label-text" x="${labelX+10}" y="${labelY+22}">${callsign}</text><text class="navigation-label-meta" x="${labelX+10}" y="${labelY+45}">${fl} · ${speed}</text></g>`;
+      return `<g class="${iconClass}" transform="translate(${pos.x} ${pos.y}) rotate(${Number(item.heading)||0})"><image href="${aircraftIconPath(item.aircraftType)}" x="${-size/2}" y="${-size/2}" width="${size}" height="${size}"/></g><g transform="translate(${pos.x} ${pos.y}) scale(${mapScale})"><text class="navigation-label-text${textClass}" x="${labelX}" y="${labelY}">${callsign}</text><text class="navigation-label-meta${textClass}" x="${labelX}" y="${labelY+21}">${fl} · ${speed}</text></g>`;
     }).join('');
   }
 
