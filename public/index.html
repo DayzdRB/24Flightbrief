@@ -428,7 +428,10 @@
     text-transform:uppercase;
   }
   .map-layer-toggle.active{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .map-layer-toggle.dark{border-color:#3a4e56;color:#aebfba;}
+  .map-layer-toggle.dark.active{background:var(--teal);color:#fff;border-color:var(--teal);}
   .route-map-wrap{
+    position:relative;
     width:100%;
     max-width:750px;
     margin-inline:auto;
@@ -443,6 +446,37 @@
   .map-chart-base{opacity:.92}.map-airport-assets{opacity:.72}.map-airport-assets image{mix-blend-mode:multiply}
   .map-waypoint-layer{opacity:1;transition:opacity .16s ease;}
   .map-waypoint-layer.is-hidden{opacity:0;}
+  .map-waypoint-dot{fill:#546762;}
+  .map-waypoint-label{fill:#546762;font-family:'JetBrains Mono',monospace;}
+  .navigation-radar .map-waypoint-dot{fill:#7fe0c2;fill-opacity:.85;}
+  .navigation-radar .map-waypoint-label{fill:#7fe0c2;fill-opacity:.85;}
+  .map-pannable{cursor:grab;touch-action:none;}
+  .map-pannable.is-panning{cursor:grabbing;}
+  .map-zoom-controls{
+    position:absolute;
+    top:10px;
+    right:10px;
+    z-index:5;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .map-zoom-btn{
+    width:28px;
+    height:28px;
+    border-radius:5px;
+    border:1.5px solid var(--ink);
+    background:#fff;
+    color:var(--ink);
+    font:700 15px 'JetBrains Mono',monospace;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+  }
+  .map-zoom-btn:active{transform:translateY(1px);}
+  .map-zoom-controls.dark .map-zoom-btn{background:#182329;color:#dfece7;border-color:#33474f;}
   .map-airport-dot{
     fill:rgba(238,244,242,.72);
     stroke:rgba(22,35,43,.88);
@@ -1410,7 +1444,12 @@
           <button class="map-layer-toggle" id="routeLineToggle" type="button" aria-pressed="false">Route line</button>
         </div>
         <div class="route-map-wrap">
-          <svg id="routeMapSvg" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ATC24 SVG route map" xmlns="http://www.w3.org/2000/svg">
+          <div class="map-zoom-controls" data-zoom-target="routeMapSvg">
+            <button type="button" class="map-zoom-btn" data-zoom="in" aria-label="Zoom in">+</button>
+            <button type="button" class="map-zoom-btn" data-zoom="out" aria-label="Zoom out">&minus;</button>
+            <button type="button" class="map-zoom-btn" data-zoom="reset" aria-label="Reset view" title="Reset view">&#8634;</button>
+          </div>
+          <svg id="routeMapSvg" class="map-pannable" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ATC24 SVG route map" xmlns="http://www.w3.org/2000/svg">
             <image class="map-chart-base" href="maps/coast.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
             <image class="map-chart-base" href="maps/boundaries.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
             <g class="map-airport-assets" id="mapAirportAssets"></g>
@@ -1629,10 +1668,17 @@
         <section class="navigation-map-card">
           <div class="navigation-map-head"><div><h2 id="navigationTitle">Awaiting saved flight</h2><p id="navigationStatus">The aircraft feed will appear here.</p></div><span class="navigation-live" id="navigationFeedSource">Offline</span></div>
           <div class="navigation-radar">
-            <svg id="navigationRadarSvg" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Live ATC24 aircraft radar">
+            <div class="map-zoom-controls dark" data-zoom-target="navigationRadarSvg">
+              <button type="button" class="map-zoom-btn" data-zoom="in" aria-label="Zoom in">+</button>
+              <button type="button" class="map-zoom-btn" data-zoom="out" aria-label="Zoom out">&minus;</button>
+              <button type="button" class="map-zoom-btn" data-zoom="reset" aria-label="Reset view" title="Reset view">&#8634;</button>
+            </div>
+            <button type="button" class="map-layer-toggle dark" id="navigationWaypointToggle" style="position:absolute;top:10px;left:10px;z-index:5;" aria-pressed="true">Waypoints</button>
+            <svg id="navigationRadarSvg" class="map-pannable" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Live ATC24 aircraft radar">
               <image class="navigation-map-coast" href="maps/coast.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
               <image class="navigation-map-coast" href="maps/boundaries.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
               <g class="navigation-map-assets" id="navigationMapAssets"></g>
+              <g class="map-waypoint-layer" id="navigationWaypointLayer"></g>
               <g id="navigationDestinationLayer"></g><g id="navigationRouteLayer"></g><g id="navigationAircraftLayer"></g>
             </svg>
             <div class="navigation-empty" id="navigationEmpty"><strong>No live data yet</strong>Save a flight plan, then select Navigate with Flight Plan.</div>
@@ -2748,13 +2794,25 @@
   const mapRouteLineG = document.getElementById('mapRouteLine');
   const mapRouteMarkersG = document.getElementById('mapRouteMarkers');
   const mapWaypointLayer = document.getElementById('mapWaypointLayer');
+  const navigationWaypointLayer = document.getElementById('navigationWaypointLayer');
   const waypointLayerToggle = document.getElementById('waypointLayerToggle');
+  const navigationWaypointToggle = document.getElementById('navigationWaypointToggle');
   const routeLineToggle = document.getElementById('routeLineToggle');
   document.getElementById('mapAirportAssets').innerHTML = mapAssetMarkup();
   document.getElementById('navigationMapAssets').innerHTML = mapAssetMarkup();
-  mapWaypointLayer.innerHTML = Object.entries(WAYPOINTS).map(([code,p])=>{ const q=mapPoint(p); return `<g><circle cx="${q.x}" cy="${q.y}" r="2.4" fill="#546762"/><text x="${q.x+4}" y="${q.y-3}" font-size="7" fill="#546762">${code}</text></g>`; }).join('');
+
+  function waypointLayerMarkup(){
+    return Object.entries(WAYPOINTS).map(([code,p])=>{
+      const q = mapPoint(p);
+      return `<g class="map-waypoint-point"><circle class="map-waypoint-dot" cx="${q.x}" cy="${q.y}" r="2.4"/><text class="map-waypoint-label" x="${q.x+4}" y="${q.y-3}" font-size="7">${code}</text></g>`;
+    }).join('');
+  }
+  mapWaypointLayer.innerHTML = waypointLayerMarkup();
+  navigationWaypointLayer.innerHTML = waypointLayerMarkup();
+
   let waypointLayerVisible = true;
   let waypointRouteLineVisible = false;
+  let navigationWaypointLayerVisible = true;
 
   function setWaypointLayerVisible(visible){
     waypointLayerVisible = visible !== false;
@@ -2763,6 +2821,151 @@
     waypointLayerToggle.setAttribute('aria-pressed', String(waypointLayerVisible));
   }
   waypointLayerToggle.addEventListener('click', ()=>setWaypointLayerVisible(!waypointLayerVisible));
+
+  function setNavigationWaypointLayerVisible(visible){
+    navigationWaypointLayerVisible = visible !== false;
+    navigationWaypointLayer.classList.toggle('is-hidden', !navigationWaypointLayerVisible);
+    navigationWaypointToggle.classList.toggle('active', navigationWaypointLayerVisible);
+    navigationWaypointToggle.setAttribute('aria-pressed', String(navigationWaypointLayerVisible));
+  }
+  navigationWaypointToggle.addEventListener('click', ()=>setNavigationWaypointLayerVisible(!navigationWaypointLayerVisible));
+  setNavigationWaypointLayerVisible(true);
+
+  // ===== Map pan & zoom =====
+  // Works purely in the SVG's own world-coordinate viewBox (-600..600 studs/100,
+  // the same normalized space used for airports/waypoints/aircraft), so every
+  // layer -- basemap, waypoints, route, aircraft -- scales and pans together.
+  function attachMapPanZoom(svg, {minZoom = 1, maxZoom = 14} = {}){
+    const base = {x: MAP_VIEWBOX_MIN_X, y: MAP_VIEWBOX_MIN_Y, w: MAP_VIEWBOX_WIDTH, h: MAP_VIEWBOX_HEIGHT};
+    const view = {...base};
+
+    function apply(){
+      svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
+    }
+
+    function clamp(){
+      const minW = base.w / maxZoom;
+      const maxW = base.w / minZoom;
+      view.w = Math.min(maxW, Math.max(minW, view.w));
+      view.h = view.w;
+      const margin = base.w * 0.15;
+      const minX = base.x - margin;
+      const maxX = base.x + base.w + margin - view.w;
+      const minY = base.y - margin;
+      const maxY = base.y + base.h + margin - view.h;
+      view.x = Math.min(Math.max(view.x, minX), Math.max(minX, maxX));
+      view.y = Math.min(Math.max(view.y, minY), Math.max(minY, maxY));
+    }
+
+    function screenToSvg(clientX, clientY){
+      const rect = svg.getBoundingClientRect();
+      if(!rect.width || !rect.height) return {x: view.x, y: view.y};
+      return {
+        x: view.x + ((clientX - rect.left) / rect.width) * view.w,
+        y: view.y + ((clientY - rect.top) / rect.height) * view.h,
+      };
+    }
+
+    function zoomAt(clientX, clientY, factor){
+      const before = screenToSvg(clientX, clientY);
+      view.w /= factor;
+      view.h /= factor;
+      clamp();
+      const after = screenToSvg(clientX, clientY);
+      view.x += before.x - after.x;
+      view.y += before.y - after.y;
+      clamp();
+      apply();
+    }
+
+    svg.addEventListener('wheel', (e)=>{
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.22 : 1/1.22;
+      zoomAt(e.clientX, e.clientY, factor);
+    }, {passive: false});
+
+    const pointers = new Map();
+    let dragLast = null;
+    let pinchStartDist = null;
+    let pinchStartW = null;
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+    svg.addEventListener('pointerdown', (e)=>{
+      svg.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
+      if(pointers.size === 1){
+        dragLast = {x: e.clientX, y: e.clientY};
+        svg.classList.add('is-panning');
+      } else if(pointers.size === 2){
+        const pts = [...pointers.values()];
+        pinchStartDist = dist(pts[0], pts[1]);
+        pinchStartW = view.w;
+        dragLast = null;
+      }
+    });
+
+    svg.addEventListener('pointermove', (e)=>{
+      if(!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
+      if(pointers.size === 1 && dragLast){
+        const before = screenToSvg(dragLast.x, dragLast.y);
+        const after = screenToSvg(e.clientX, e.clientY);
+        view.x -= (after.x - before.x);
+        view.y -= (after.y - before.y);
+        clamp();
+        apply();
+        dragLast = {x: e.clientX, y: e.clientY};
+      } else if(pointers.size === 2 && pinchStartDist){
+        const pts = [...pointers.values()];
+        const factor = dist(pts[0], pts[1]) / pinchStartDist;
+        view.w = pinchStartW / factor;
+        view.h = view.w;
+        clamp();
+        apply();
+      }
+    });
+
+    function endPointer(e){
+      pointers.delete(e.pointerId);
+      if(pointers.size === 0){
+        dragLast = null;
+        svg.classList.remove('is-panning');
+      }
+      if(pointers.size < 2) pinchStartDist = null;
+    }
+    svg.addEventListener('pointerup', endPointer);
+    svg.addEventListener('pointercancel', endPointer);
+    svg.addEventListener('pointerleave', (e)=>{ if(pointers.size <= 1) endPointer(e); });
+
+    svg.addEventListener('dblclick', (e)=>{
+      e.preventDefault();
+      zoomAt(e.clientX, e.clientY, 1.6);
+    });
+
+    apply();
+
+    return {
+      zoomIn: ()=>{ const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.4); },
+      zoomOut: ()=>{ const r = svg.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1 / 1.4); },
+      reset: ()=>{ view.x = base.x; view.y = base.y; view.w = base.w; view.h = base.h; apply(); },
+    };
+  }
+
+  const mapPanZoomControllers = {
+    routeMapSvg: attachMapPanZoom(document.getElementById('routeMapSvg')),
+    navigationRadarSvg: attachMapPanZoom(document.getElementById('navigationRadarSvg')),
+  };
+  document.querySelectorAll('.map-zoom-controls').forEach(panel=>{
+    const controller = mapPanZoomControllers[panel.dataset.zoomTarget];
+    if(!controller) return;
+    panel.querySelectorAll('.map-zoom-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        if(btn.dataset.zoom === 'in') controller.zoomIn();
+        else if(btn.dataset.zoom === 'out') controller.zoomOut();
+        else controller.reset();
+      });
+    });
+  });
 
   function setWaypointRouteLineVisible(visible){
     waypointRouteLineVisible = visible === true;
