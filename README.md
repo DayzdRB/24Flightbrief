@@ -1,21 +1,86 @@
-# 24Flightbrief
-A flight planning tool for ATC24
+# 24FlightBrief
 
-7/15/26
-{
-Complete Discour Oauth2 integration
-}
+Flight planning, cargo/customs inspection, and live navigation for the ATC24 PTFS network.
 
-Next Steps:
-Integrate 24Data API into 24FlightBrief
-Use ATIS info to give suggested routes
-Get rid of Redundant input fields:Tail Number, Operator / Airline, Aircraft Type in Performance
-Move Dep and Arr time to an input field after create flight plan
-Overlay Route to the SVG PTFS Map with waypoints
-Move Performance Cruising Altitude to the be next to the rest of discord required Flight plan details
-Performance data is based off of PTFS wiki data instead of where ever it got it from
-Make route copied for the discord command line up with route information
-Add in a dynamic ETA based on real time air traffic data from the 24Data API
+## Included in this build
 
+- Eight-step flight-plan workflow with saved plans and PDF/image exports.
+- Separate departure and arrival cargo/customs inspection links.
+- Departure inspection is available after a flight plan is saved.
+- Arrival inspection remains locked until:
+  1. departure customs is approved;
+  2. live aircraft tracking confirms the flight departed; and
+  3. the aircraft lands inside the destination airport area.
+- Approved departure and arrival agent signatures appear on the flight-plan summary.
+- Live navigation workspace with:
+  - planned route and waypoint progression;
+  - next waypoint, distance remaining, and ETA;
+  - actual departure and arrival milestones;
+  - all tracked traffic plotted with aircraft-type SVG icons;
+  - callsign, flight level, groundspeed, and heading labels;
+  - projected traffic advisories.
+- Redis-backed ATC24 data cache with a rate-limited REST fallback.
+- Optional single-instance ATC24 WebSocket relay for near-real-time updates.
 
+## Vercel environment variables
 
+The existing Discord OAuth, session, and Upstash Redis variables remain required. The ATC24 REST fallback does not require an API key.
+
+Common Redis variable names supported by the project:
+
+```text
+KV_REST_API_URL
+KV_REST_API_TOKEN
+```
+
+or:
+
+```text
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
+```
+
+## Install
+
+```bash
+npm install
+```
+
+The `ws` dependency is used only by the optional persistent relay.
+
+## Run the site
+
+Use the normal Vercel development or deployment process for the repository.
+
+The Vercel API routes use a shared Redis cache and a distributed refresh lock. When no fresh WebSocket snapshot is available, one server request refreshes the ATC24 REST aircraft feed no more than once every three seconds; downstream browsers receive the cached result.
+
+## Optional live WebSocket relay
+
+The ATC24 WebSocket allows a maximum of three upstream connections and should be opened by a server without an `Origin` header. Run the included relay as exactly one persistent worker on Railway, Render, Fly.io, a VPS, or another process host:
+
+```bash
+npm run relay
+```
+
+The relay connects to:
+
+```text
+wss://24data.ptfs.app/wss
+```
+
+It writes live aircraft and controller snapshots into the same Redis instance used by Vercel. Vercel then serves those cached snapshots to every browser. Do not scale the relay above one instance unless the upstream connection limit is deliberately coordinated.
+
+See `relay/README.md` for deployment details.
+
+## Customs workflow
+
+1. Save/file a flight plan while signed in.
+2. Copy the departure inspection link from the summary or navigation workspace.
+3. A customs agent completes and approves the departure form.
+4. Open **Navigate with Flight Plan** so the site tracks the exact in-game callsign filed on the plan.
+5. After a real departure and a confirmed landing near the destination, the arrival inspection link unlocks automatically.
+6. Approved agent signatures and timestamps appear on the flight-plan summary.
+
+## Aircraft icons
+
+Aircraft radar symbols are stored in `public/aircraft-icons`. The renderer chooses the closest available icon from the tracked aircraft type and falls back to a generic aircraft symbol when no exact match exists. Attribution from the uploaded icon pack is preserved in `public/aircraft-icons/ATTRIBUTION.txt`.

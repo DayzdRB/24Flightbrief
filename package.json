@@ -5,5 +5,11 @@
   "description": "Flight planning tool for the Roblox ATC24 network.",
   "engines": {
     "node": ">=18"
+  },
+  "scripts": {
+    "relay": "node relay/atc24-websocket.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
   }
 }

@@ -1,13 +1,20 @@
 // GET /api/customs/:token
 // PUT /api/customs/:token
+// Each token is permanently bound to departure or arrival inspection.
 
 const { methodNotAllowed, readJsonBody, sendHandlerError, setNoStore } = require('../../lib/http');
+const { ensurePlanShape, loadPlans, savePlans } = require('../../lib/flight-plans');
 const { redisGet, redisSet } = require('../../lib/redis');
 const { getSessionUser } = require('../../lib/session');
 
-async function loadPlans(userId) {
-  const raw = await redisGet(`plans:${userId}`);
-  return raw ? JSON.parse(raw) : [];
+function arrivalAccessError(plan) {
+  if (plan.customs?.departure?.status !== 'approved') {
+    return 'Arrival inspection is locked until departure customs is approved.';
+  }
+  if (!plan.tracking?.arrivalUnlockedAt) {
+    return 'Arrival inspection is locked until live tracking confirms the aircraft has landed near the destination.';
+  }
+  return null;
 }
 
 module.exports = async (req, res) => {
@@ -30,19 +37,41 @@ module.exports = async (req, res) => {
     if (index < 0) return res.status(404).json({ error: 'Flight plan not found.' });
 
     const plan = plans[index];
+    const changed = await ensurePlanShape(plan, reference.ownerId);
+    const phase = reference.phase === 'arrival' ? 'arrival' : 'departure';
+    if (!reference.phase) {
+      reference.phase = phase;
+      await redisSet(`customs-token:${token}`, JSON.stringify(reference));
+    }
+    if (changed) await savePlans(reference.ownerId, plans);
+
+    if (phase === 'arrival') {
+      const accessError = arrivalAccessError(plan);
+      if (accessError) {
+        return res.status(403).json({
+          error: accessError,
+          phase,
+          departureStatus: plan.customs?.departure?.status || 'not-requested',
+          arrivalUnlocked: Boolean(plan.tracking?.arrivalUnlockedAt),
+        });
+      }
+    }
+
     if (req.method === 'GET') {
       return res.status(200).json({
         id: plan.id,
         name: plan.name,
         data: plan.data,
-        customs: plan.customs || { departure: {}, arrival: {} },
+        customs: plan.customs,
+        phase,
+        inspection: plan.customs?.[phase] || { status: 'not-requested' },
+        tracking: plan.tracking || {},
         ownerId: reference.ownerId,
         agent: { id: agent.id, username: agent.username },
       });
     }
 
     const input = await readJsonBody(req);
-    const phase = input.phase === 'arrival' ? 'arrival' : 'departure';
     const allowedDecisions = ['pending', 'approved', 'rejected', 'changes-requested'];
     const decision = allowedDecisions.includes(input.decision) ? input.decision : 'pending';
 
@@ -65,19 +94,9 @@ module.exports = async (req, res) => {
     const amendments = input.amendments || {};
     const fields = plan.data.fields || (plan.data.fields = {});
     const whitelist = [
-      'depAirport',
-      'arrAirport',
-      'cruiseAlt',
-      'perfVstall',
-      'outV1',
-      'outVR',
-      'outV2',
-      'outVref',
-      'outVapp',
-      'outCruise',
-      'outNoFlaps',
+      'depAirport', 'arrAirport', 'cruiseAlt', 'perfVstall',
+      'outV1', 'outVR', 'outV2', 'outVref', 'outVapp', 'outCruise', 'outNoFlaps',
     ];
-
     for (const key of whitelist) {
       if (Object.prototype.hasOwnProperty.call(amendments, key)) {
         fields[key] = String(amendments[key] || '').slice(0, 100);
@@ -86,13 +105,33 @@ module.exports = async (req, res) => {
 
     plan.data.performanceVersion = Number(input.performanceVersion || 2);
     plan.updatedAt = Date.now();
-    plans[index] = plan;
-    await redisSet(`plans:${reference.ownerId}`, JSON.stringify(plans));
+
+    // Merge the inspection into the newest stored plan. Tracking can update
+    // concurrently while the customs agent is completing the form.
+    const latestPlans = await loadPlans(reference.ownerId);
+    const latestIndex = latestPlans.findIndex(item => item.id === reference.planId);
+    if (latestIndex < 0) return res.status(404).json({ error: 'Flight plan not found.' });
+    const latestPlan = latestPlans[latestIndex];
+    latestPlan.customs ||= { departure: {}, arrival: {} };
+    latestPlan.customs[phase] = plan.customs[phase];
+    latestPlan.data ||= {};
+    latestPlan.data.fields ||= {};
+    for (const key of whitelist) {
+      if (Object.prototype.hasOwnProperty.call(amendments, key)) {
+        latestPlan.data.fields[key] = plan.data.fields[key];
+      }
+    }
+    latestPlan.data.performanceVersion = plan.data.performanceVersion;
+    latestPlan.updatedAt = plan.updatedAt;
+    latestPlans[latestIndex] = latestPlan;
+    await savePlans(reference.ownerId, latestPlans);
 
     return res.status(200).json({
       ok: true,
-      customs: plan.customs[phase],
-      data: plan.data,
+      phase,
+      customs: latestPlan.customs[phase],
+      allCustoms: latestPlan.customs,
+      data: latestPlan.data,
     });
   } catch (error) {
     console.error('customs error:', error);

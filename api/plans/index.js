@@ -3,13 +3,17 @@
 
 const crypto = require('crypto');
 const { methodNotAllowed, readJsonBody, sendHandlerError, setNoStore } = require('../../lib/http');
-const { redisGet, redisSet } = require('../../lib/redis');
+const {
+  defaultCustoms,
+  defaultTracking,
+  ensurePlanShape,
+  loadPlans,
+  newToken,
+  publicPlan,
+  savePlans,
+} = require('../../lib/flight-plans');
+const { redisSet } = require('../../lib/redis');
 const { getSessionUser } = require('../../lib/session');
-
-async function loadPlans(userId) {
-  const raw = await redisGet(`plans:${userId}`);
-  return raw ? JSON.parse(raw) : [];
-}
 
 module.exports = async (req, res) => {
   setNoStore(res);
@@ -20,7 +24,13 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === 'GET') {
-      return res.status(200).json(await loadPlans(user.id));
+      const plans = await loadPlans(user.id);
+      let changed = false;
+      for (const plan of plans) {
+        if (await ensurePlanShape(plan, user.id)) changed = true;
+      }
+      if (changed) await savePlans(user.id, plans);
+      return res.status(200).json(plans.map(publicPlan));
     }
 
     const { name, data } = await readJsonBody(req);
@@ -30,31 +40,32 @@ module.exports = async (req, res) => {
 
     const plans = await loadPlans(user.id);
     const now = Date.now();
-    const customsToken = crypto.randomBytes(24).toString('hex');
+    const departureToken = newToken();
+    const arrivalToken = newToken();
     const plan = {
       id: crypto.randomUUID(),
       name: String(name || 'Untitled plan').trim().slice(0, 100) || 'Untitled plan',
       data,
       createdAt: now,
       updatedAt: now,
-      customs: {
-        departure: { status: 'not-requested' },
-        arrival: { status: 'not-requested' },
-      },
-      customsToken,
+      customs: defaultCustoms(),
+      customsTokens: { departure: departureToken, arrival: arrivalToken },
+      customsToken: departureToken,
+      tracking: defaultTracking(),
     };
 
     plans.unshift(plan);
-    await redisSet(`plans:${user.id}`, JSON.stringify(plans.slice(0, 50)));
+    await savePlans(user.id, plans.slice(0, 50));
     await redisSet(
-      `customs-token:${customsToken}`,
-      JSON.stringify({ ownerId: user.id, planId: plan.id })
+      `customs-token:${departureToken}`,
+      JSON.stringify({ ownerId: user.id, planId: plan.id, phase: 'departure' })
+    );
+    await redisSet(
+      `customs-token:${arrivalToken}`,
+      JSON.stringify({ ownerId: user.id, planId: plan.id, phase: 'arrival' })
     );
 
-    return res.status(201).json({
-      ...plan,
-      customsUrl: `/customs.html?token=${customsToken}`,
-    });
+    return res.status(201).json(publicPlan(plan));
   } catch (error) {
     console.error('plans/index error:', error);
     return sendHandlerError(res, error);

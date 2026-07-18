@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>ATC24 Customs Inspection</title>
+<title>ATC24 Cargo Inspection</title>
 <style>
 :root{
   --navy:#101b22;
@@ -128,8 +128,8 @@ textarea{min-height:125px;resize:vertical}
   <div class="brand">
     <div class="brand-mark">24</div>
     <div>
-      <h1>ATC24 Customs Inspection</h1>
-      <p>Restricted inspection workspace</p>
+      <h1 id="workspaceBrandTitle">ATC24 Cargo Inspection</h1>
+      <p id="workspaceBrandSubtitle">Restricted inspection workspace</p>
     </div>
   </div>
   <button id="loginBtn" class="login-button" type="button">Sign in with Discord</button>
@@ -139,9 +139,9 @@ textarea{min-height:125px;resize:vertical}
   <main class="workspace">
     <div class="workspace-top">
       <div>
-        <p class="eyebrow">Cargo clearance</p>
+        <p class="eyebrow" id="phaseEyebrow">Cargo clearance</p>
         <h2 id="planTitle">Loading flight plan…</h2>
-        <p>Review the manifest, record each cargo decision, and return one signed inspection result to the pilot.</p>
+        <p id="phaseDescription">Review the manifest, record each cargo decision, and return one signed inspection result to the pilot.</p>
       </div>
       <div class="status-strip">
         <span id="departureStatus" class="status-chip">Departure: not requested</span>
@@ -215,8 +215,8 @@ textarea{min-height:125px;resize:vertical}
             <div class="card-header"><div><h3>Submit inspection</h3><p id="agentLabel">Authenticated customs agent</p></div></div>
             <div class="card-body">
               <div class="phase-row field">
-                <label for="phase">Inspection phase</label>
-                <select id="phase"><option value="departure">Departure inspection</option><option value="arrival">Arrival inspection</option></select>
+                <label>Inspection phase</label>
+                <input id="phaseLabel" readonly value="Loading…">
               </div>
               <div class="current-state"><span>Current result</span><strong id="currentResult">Not requested</strong></div>
               <div class="form-stack">
@@ -243,6 +243,7 @@ textarea{min-height:125px;resize:vertical}
 const token = new URLSearchParams(location.search).get('token');
 const $ = id => document.getElementById(id);
 let plan = null;
+let phase = 'departure';
 let decisions = [];
 let submitting = false;
 
@@ -344,8 +345,7 @@ function renderCargo(){
 
 function loadPhaseState(){
   if(!plan) return;
-  const phase = $('phase').value;
-  const inspection = plan.customs?.[phase] || {};
+  const inspection = plan.customs?.[phase] || plan.inspection || {};
   const cargoCount = Array.isArray(plan.data?.cargo) ? plan.data.cargo.length : 0;
   decisions = Array.from({length:cargoCount}, () => null);
 
@@ -364,6 +364,15 @@ function loadPhaseState(){
 
 function fill(){
   ensurePerformanceFields();
+  const isArrival = phase === 'arrival';
+  document.title = isArrival ? 'ATC24 Arrival Cargo Inspection' : 'ATC24 Departure Customs';
+  $('workspaceBrandTitle').textContent = isArrival ? 'ATC24 Arrival Cargo Inspection' : 'ATC24 Departure Customs';
+  $('workspaceBrandSubtitle').textContent = isArrival ? 'Destination cargo inspection workspace' : 'Pre-departure cargo clearance workspace';
+  $('phaseEyebrow').textContent = isArrival ? 'Arrival inspection' : 'Departure clearance';
+  $('phaseDescription').textContent = isArrival
+    ? 'Confirm the arriving manifest, inspect each cargo item, and submit the destination agent signature.'
+    : 'Clear the filed cargo before departure and submit the departure agent signature.';
+  $('phaseLabel').value = isArrival ? 'Arrival cargo inspection' : 'Departure customs clearance';
   $('planTitle').textContent = plan.name || field('fdCallsign') || 'Flight plan inspection';
   $('callsign').value = field('fdCallsign');
   $('pilot').value = field('fdPilotUsername');
@@ -399,6 +408,8 @@ async function load(){
       return;
     }
     plan = data;
+    phase = data.phase === 'arrival' ? 'arrival' : 'departure';
+    plan.inspection = data.inspection || plan.customs?.[phase] || {};
     $('message').classList.add('hidden');
     $('app').classList.remove('hidden');
     fill();
@@ -440,12 +451,10 @@ async function submit(decision){
   $('saveStatus').textContent = 'Submitting inspection…';
 
   try{
-    const phase = $('phase').value;
     const res = await fetch('/api/customs/' + encodeURIComponent(token), {
       method:'PUT',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        phase,
         decision,
         itemDecisions:decisions.map((itemDecision,index) => ({
           index,
@@ -460,8 +469,9 @@ async function submit(decision){
     const data = await res.json().catch(() => ({}));
     if(!res.ok) throw new Error(data.error || 'Could not submit inspection.');
 
-    plan.customs ||= {departure:{},arrival:{}};
+    plan.customs = data.allCustoms || plan.customs || {departure:{},arrival:{}};
     plan.customs[phase] = data.customs;
+    plan.inspection = data.customs;
     plan.data = data.data || plan.data;
     $('currentResult').textContent = readableStatus(data.customs?.status);
     refreshStatusStrip();
@@ -476,7 +486,6 @@ async function submit(decision){
   }
 }
 
-$('phase').addEventListener('change', loadPhaseState);
 $('acceptAllBtn').onclick = () => { decisions = decisions.map(() => 'accepted'); updateCargoButtons(); };
 $('rejectAllBtn').onclick = () => { decisions = decisions.map(() => 'rejected'); updateCargoButtons(); };
 $('approveBtn').onclick = () => submit('approved');

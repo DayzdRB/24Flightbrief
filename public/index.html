@@ -1132,6 +1132,50 @@
     .settings-danger{align-items:flex-start;flex-direction:column;}
   }
 
+
+  /* ===== Customs workflow and live navigation ===== */
+  .customs-workflow{margin:16px 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .customs-stage{border:1px solid var(--rule-strong);background:rgba(255,255,255,.72);padding:14px;border-radius:4px;box-shadow:3px 3px 0 rgba(22,35,43,.1)}
+  .customs-stage.locked{opacity:.68;background:rgba(229,232,229,.72)}
+  .customs-stage-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .customs-stage h4{margin:0;text-transform:uppercase;letter-spacing:.07em;font-size:11px}
+  .customs-stage p{margin:0 0 10px;color:var(--ink-soft);font-size:10.5px;line-height:1.45}
+  .customs-stage input{width:100%;padding:8px;border:1px solid var(--rule);background:#fff;font:10px 'JetBrains Mono',monospace;margin-bottom:8px}
+  .customs-status{display:inline-flex;align-items:center;border-radius:999px;border:1px solid var(--rule);padding:4px 7px;font:700 9px 'JetBrains Mono',monospace;text-transform:uppercase;background:#f1f3f1}
+  .customs-status.approved{background:#dff0e9;border-color:#79aa98;color:#17533e}.customs-status.rejected{background:#f4e0dc;border-color:#c99288;color:#812e24}.customs-status.changes-requested{background:#fff0cf;border-color:#d7b36a;color:#6d4a0c}.customs-status.pending{background:#e5eef3;border-color:#8aadb9;color:#214c5e}
+  .customs-approvals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:15px 0}
+  .customs-approval{display:none;position:relative;border:2px solid #27715a;padding:16px;background:rgba(231,244,238,.72);min-height:126px;overflow:hidden}
+  .customs-approval.visible{display:block}.customs-approval.arrival{border-color:#315f78;background:rgba(230,240,245,.72)}
+  .customs-approval::after{content:'APPROVED';position:absolute;right:-17px;bottom:16px;transform:rotate(-12deg);font:900 26px 'JetBrains Mono',monospace;color:rgba(39,113,90,.18);letter-spacing:.08em}
+  .customs-approval.arrival::after{color:rgba(49,95,120,.18)}
+  .customs-approval h4{margin:0 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+  .customs-approval strong{font-size:18px;display:block;margin-bottom:5px}.customs-approval p{margin:2px 0;font-size:10px}
+  .navigation-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr);gap:18px;align-items:start}
+  .navigation-map-card,.navigation-side-card{border:1px solid var(--rule-strong);background:#111d24;box-shadow:var(--shadow);border-radius:5px;overflow:hidden}
+  .navigation-map-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 16px;color:#eaf2f0;border-bottom:1px solid rgba(255,255,255,.13);background:#16262e}
+  .navigation-map-head h2{margin:0;font-size:17px}.navigation-map-head p{margin:3px 0 0;color:#aebfc2;font-size:11px}
+  .navigation-live{display:flex;align-items:center;gap:7px;font:700 10px 'JetBrains Mono',monospace;text-transform:uppercase}.navigation-live::before{content:'';width:8px;height:8px;border-radius:50%;background:#80d6a8;box-shadow:0 0 0 5px rgba(128,214,168,.12)}
+  .navigation-radar{position:relative;aspect-ratio:2048/1692;background:#101b22;overflow:hidden}
+  .navigation-radar svg{width:100%;height:100%;display:block}
+  .navigation-route-casing{fill:none;stroke:#071015;stroke-width:15;stroke-linecap:round;stroke-linejoin:round;opacity:.65}
+  .navigation-route-line{fill:none;stroke:#7be1ba;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:18 11}
+  .navigation-route-node{fill:#f5f4e9;stroke:#174d3d;stroke-width:5}.navigation-route-node.next{fill:#ffd06f;stroke:#5e4106;stroke-width:7}
+  .navigation-route-label{font:800 24px 'JetBrains Mono',monospace;fill:#f5f4e9;stroke:#0c151a;stroke-width:7;paint-order:stroke}
+  .navigation-destination-ring{fill:rgba(255,208,111,.08);stroke:#ffd06f;stroke-width:5;stroke-dasharray:15 11}
+  .navigation-aircraft image{filter:drop-shadow(0 3px 3px rgba(0,0,0,.7))}.navigation-aircraft.own image{filter:brightness(0) saturate(100%) invert(79%) sepia(30%) saturate(896%) hue-rotate(103deg) brightness(93%) contrast(87%) drop-shadow(0 0 8px rgba(123,225,186,.85))}.navigation-aircraft.emergency image{filter:brightness(0) saturate(100%) invert(37%) sepia(90%) saturate(1800%) hue-rotate(337deg) brightness(92%) contrast(90%)}
+  .navigation-label-box{fill:rgba(8,17,22,.88);stroke:#9bb0b5;stroke-width:2}.navigation-label-box.own{stroke:#7be1ba;stroke-width:4}.navigation-label-box.warning{stroke:#ff7569;stroke-width:4}
+  .navigation-label-text{font:800 21px 'JetBrains Mono',monospace;fill:#f6faf9}.navigation-label-meta{font:700 17px 'JetBrains Mono',monospace;fill:#bad0d2}
+  .navigation-attribution{padding:7px 12px;background:#0e181e;color:#8fa2a6;font-size:9px;text-align:right}.navigation-attribution a{color:#b8cfca}
+  .navigation-side{display:grid;gap:14px}.navigation-side-card{background:var(--paper);color:var(--ink);padding:16px}
+  .navigation-side-card h3{margin:0 0 12px;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+  .navigation-telemetry{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.navigation-stat{border:1px solid var(--rule);background:#fff;padding:9px;min-height:65px}.navigation-stat span{display:block;font:700 8.5px 'JetBrains Mono',monospace;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px}.navigation-stat strong{font-size:14px;line-height:1.2}
+  .traffic-advisories{display:grid;gap:8px}.traffic-advisory{border-left:4px solid #78909a;background:#fff;padding:9px 10px;border-radius:2px}.traffic-advisory.warning{border-color:#b2352b;background:#f8e5e2}.traffic-advisory.caution{border-color:#d69a27;background:#fff1d2}.traffic-advisory.advisory{border-color:#315f78;background:#e8f0f4}.traffic-advisory strong{display:flex;justify-content:space-between;text-transform:uppercase;font-size:10px}.traffic-advisory p{font-size:10px;margin:4px 0 0;color:var(--ink-soft)}
+  .flight-milestones{display:grid;gap:7px}.flight-milestone{display:flex;gap:9px;align-items:flex-start;font-size:10.5px}.flight-milestone::before{content:'○';font:900 16px monospace;color:#879397;line-height:1}.flight-milestone.complete::before{content:'●';color:#27715a}.flight-milestone.active::before{content:'◉';color:#d99a2b}
+  .navigation-customs-actions{display:grid;gap:8px}.navigation-customs-actions button{width:100%}
+  .navigation-empty{position:absolute;inset:0;z-index:6;display:grid;place-content:center;padding:28px;text-align:center;color:#aebfc2;background:rgba(8,17,22,.72);backdrop-filter:blur(3px)}.navigation-empty strong{display:block;color:#fff;margin-bottom:6px}
+  @media(max-width:960px){.navigation-layout{grid-template-columns:1fr}.navigation-side{grid-template-columns:repeat(2,minmax(0,1fr))}.customs-workflow,.customs-approvals{grid-template-columns:1fr}}
+  @media(max-width:650px){.navigation-side{grid-template-columns:1fr}.navigation-telemetry{grid-template-columns:1fr 1fr}.navigation-label-text{font-size:18px}.navigation-label-meta{font-size:15px}}
+
 </style>
 </head>
 <body class="startup-loading">
@@ -1214,7 +1258,9 @@
             <button class="btn-ghost" id="editBtn" style="display:none;">Edit</button>
             <button class="btn-primary" id="createPlanBtn">Create Flight Plan</button>
             <button class="btn-ghost hidden-until-filed" id="savePlanBtn">Save to my account</button>
-            <button class="btn-ghost hidden-until-filed" id="customsLinkBtn" style="display:none;">Copy customs link</button>
+            <button class="btn-ghost hidden-until-filed" id="customsLinkBtn" style="display:none;">Copy departure customs link</button>
+            <button class="btn-ghost hidden-until-filed" id="arrivalCustomsBtn" style="display:none;">Copy arrival inspection link</button>
+            <button class="btn-amber hidden-until-filed" id="navigateFlightBtn">Navigate with Flight Plan</button>
             <button class="btn-ghost hidden-until-filed" id="copyPlanBtn">Copy /createflightplan command</button>
             <button class="btn-ghost hidden-until-filed" id="copyImgBtn">Copy as image</button>
             <button class="btn-amber hidden-until-filed" id="exportImgBtn">Download PNG</button>
@@ -1526,7 +1572,30 @@
           </div>
         </div>
 
-        <div class="customs-link-box no-export" id="customsLinkBox"><strong>Customs inspection link</strong><br>Share this only with the cargo/customs agent. They must sign in with Discord.<input id="customsUrl" readonly aria-label="Customs inspection link" title="Click to select the full link"></div>
+        <div class="customs-workflow no-export" id="customsLinkBox">
+          <section class="customs-stage" id="departureCustomsCard">
+            <div class="customs-stage-head"><h4>Departure Customs</h4><span class="customs-status" id="departureCustomsStatus">Save required</span></div>
+            <p>Available immediately after the signed-in pilot saves the filed flight plan.</p>
+            <input id="customsUrl" readonly aria-label="Departure customs link" title="Click to select the full link">
+            <button class="btn-ghost btn-small" type="button" id="departureCustomsCopy">Copy departure link</button>
+          </section>
+          <section class="customs-stage locked" id="arrivalCustomsCard">
+            <div class="customs-stage-head"><h4>Arrival Cargo Inspection</h4><span class="customs-status" id="arrivalCustomsStatus">Locked</span></div>
+            <p id="arrivalCustomsMessage">Unlocks after departure customs approval and live tracking confirms a landing near the destination.</p>
+            <input id="arrivalCustomsUrl" readonly aria-label="Arrival customs link" title="Click to select the full link">
+            <button class="btn-ghost btn-small" type="button" id="arrivalCustomsCopy" disabled>Copy arrival link</button>
+          </section>
+        </div>
+        <div class="customs-approvals">
+          <section class="customs-approval" id="departureCustomsApproval">
+            <h4>Departure Customs Approved</h4><strong id="departureApprovalSignature">—</strong>
+            <p id="departureApprovalAgent"></p><p id="departureApprovalTime"></p><p id="departureApprovalRemarks"></p>
+          </section>
+          <section class="customs-approval arrival" id="arrivalCustomsApproval">
+            <h4>Arrival Inspection Approved</h4><strong id="arrivalApprovalSignature">—</strong>
+            <p id="arrivalApprovalAgent"></p><p id="arrivalApprovalTime"></p><p id="arrivalApprovalRemarks"></p>
+          </section>
+        </div>
       </div>
       <div class="wizard-nav no-export" id="wizardNav"><button class="btn-ghost" id="wizardPrev" type="button">Previous</button><span class="autosave-state" id="autosaveState">Not saved yet</span><button class="btn-primary" id="wizardNext" type="button">Next</button></div>
     </div>
@@ -1542,6 +1611,42 @@
       <div class="surface-card">
         <div class="section-note" id="plansLoginNotice">Sign in with Discord from Settings to load and save flight plans.</div>
         <div class="plans-grid" id="plansList"><div class="empty-state"><strong>Loading flights</strong>Checking your account…</div></div>
+      </div>
+    </section>
+
+
+    <section class="app-view" id="navigationView" data-app-view="navigation">
+      <div class="page-heading">
+        <div><h1>Live Flight Navigation</h1><p id="navigationSubtitle">Open a saved flight plan to begin tracking.</p></div>
+        <div class="btn-row"><button class="btn-ghost" type="button" id="navigationBackBtn">Back to Flight Plan</button><button class="btn-primary" type="button" id="navigationRefreshBtn">Refresh now</button></div>
+      </div>
+      <div class="navigation-layout">
+        <section class="navigation-map-card">
+          <div class="navigation-map-head"><div><h2 id="navigationTitle">Awaiting saved flight</h2><p id="navigationStatus">The aircraft feed will appear here.</p></div><span class="navigation-live" id="navigationFeedSource">Offline</span></div>
+          <div class="navigation-radar">
+            <svg id="navigationRadarSvg" viewBox="0 0 2048 1692" role="img" aria-label="Live ATC24 aircraft radar">
+              <image href="EnrouteChartBase.png" x="0" y="0" width="2048" height="1692" preserveAspectRatio="none"></image>
+              <g id="navigationDestinationLayer"></g><g id="navigationRouteLayer"></g><g id="navigationAircraftLayer"></g>
+            </svg>
+            <div class="navigation-empty" id="navigationEmpty"><strong>No live data yet</strong>Save a flight plan, then select Navigate with Flight Plan.</div>
+          </div>
+          <div class="navigation-attribution">Aircraft icons by <a href="https://adsb-radar.com/" target="_blank" rel="noopener noreferrer">ADS-B Radar for macOS</a>.</div>
+        </section>
+        <aside class="navigation-side">
+          <section class="navigation-side-card"><h3>Flight telemetry</h3><div class="navigation-telemetry">
+            <div class="navigation-stat"><span>Aircraft</span><strong id="navAircraft">—</strong></div>
+            <div class="navigation-stat"><span>Flight level</span><strong id="navAltitude">—</strong></div>
+            <div class="navigation-stat"><span>Ground speed</span><strong id="navGroundSpeed">—</strong></div>
+            <div class="navigation-stat"><span>Heading</span><strong id="navHeading">—</strong></div>
+            <div class="navigation-stat"><span>Next waypoint</span><strong id="navNextWaypoint">—</strong></div>
+            <div class="navigation-stat"><span>To next</span><strong id="navDistanceNext">—</strong></div>
+            <div class="navigation-stat"><span>Remaining</span><strong id="navRemaining">—</strong></div>
+            <div class="navigation-stat"><span>ETA</span><strong id="navEta">—</strong></div>
+          </div></section>
+          <section class="navigation-side-card"><h3>Traffic advisories</h3><div class="traffic-advisories" id="trafficAdvisories"><div class="section-note">No tracked aircraft selected.</div></div></section>
+          <section class="navigation-side-card"><h3>Flight progression</h3><div class="flight-milestones" id="flightMilestones"></div></section>
+          <section class="navigation-side-card"><h3>Customs links</h3><div class="navigation-customs-actions"><button class="btn-ghost" id="navDepartureCustomsBtn" type="button">Copy departure customs link</button><button class="btn-primary" id="navArrivalCustomsBtn" type="button" disabled>Arrival inspection locked</button></div></section>
+        </aside>
       </div>
     </section>
 
@@ -1600,7 +1705,7 @@
   // ===============================================================
   const LOCAL_SETTINGS_KEY = '24fb-settings';
   const AUTOSAVE_KEY = '24fb-autosave';
-  const viewNames = new Set(['home','planner','flights','settings']);
+  const viewNames = new Set(['home','planner','flights','navigation','settings']);
   const appViews = [...document.querySelectorAll('[data-app-view]')];
 
   function readLocalSettings(){
@@ -1724,7 +1829,9 @@
     }
     if(target === 'flights') loadPlansList();
     if(target === 'settings') loadSettingsView();
-    const titles={home:'24FlightBrief — Flight Planning for ATC24',planner:'Create Flight Plan — 24FlightBrief',flights:'My Flights — 24FlightBrief',settings:'Settings — 24FlightBrief'};
+    if(target === 'navigation') startNavigationTracking();
+    else stopNavigationTracking();
+    const titles={home:'24FlightBrief — Flight Planning for ATC24',planner:'Create Flight Plan — 24FlightBrief',flights:'My Flights — 24FlightBrief',navigation:'Live Navigation — 24FlightBrief',settings:'Settings — 24FlightBrief'};
     document.title=titles[target];
     window.scrollTo({top:0, behavior:'smooth'});
   }
@@ -3852,6 +3959,7 @@
     document.getElementById('editBtn').style.display = 'none';
     document.getElementById('createPlanBtn').style.display = 'inline-flex';
     localStorage.removeItem(AUTOSAVE_KEY);
+    markPlanLoaded(null);
     applyLocalSettings(true);
     if(currentUser) loadRobloxUsername();
     updateDraftStatus();
@@ -3908,6 +4016,8 @@
     document.getElementById('editBtn').style.display = 'inline-flex';
     document.getElementById('createPlanBtn').style.display = 'none';
     document.getElementById('reviewPage').scrollIntoView({behavior:'smooth', block:'start'});
+    // Filing creates the departure-customs link immediately for signed-in pilots.
+    if(currentUser) document.getElementById('savePlanBtn').click();
   });
 
   document.getElementById('editBtn').addEventListener('click', ()=>{
@@ -4029,28 +4139,73 @@
   let currentUser = null;
   let currentCustoms = null;
   let currentPlanId = null;
-  let currentCustomsToken = null;
+  let currentCustomsTokens = {departure:null,arrival:null};
+  let currentTracking = null;
+  let currentPlanSnapshot = null;
+  let navigationTimer = null;
+  let navigationBusy = false;
 
-  function showCustomsLink(token){
-    const box = document.getElementById('customsLinkBox');
-    const button = document.getElementById('customsLinkBtn');
-    const input = document.getElementById('customsUrl');
-    currentCustomsToken = token || null;
-    if(!currentCustomsToken){
-      input.value = '';
-      box.style.display = 'none';
-      button.style.display = 'none';
-      return;
-    }
-    input.value = new URL(`/customs.html?token=${encodeURIComponent(currentCustomsToken)}`, window.location.origin).href;
-    box.style.display = 'block';
-    button.style.display = 'inline-flex';
+  function readableCustomsStatus(status){
+    return String(status || 'not-requested').replaceAll('-', ' ');
+  }
+
+  function absoluteSiteUrl(path){
+    return path ? new URL(path, window.location.origin).href : '';
+  }
+
+  function renderCustomsApproval(phase){
+    const inspection=currentCustoms?.[phase] || {};
+    const block=document.getElementById(`${phase}CustomsApproval`);
+    if(!block) return;
+    const approved=inspection.status==='approved' && Boolean(inspection.signature);
+    block.classList.toggle('visible',approved);
+    if(!approved) return;
+    document.getElementById(`${phase}ApprovalSignature`).textContent=inspection.signature;
+    document.getElementById(`${phase}ApprovalAgent`).textContent=`Agent: ${inspection.agentDiscordUsername || 'Discord customs agent'}`;
+    document.getElementById(`${phase}ApprovalTime`).textContent=inspection.signedAt ? `Approved: ${new Date(inspection.signedAt).toLocaleString()}` : '';
+    document.getElementById(`${phase}ApprovalRemarks`).textContent=inspection.remarks ? `Remarks: ${inspection.remarks}` : 'Remarks: None';
+  }
+
+  function setCustomsWorkflow(plan={}){
+    const depPath=plan.departureCustomsUrl || (plan.customsTokens?.departure || plan.customsToken ? `/customs.html?token=${encodeURIComponent(plan.customsTokens?.departure || plan.customsToken)}` : null);
+    const arrPath=plan.arrivalCustomsUrl || (plan.customsTokens?.arrival ? `/customs.html?token=${encodeURIComponent(plan.customsTokens.arrival)}` : null);
+    const departureUrl=absoluteSiteUrl(depPath);
+    const arrivalUrl=absoluteSiteUrl(arrPath);
+    const depInput=document.getElementById('customsUrl');
+    const arrInput=document.getElementById('arrivalCustomsUrl');
+    depInput.value=departureUrl;
+    arrInput.value=arrivalUrl;
+    document.getElementById('customsLinkBtn').style.display=departureUrl?'inline-flex':'none';
+    document.getElementById('arrivalCustomsBtn').style.display=arrivalUrl?'inline-flex':'none';
+    document.getElementById('departureCustomsCopy').disabled=!departureUrl;
+    document.getElementById('arrivalCustomsCopy').disabled=!arrivalUrl;
+    document.getElementById('navDepartureCustomsBtn').disabled=!departureUrl;
+    document.getElementById('navArrivalCustomsBtn').disabled=!arrivalUrl;
+    document.getElementById('navArrivalCustomsBtn').textContent=arrivalUrl?'Copy arrival inspection link':'Arrival inspection locked';
+
+    const depStatus=currentCustoms?.departure?.status || (departureUrl?'not-requested':'save-required');
+    const arrStatus=currentCustoms?.arrival?.status || 'not-requested';
+    const depBadge=document.getElementById('departureCustomsStatus');
+    depBadge.textContent=departureUrl?readableCustomsStatus(depStatus):'Save required';
+    depBadge.className=`customs-status ${departureUrl?depStatus:''}`;
+    const arrBadge=document.getElementById('arrivalCustomsStatus');
+    arrBadge.textContent=arrivalUrl?readableCustomsStatus(arrStatus):'Locked';
+    arrBadge.className=`customs-status ${arrivalUrl?arrStatus:''}`;
+    document.getElementById('arrivalCustomsCard').classList.toggle('locked',!arrivalUrl);
+    document.getElementById('arrivalCustomsMessage').textContent=arrivalUrl
+      ? 'The aircraft has landed in the destination area. Share this link with the arrival inspection agent.'
+      : 'Unlocks only after departure customs is approved and live tracking confirms the aircraft has landed near its destination.';
+    renderCustomsApproval('departure');
+    renderCustomsApproval('arrival');
   }
 
   function markPlanLoaded(plan){
     currentPlanId = plan?.id || null;
+    currentPlanSnapshot = plan || null;
     currentCustoms = plan?.customs || null;
-    showCustomsLink(plan?.customsToken || null);
+    currentTracking = plan?.tracking || null;
+    currentCustomsTokens = plan?.customsTokens || {departure:plan?.customsToken || null,arrival:null};
+    setCustomsWorkflow(plan || {});
     document.getElementById('savePlanBtn').textContent = currentPlanId
       ? 'Update saved plan'
       : 'Save to my account';
@@ -4174,10 +4329,11 @@
       ['People',2,[['Crew',[...crewBody.querySelectorAll('tr')].map(r=>[...r.querySelectorAll('input')].map(x=>x.value).filter(Boolean).join(': ')).filter(Boolean).join(', ')||'—'],['Souls',value('soulsCount')],['Passenger weight',value('soulsWeightTotal')]]],
       ['Cargo',4,[['Items',cargoRows.join('; ')||'No cargo listed'],['Cargo weight',document.getElementById('loadCargo').value||'0 kg']]],
       ['Performance',5,[['Stall',value('perfVstall') === 'N/A' ? 'N/A' : value('perfVstall')+' kt'],['V1',value('outV1')],['Rotate',value('outVR')],['V2',value('outV2')],['Vref',value('outVref')],['Approach',value('outVapp')],['Cruise',value('outCruise')],['No-flaps landing',value('outNoFlaps')]]],
-      ['Remarks & Customs',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['Departure customs',currentCustoms?.departure?.status||'Not requested'],['Arrival customs',currentCustoms?.arrival?.status||'Not requested'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—']]]
+      ['Remarks & Customs',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['Departure customs',readableCustomsStatus(currentCustoms?.departure?.status||'Not requested')],['Departure agent',currentCustoms?.departure?.agentDiscordUsername||'—'],['Departure signature',currentCustoms?.departure?.signature||'—'],['Arrival customs',readableCustomsStatus(currentCustoms?.arrival?.status||'Not requested')],['Arrival agent',currentCustoms?.arrival?.agentDiscordUsername||'—'],['Arrival signature',currentCustoms?.arrival?.signature||'—'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—']]]
     ];
     const grid=document.getElementById('reviewGrid'); grid.innerHTML='';
     cards.forEach(([title,step,rows], index)=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><div class="review-card-head"><span class="review-index">${String(index + 1).padStart(2,'0')}</span><h4>${title}</h4></div><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
+    setCustomsWorkflow(currentPlanSnapshot || {});
   }
   let autosaveTimer;
   function scheduleAutosave(){
@@ -4202,32 +4358,23 @@
     }
   });
   updateDraftStatus();
-  document.getElementById('customsLinkBtn').addEventListener('click', async ()=>{
-    const input = document.getElementById('customsUrl');
-    const url = input?.value?.trim();
-    if(!url){
-      flashBtn('customsLinkBtn', 'Save plan first');
-      return;
-    }
-
-    const copied = await copyText(url);
-    if(copied){
-      flashBtn('customsLinkBtn', 'Copied!');
-      return;
-    }
-
-    // Last-resort manual fallback: select the visible URL so the user can use
-    // Ctrl/Cmd+C even when the browser refuses all scripted clipboard access.
-    input.focus();
-    input.select();
-    input.setSelectionRange(0, input.value.length);
-    flashBtn('customsLinkBtn', 'Selected — press Ctrl/Cmd+C');
-  });
-
-  document.getElementById('customsUrl').addEventListener('click', event=>{
-    event.currentTarget.select();
-    event.currentTarget.setSelectionRange(0, event.currentTarget.value.length);
-  });
+  async function copyCustomsUrl(inputId,buttonId){
+    const input=document.getElementById(inputId);
+    const url=input?.value?.trim();
+    if(!url){ flashBtn(buttonId,inputId==='arrivalCustomsUrl'?'Arrival locked':'Save plan first'); return; }
+    if(await copyText(url)){ flashBtn(buttonId,'Copied!'); return; }
+    input.focus(); input.select(); input.setSelectionRange(0,input.value.length);
+    flashBtn(buttonId,'Selected — press Ctrl/Cmd+C');
+  }
+  document.getElementById('customsLinkBtn').addEventListener('click',()=>copyCustomsUrl('customsUrl','customsLinkBtn'));
+  document.getElementById('departureCustomsCopy').addEventListener('click',()=>copyCustomsUrl('customsUrl','departureCustomsCopy'));
+  document.getElementById('navDepartureCustomsBtn').addEventListener('click',()=>copyCustomsUrl('customsUrl','navDepartureCustomsBtn'));
+  document.getElementById('arrivalCustomsBtn').addEventListener('click',()=>copyCustomsUrl('arrivalCustomsUrl','arrivalCustomsBtn'));
+  document.getElementById('arrivalCustomsCopy').addEventListener('click',()=>copyCustomsUrl('arrivalCustomsUrl','arrivalCustomsCopy'));
+  document.getElementById('navArrivalCustomsBtn').addEventListener('click',()=>copyCustomsUrl('arrivalCustomsUrl','navArrivalCustomsBtn'));
+  ['customsUrl','arrivalCustomsUrl'].forEach(id=>document.getElementById(id).addEventListener('click',event=>{
+    event.currentTarget.select(); event.currentTarget.setSelectionRange(0,event.currentTarget.value.length);
+  }));
   showWizardStep(0);
 
   refreshAccountStatus();
@@ -4264,10 +4411,9 @@
       if(!res.ok) throw new Error('save failed');
 
       const saved = await res.json();
-      currentPlanId = saved.id || currentPlanId;
-      currentCustoms = saved.customs || currentCustoms;
-      showCustomsLink(saved.customsToken || currentCustomsToken);
+      markPlanLoaded(saved);
       await saveRobloxUsername();
+      buildReview();
       saveButton.textContent = updating ? 'Updated!' : 'Saved!';
     }catch(e){
       console.error('24FlightBrief: save failed', e);
@@ -4316,6 +4462,17 @@
       navigateTo('planner');
     });
     actions.appendChild(openBtn);
+    const navigateBtn=document.createElement('button');
+    navigateBtn.className='btn-amber btn-small';
+    navigateBtn.type='button';
+    navigateBtn.textContent='Navigate';
+    navigateBtn.addEventListener('click',()=>{
+      markPlanLoaded(plan);
+      loadFormData(plan.data);
+      buildReview();
+      navigateTo('navigation');
+    });
+    actions.appendChild(navigateBtn);
     if(!compact){
       const delBtn=document.createElement('button');
       delBtn.className='btn-ghost btn-small plan-delete';
@@ -4364,8 +4521,212 @@
     }
   }
 
+  function escapeSvgText(value){
+    return String(value ?? '').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  }
+
+  function aircraftIconPath(type){
+    const t=String(type||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    if(/a380/.test(t)) return '/aircraft-icons/a380.svg';
+    if(/a340/.test(t)) return '/aircraft-icons/a340.svg';
+    if(/a350/.test(t)) return '/aircraft-icons/a340.svg';
+    if(/a330/.test(t)) return '/aircraft-icons/a330.svg';
+    if(/a32|a319|a320|a321/.test(t)) return '/aircraft-icons/a320.svg';
+    if(/a220/.test(t)) return '/aircraft-icons/a0.svg';
+    if(/an225|antonov225/.test(t)) return '/aircraft-icons/a7.svg';
+    if(/b787|787/.test(t)) return '/aircraft-icons/b787.svg';
+    if(/b777|777/.test(t)) return '/aircraft-icons/b777.svg';
+    if(/b767|767/.test(t)) return '/aircraft-icons/b767.svg';
+    if(/b747|747/.test(t)) return '/aircraft-icons/b747.svg';
+    if(/b737|737/.test(t)) return '/aircraft-icons/b737.svg';
+    if(/md11/.test(t)) return '/aircraft-icons/md11.svg';
+    if(/e195|e190/.test(t)) return '/aircraft-icons/e195.svg';
+    if(/erj|embraer/.test(t)) return '/aircraft-icons/erj.svg';
+    if(/crj/.test(t)) return '/aircraft-icons/crjx.svg';
+    if(/dash8|q400|dh8/.test(t)) return '/aircraft-icons/dh8a.svg';
+    if(/f100/.test(t)) return '/aircraft-icons/f100.svg';
+    if(/c130|hercules/.test(t)) return '/aircraft-icons/c130.svg';
+    if(/cessna|c172|c182/.test(t)) return '/aircraft-icons/cessna.svg';
+    if(/lear/.test(t)) return '/aircraft-icons/learjet.svg';
+    if(/gulfstream|glf/.test(t)) return '/aircraft-icons/glf5.svg';
+    if(/falcon|fa7x/.test(t)) return '/aircraft-icons/fa7x.svg';
+    if(/f15/.test(t)) return '/aircraft-icons/f15.svg';
+    if(/f5/.test(t)) return '/aircraft-icons/f5.svg';
+    if(/f11|fighter/.test(t)) return '/aircraft-icons/f11.svg';
+    return '/aircraft-icons/c0.svg';
+  }
+
+  function renderNavigationMap(data){
+    const routeLayer=document.getElementById('navigationRouteLayer');
+    const destinationLayer=document.getElementById('navigationDestinationLayer');
+    const aircraftLayer=document.getElementById('navigationAircraftLayer');
+    const nodes=data.route?.nodes || [];
+    const nextCode=data.route?.nextWaypoint?.code;
+    let routeSvg='';
+    if(nodes.length>1){
+      const points=nodes.map(node=>`${node.mapPosition.x},${node.mapPosition.y}`).join(' ');
+      routeSvg+=`<polyline class="navigation-route-casing" points="${points}"/><polyline class="navigation-route-line" points="${points}"/>`;
+    }
+    nodes.forEach(node=>{
+      const isNext=node.code===nextCode;
+      routeSvg+=`<circle class="navigation-route-node${isNext?' next':''}" cx="${node.mapPosition.x}" cy="${node.mapPosition.y}" r="${isNext?17:12}"/><text class="navigation-route-label" x="${node.mapPosition.x}" y="${node.mapPosition.y-23}" text-anchor="middle">${escapeSvgText(node.code)}</text>`;
+    });
+    routeLayer.innerHTML=routeSvg;
+
+    const dest=data.destination;
+    destinationLayer.innerHTML=dest?.mapPosition
+      ? `<circle class="navigation-destination-ring" cx="${dest.mapPosition.x}" cy="${dest.mapPosition.y}" r="${Math.max(28,Number(dest.arrivalLandingRadiusMap)||60)}"/>`
+      : '';
+
+    const warningCallsigns=new Set((data.trafficAdvisories||[]).filter(item=>item.level==='warning').map(item=>item.callsign));
+    const aircraft=[...(data.aircraft?[data.aircraft]:[]),...(data.nearbyAircraft||[])];
+    aircraftLayer.innerHTML=aircraft.filter(item=>{
+      const p=item.mapPosition; return p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>-150&&p.x<2198&&p.y>-120&&p.y<1812;
+    }).map(item=>{
+      const pos=item.mapPosition;
+      const own=item.callsign===data.matchingCallsign;
+      const warning=warningCallsigns.has(item.callsign);
+      const iconClass=`navigation-aircraft${own?' own':''}${item.isEmergencyOccuring?' emergency':''}`;
+      const size=own?48:38;
+      const callsign=escapeSvgText(item.callsign);
+      const fl=escapeSvgText(item.flightLevel||'FL000');
+      const speed=`${Math.max(0,Math.round(Number(item.groundSpeed)||0))} KT`;
+      const width=Math.max(174,Math.min(330,74+String(item.callsign||'').length*14));
+      const labelX=pos.x>1650?pos.x-width-35:pos.x+30;
+      const labelY=Math.max(8,Math.min(1625,pos.y-27));
+      const boxClass=`navigation-label-box${own?' own':''}${warning?' warning':''}`;
+      return `<g class="${iconClass}" transform="translate(${pos.x} ${pos.y}) rotate(${Number(item.heading)||0})"><image href="${aircraftIconPath(item.aircraftType)}" x="${-size/2}" y="${-size/2}" width="${size}" height="${size}"/></g><g><rect class="${boxClass}" x="${labelX}" y="${labelY}" width="${width}" height="58" rx="5"/><text class="navigation-label-text" x="${labelX+10}" y="${labelY+22}">${callsign}</text><text class="navigation-label-meta" x="${labelX+10}" y="${labelY+45}">${fl} · ${speed}</text></g>`;
+    }).join('');
+  }
+
+  function renderTrafficAdvisories(data){
+    const list=document.getElementById('trafficAdvisories');
+    const advisories=data.trafficAdvisories||[];
+    if(!data.aircraft){
+      list.innerHTML='<div class="section-note">The filed in-game callsign is not currently visible in the ATC24 feed.</div>';
+      return;
+    }
+    if(!advisories.length){
+      list.innerHTML='<div class="section-note">No projected traffic conflicts inside the advisory thresholds.</div>';
+      return;
+    }
+    list.innerHTML=advisories.map(item=>`<article class="traffic-advisory ${item.level}"><strong><span>${escapeSvgText(item.callsign)}</span><span>${escapeSvgText(item.level)}</span></strong><p>${escapeSvgText(item.message)}<br>${escapeSvgText(item.flightLevel)} · ${Math.round(item.speed||0)} KT · projected ${Number(item.cpaDistanceNm).toFixed(1)} NM in ${Math.round(item.cpaSeconds)} sec</p></article>`).join('');
+  }
+
+  function renderFlightMilestones(data){
+    const tracking=data.plan?.tracking||{};
+    const customs=data.plan?.customs||{};
+    const rows=[
+      ['Flight plan filed',Boolean(currentPlanId),'Saved to your account'],
+      ['Departure customs approved',customs.departure?.status==='approved',readableCustomsStatus(customs.departure?.status)],
+      ['Aircraft observed at departure',Boolean(tracking.departureObservedAt),tracking.departureObservedAt?new Date(tracking.departureObservedAt).toLocaleTimeString():'Waiting'],
+      ['Aircraft departed',Boolean(tracking.actualDepartureAt),tracking.actualDepartureAt?new Date(tracking.actualDepartureAt).toLocaleTimeString():'Waiting'],
+      ['Aircraft landed at destination',Boolean(tracking.actualArrivalAt),tracking.actualArrivalAt?new Date(tracking.actualArrivalAt).toLocaleTimeString():'Waiting'],
+      ['Arrival inspection approved',customs.arrival?.status==='approved',readableCustomsStatus(customs.arrival?.status)],
+    ];
+    const firstIncomplete=rows.findIndex(row=>!row[1]);
+    document.getElementById('flightMilestones').innerHTML=rows.map((row,index)=>`<div class="flight-milestone ${row[1]?'complete':index===firstIncomplete?'active':''}"><div><strong>${escapeSvgText(row[0])}</strong><br><span>${escapeSvgText(row[2]||'')}</span></div></div>`).join('');
+  }
+
+  function formatNm(value){ return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} NM` : '—'; }
+  function formatEta(minutes){
+    if(!Number.isFinite(Number(minutes))) return '—';
+    const eta=new Date(Date.now()+Number(minutes)*60000);
+    return `${Math.round(Number(minutes))} min · ${eta.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
+  }
+
+  function applyTrackingData(data){
+    currentCustoms=data.plan?.customs||currentCustoms;
+    currentTracking=data.plan?.tracking||currentTracking;
+    currentPlanSnapshot={...(currentPlanSnapshot||{}),...data.plan,customs:currentCustoms,tracking:currentTracking};
+    setCustomsWorkflow(data.plan||{});
+    if(document.body.classList.contains('filed')) buildReview();
+    document.getElementById('navigationEmpty').style.display='none';
+    document.getElementById('navigationTitle').textContent=data.plan?.name||data.requestedCallsign||'Live flight';
+    document.getElementById('navigationSubtitle').textContent=`${data.plan?.fields?.depAirport||'----'} → ${data.plan?.fields?.arrAirport||'----'} · tracking ${data.requestedCallsign||'filed callsign'}`;
+    document.getElementById('navigationFeedSource').textContent=data.feedSource==='websocket'?'WebSocket relay':'Server cache';
+    document.getElementById('navigationStatus').textContent=data.aircraft
+      ? `${data.matchingCallsign} · ${data.aircraft.flightLevel} · ${Math.round(data.aircraft.groundSpeed)} KT · ${formatNm(data.route?.remainingNm)} remaining${data.route?.nextWaypoint?.code?` · next ${data.route.nextWaypoint.code}`:''}`
+      : `${data.requestedCallsign||'Filed aircraft'} is not currently visible. Other traffic remains displayed.`;
+    document.getElementById('navAircraft').textContent=data.aircraft?`${data.aircraft.callsign} · ${data.aircraft.aircraftType||'Unknown type'}`:'Not found';
+    document.getElementById('navAltitude').textContent=data.aircraft?`${data.aircraft.flightLevel} · ${Math.round(data.aircraft.altitude).toLocaleString()} ft`:'—';
+    document.getElementById('navGroundSpeed').textContent=data.aircraft?`${Math.round(data.aircraft.groundSpeed)} kt`:'—';
+    document.getElementById('navHeading').textContent=data.aircraft?`${Math.round(data.aircraft.heading)}°`:'—';
+    document.getElementById('navNextWaypoint').textContent=data.route?.nextWaypoint?.code||'—';
+    document.getElementById('navDistanceNext').textContent=formatNm(data.route?.distanceToNextNm);
+    document.getElementById('navRemaining').textContent=formatNm(data.route?.remainingNm);
+    document.getElementById('navEta').textContent=formatEta(data.route?.etaMinutes);
+    renderNavigationMap(data);
+    renderTrafficAdvisories(data);
+    renderFlightMilestones(data);
+  }
+
+  async function refreshNavigationData(){
+    if(!currentPlanId || navigationBusy) return;
+    navigationBusy=true;
+    try{
+      const res=await fetch(`/api/tracking/${encodeURIComponent(currentPlanId)}`,{cache:'no-store'});
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok) throw new Error(data.error||'Tracking unavailable');
+      applyTrackingData(data);
+    }catch(error){
+      document.getElementById('navigationStatus').textContent=error.message||'Could not retrieve live tracking data.';
+      document.getElementById('navigationFeedSource').textContent='Unavailable';
+    }finally{ navigationBusy=false; }
+  }
+
+  function stopNavigationTracking(){
+    if(navigationTimer){ clearInterval(navigationTimer); navigationTimer=null; }
+  }
+
+  function startNavigationTracking(){
+    stopNavigationTracking();
+    if(!currentPlanId){
+      document.getElementById('navigationEmpty').style.display='block';
+      document.getElementById('navigationStatus').textContent='Save a flight plan before starting navigation.';
+      return;
+    }
+    refreshNavigationData();
+    navigationTimer=setInterval(refreshNavigationData,2000);
+  }
+
+  async function openNavigation(){
+    if(!currentPlanId){
+      if(!currentUser){ flashBtn('navigateFlightBtn','Log in and save first'); return; }
+      document.getElementById('savePlanBtn').click();
+      for(let attempt=0;attempt<40&&!currentPlanId;attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+      if(!currentPlanId){ flashBtn('navigateFlightBtn','Save plan first'); return; }
+    }
+    navigateTo('navigation');
+  }
+
+  async function refreshCurrentPlanRecord(){
+    if(!currentUser||!currentPlanId||navigationBusy) return;
+    try{
+      const trackingResponse=await fetch(`/api/tracking/${encodeURIComponent(currentPlanId)}`,{cache:'no-store'});
+      if(trackingResponse.ok){
+        const trackingData=await trackingResponse.json();
+        applyTrackingData(trackingData);
+        return;
+      }
+      const res=await fetch('/api/plans',{cache:'no-store'});
+      if(!res.ok) return;
+      const plans=await res.json();
+      const active=plans.find(plan=>plan.id===currentPlanId);
+      if(!active) return;
+      markPlanLoaded(active);
+      if(document.body.classList.contains('filed')) buildReview();
+    }catch(error){}
+  }
+
+  document.getElementById('navigateFlightBtn').addEventListener('click',openNavigation);
+  document.getElementById('navigationBackBtn').addEventListener('click',()=>navigateTo('planner'));
+  document.getElementById('navigationRefreshBtn').addEventListener('click',refreshNavigationData);
+  setInterval(refreshCurrentPlanRecord,15000);
+
   applyLocalSettings(false);
   updateDraftStatus();
+  markPlanLoaded(null);
   navigateTo(location.hash.replace('#','') || 'home', false);
 })();
 </script>
