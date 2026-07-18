@@ -1214,7 +1214,8 @@
   .customs-approval.arrival::after{color:rgba(49,95,120,.18)}
   .customs-approval h4{margin:0 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
   .customs-approval strong{font-size:18px;display:block;margin-bottom:5px}.customs-approval p{margin:2px 0;font-size:10px}
-  .navigation-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr);gap:18px;align-items:start}
+  .navigation-layout{display:grid;grid-template-columns:minmax(225px,.55fr) minmax(0,1.75fr) minmax(310px,.75fr);gap:18px;align-items:start}
+  .map-runway-layer-hidden .map-runway-asset{display:none;}
   .navigation-map-card,.navigation-side-card{border:1px solid var(--rule-strong);background:#111d24;box-shadow:var(--shadow);border-radius:5px;overflow:hidden}
   .navigation-map-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 16px;color:#eaf2f0;border-bottom:1px solid rgba(255,255,255,.13);background:#16262e}
   .navigation-map-head h2{margin:0;font-size:17px}.navigation-map-head p{margin:3px 0 0;color:#aebfc2;font-size:11px}
@@ -1241,7 +1242,8 @@
   .flight-milestones{display:grid;gap:7px}.flight-milestone{display:flex;gap:9px;align-items:flex-start;font-size:10.5px}.flight-milestone::before{content:'○';font:900 16px monospace;color:#879397;line-height:1}.flight-milestone.complete::before{content:'●';color:#27715a}.flight-milestone.active::before{content:'◉';color:#d99a2b}
   .navigation-customs-actions{display:grid;gap:8px}.navigation-customs-actions button{width:100%}
   .navigation-empty{position:absolute;inset:0;z-index:6;display:grid;place-content:center;padding:28px;text-align:center;color:#aebfc2;background:rgba(8,17,22,.72);backdrop-filter:blur(3px)}.navigation-empty strong{display:block;color:#fff;margin-bottom:6px}
-  @media(max-width:960px){.navigation-layout{grid-template-columns:1fr}.navigation-side{grid-template-columns:repeat(2,minmax(0,1fr))}.customs-workflow,.customs-approvals{grid-template-columns:1fr}}
+  @media(max-width:1250px){.navigation-layout{grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr)}.navigation-side.left{grid-column:1/-1;order:5;grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:960px){.navigation-layout{grid-template-columns:1fr}.navigation-side{grid-template-columns:repeat(2,minmax(0,1fr))}.navigation-side.left{grid-column:auto}.customs-workflow,.customs-approvals{grid-template-columns:1fr}}
   @media(max-width:650px){.navigation-side{grid-template-columns:1fr}.navigation-telemetry{grid-template-columns:1fr 1fr}.navigation-label-text{font-size:18px}.navigation-label-meta{font-size:15px}}
 
 </style>
@@ -1472,6 +1474,7 @@
         <div class="sub-title"><h4>Route Map</h4><div class="line-thin"></div></div>
         <div class="route-map-toolbar no-export">
           <button class="map-layer-toggle active" id="waypointLayerToggle" type="button" aria-pressed="true">Waypoints</button>
+          <button class="map-layer-toggle active" id="runwayLayerToggle" type="button" aria-pressed="true">Runways</button>
           <button class="map-layer-toggle" id="routeLineToggle" type="button" aria-pressed="false">Route line</button>
           <button class="map-layer-toggle" id="mapDistanceToggle" type="button" aria-pressed="false" title="Double-click the map to start or clear a measurement">Distance tool</button>
         </div>
@@ -1698,6 +1701,20 @@
         <div class="btn-row"><button class="btn-ghost" type="button" id="navigationBackBtn">Back to Flight Plan</button><button class="btn-primary" type="button" id="navigationRefreshBtn">Refresh now</button></div>
       </div>
       <div class="navigation-layout">
+        <aside class="navigation-side left" id="navigationSideLeft">
+          <section class="navigation-side-card"><h3>Performance</h3><div class="navigation-telemetry">
+            <div class="navigation-stat"><span>V1</span><strong id="navPerfV1">—</strong></div>
+            <div class="navigation-stat"><span>VR</span><strong id="navPerfVR">—</strong></div>
+            <div class="navigation-stat"><span>V2</span><strong id="navPerfV2">—</strong></div>
+            <div class="navigation-stat"><span>Vref</span><strong id="navPerfVref">—</strong></div>
+            <div class="navigation-stat"><span>Vapp</span><strong id="navPerfVapp">—</strong></div>
+            <div class="navigation-stat"><span>Cruise</span><strong id="navPerfCruise">—</strong></div>
+          </div><div class="perf-note" id="navPerfNote">Performance values come from the filed flight plan.</div></section>
+          <section class="navigation-side-card"><h3>Needed frequencies</h3>
+            <div class="frequency-status" id="navFrequencyStatus">Frequencies for the filed departure and arrival.</div>
+            <div class="frequency-list" style="grid-template-columns:1fr;" id="navFrequencyList"></div>
+          </section>
+        </aside>
         <section class="navigation-map-card">
           <div class="navigation-map-head"><div><h2 id="navigationTitle">Awaiting saved flight</h2><p id="navigationStatus">The aircraft feed will appear here.</p></div><span class="navigation-live" id="navigationFeedSource">Offline</span></div>
           <div class="navigation-radar">
@@ -1707,7 +1724,8 @@
               <button type="button" class="map-zoom-btn" data-zoom="reset" aria-label="Reset view" title="Reset view">&#8634;</button>
             </div>
             <button type="button" class="map-layer-toggle dark" id="navigationWaypointToggle" style="position:absolute;top:10px;left:10px;z-index:5;" aria-pressed="true">Waypoints</button>
-            <button type="button" class="map-layer-toggle dark" id="navigationDistanceToggle" style="position:absolute;top:44px;left:10px;z-index:5;" aria-pressed="false" title="Double-click the map to start or clear a measurement">Distance tool</button>
+            <button type="button" class="map-layer-toggle dark active" id="navigationRunwayToggle" style="position:absolute;top:44px;left:10px;z-index:5;" aria-pressed="true">Runways</button>
+            <button type="button" class="map-layer-toggle dark" id="navigationDistanceToggle" style="position:absolute;top:78px;left:10px;z-index:5;" aria-pressed="false" title="Double-click the map to start or clear a measurement">Distance tool</button>
             <svg id="navigationRadarSvg" class="map-pannable" viewBox="-600 -600 1200 1200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Live ATC24 aircraft radar">
               <image class="navigation-map-coast" href="maps/coast.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
               <image class="navigation-map-coast" href="maps/boundaries.svg" x="-600" y="-600" width="1200" height="1200" preserveAspectRatio="none"></image>
@@ -1726,6 +1744,7 @@
             <div class="navigation-stat"><span>Flight level</span><strong id="navAltitude">—</strong></div>
             <div class="navigation-stat"><span>Ground speed</span><strong id="navGroundSpeed">—</strong></div>
             <div class="navigation-stat"><span>Heading</span><strong id="navHeading">—</strong></div>
+            <div class="navigation-stat"><span>Target heading</span><strong id="navTargetHeading">—</strong></div>
             <div class="navigation-stat"><span>Next waypoint</span><strong id="navNextWaypoint">—</strong></div>
             <div class="navigation-stat"><span>To next</span><strong id="navDistanceNext">—</strong></div>
             <div class="navigation-stat"><span>Remaining</span><strong id="navRemaining">—</strong></div>
@@ -2803,7 +2822,9 @@
     "IZOL": ["GROUND.svg", "RWY_NW.svg", "RWY_SE.svg"]
   };
   function mapAssetMarkup(cssClass=''){
-    return Object.entries(AIRPORT_SVG_ASSETS).flatMap(([airport,files])=>files.map(file=>`<image class="${cssClass}" href="maps/${airport}/${file}" x="${MAP_VIEWBOX_MIN_X}" y="${MAP_VIEWBOX_MIN_Y}" width="${MAP_VIEWBOX_WIDTH}" height="${MAP_VIEWBOX_HEIGHT}" preserveAspectRatio="none"/>`)).join('');
+    // Runway centreline SVGs are tagged so the "Runways" layer toggles can
+    // hide them without touching the airport ground layouts.
+    return Object.entries(AIRPORT_SVG_ASSETS).flatMap(([airport,files])=>files.map(file=>`<image class="${cssClass} ${file.startsWith('RWY')?'map-runway-asset':'map-ground-asset'}" href="maps/${airport}/${file}" x="${MAP_VIEWBOX_MIN_X}" y="${MAP_VIEWBOX_MIN_Y}" width="${MAP_VIEWBOX_WIDTH}" height="${MAP_VIEWBOX_HEIGHT}" preserveAspectRatio="none"/>`)).join('');
   }
 
   const VFR_AIRSPACE_GROUPS = [
@@ -2865,6 +2886,32 @@
   }
   navigationWaypointToggle.addEventListener('click', ()=>setNavigationWaypointLayerVisible(!navigationWaypointLayerVisible));
   setNavigationWaypointLayerVisible(true);
+
+  // ===== Runway line layer toggles (planner map + navigation radar) =====
+  const runwayLayerToggle = document.getElementById('runwayLayerToggle');
+  const navigationRunwayToggle = document.getElementById('navigationRunwayToggle');
+  const mapAirportAssetsG = document.getElementById('mapAirportAssets');
+  const navigationMapAssetsG = document.getElementById('navigationMapAssets');
+  let runwayLayerVisible = true;
+  let navigationRunwayLayerVisible = true;
+
+  function setRunwayLayerVisible(visible){
+    runwayLayerVisible = visible !== false;
+    mapAirportAssetsG.classList.toggle('map-runway-layer-hidden', !runwayLayerVisible);
+    runwayLayerToggle.classList.toggle('active', runwayLayerVisible);
+    runwayLayerToggle.setAttribute('aria-pressed', String(runwayLayerVisible));
+  }
+  runwayLayerToggle.addEventListener('click', ()=>setRunwayLayerVisible(!runwayLayerVisible));
+  setRunwayLayerVisible(true);
+
+  function setNavigationRunwayLayerVisible(visible){
+    navigationRunwayLayerVisible = visible !== false;
+    navigationMapAssetsG.classList.toggle('map-runway-layer-hidden', !navigationRunwayLayerVisible);
+    navigationRunwayToggle.classList.toggle('active', navigationRunwayLayerVisible);
+    navigationRunwayToggle.setAttribute('aria-pressed', String(navigationRunwayLayerVisible));
+  }
+  navigationRunwayToggle.addEventListener('click', ()=>setNavigationRunwayLayerVisible(!navigationRunwayLayerVisible));
+  setNavigationRunwayLayerVisible(true);
 
   // ===== Map pan & zoom =====
   // The basemap still uses a normal SVG viewBox, while overlay listeners resize
@@ -3524,6 +3571,7 @@
   }
   function renderFrequencies(){
     const rows = relevantFrequencies();
+    renderNavFrequencies();
     if(!rows.length){ frequencyList.innerHTML=''; return; }
     frequencyList.innerHTML = rows.map(item => {
       const online = latestOnlinePositions.has(`${item.airport}_${item.position}`);
@@ -4761,6 +4809,7 @@
   let currentTracking = null;
   let currentPlanSnapshot = null;
   let navigationTimer = null;
+  let navigationNetworkTimer = null;
   let navigationBusy = false;
 
   function readableCustomsStatus(status){
@@ -5206,7 +5255,10 @@
       const own=item.callsign===data.matchingCallsign;
       const warning=warningCallsigns.has(item.callsign);
       const iconClass=`navigation-aircraft${own?' own':''}${item.isEmergencyOccuring?' emergency':''}`;
-      const callsign=escapeSvgText(item.callsign);
+      // Prefer the pilot's filed/selected callsign (matches mainstream ATC24
+      // clients); the raw in-game callsign is the fallback.
+      const shownCallsign=item.displayCallsign||item.callsign;
+      const callsign=escapeSvgText(shownCallsign);
       const fl=escapeSvgText(item.flightLevel||'FL000');
       const speed=`${Math.max(0,Math.round(Number(item.groundSpeed)||0))} KT`;
 
@@ -5218,7 +5270,7 @@
 
       // Data blocks remain a constant screen size and are updated on every zoom
       // event rather than waiting for the next network refresh.
-      const estWidth=Math.max(140,Math.min(280,60+String(item.callsign||'').length*11));
+      const estWidth=Math.max(140,Math.min(280,60+String(shownCallsign||'').length*11));
       const labelXAbs=pos.x>MAP_VIEWBOX_MIN_X+MAP_VIEWBOX_WIDTH*.72?pos.x-estWidth-6:pos.x+22;
       const labelYAbs=Math.max(MAP_VIEWBOX_MIN_Y+8,Math.min(MAP_VIEWBOX_MIN_Y+MAP_VIEWBOX_HEIGHT-55,pos.y-18));
       const textClass=own?' own':warning?' warning':'';
@@ -5239,7 +5291,7 @@
       list.innerHTML='<div class="section-note">No projected traffic conflicts inside the advisory thresholds.</div>';
       return;
     }
-    list.innerHTML=advisories.map(item=>`<article class="traffic-advisory ${item.level}"><strong><span>${escapeSvgText(item.callsign)}</span><span>${escapeSvgText(item.level)}</span></strong><p>${escapeSvgText(item.message)}<br>${escapeSvgText(item.flightLevel)} · ${Math.round(item.speed||0)} KT · projected ${Number(item.cpaDistanceNm).toFixed(1)} NM in ${Math.round(item.cpaSeconds)} sec</p></article>`).join('');
+    list.innerHTML=advisories.map(item=>`<article class="traffic-advisory ${item.level}"><strong><span>${escapeSvgText(item.displayCallsign||item.callsign)}</span><span>${escapeSvgText(item.level)}</span></strong><p>${escapeSvgText(item.message)}<br>${escapeSvgText(item.flightLevel)} · ${Math.round(item.speed||0)} KT · projected ${Number(item.cpaDistanceNm).toFixed(1)} NM in ${Math.round(item.cpaSeconds)} sec</p></article>`).join('');
   }
 
   function renderFlightMilestones(data){
@@ -5255,6 +5307,58 @@
     ];
     const firstIncomplete=rows.findIndex(row=>!row[1]);
     document.getElementById('flightMilestones').innerHTML=rows.map((row,index)=>`<div class="flight-milestone ${row[1]?'complete':index===firstIncomplete?'active':''}"><div><strong>${escapeSvgText(row[0])}</strong><br><span>${escapeSvgText(row[2]||'')}</span></div></div>`).join('');
+  }
+
+  // Required course to the next route node, with the turn needed to intercept
+  // it from the current heading.
+  function formatTargetHeading(data){
+    const target=Number(data.route?.bearingToNextDeg);
+    if(!Number.isFinite(target)||!data.aircraft) return '—';
+    const shown=((Math.round(target)+359)%360)+1;
+    const current=Number(data.aircraft.heading)||0;
+    const delta=((target-current+540)%360)-180;
+    const turn=Math.abs(delta)<3?'on course':`turn ${delta>0?'R':'L'} ${Math.abs(Math.round(delta))}°`;
+    return `${String(shown).padStart(3,'0')}° · ${turn}`;
+  }
+
+  // Left-hand navigation panels: performance figures from the filed plan and
+  // the official frequencies for the filed route.
+  function renderNavigationSidePanels(data){
+    const fields=data.plan?.fields||{};
+    const readPerf=id=>{
+      const saved=String(fields[id]||'').trim();
+      if(saved&&saved!=='—') return saved;
+      const el=document.getElementById(id);
+      const live=el?String(el.value||'').trim():'';
+      return live&&live!=='—'?live:'—';
+    };
+    document.getElementById('navPerfV1').textContent=readPerf('outV1');
+    document.getElementById('navPerfVR').textContent=readPerf('outVR');
+    document.getElementById('navPerfV2').textContent=readPerf('outV2');
+    document.getElementById('navPerfVref').textContent=readPerf('outVref');
+    document.getElementById('navPerfVapp').textContent=readPerf('outVapp');
+    document.getElementById('navPerfCruise').textContent=readPerf('outCruise');
+    const aircraftName=String(fields.fdAircraft||'').trim();
+    document.getElementById('navPerfNote').textContent=aircraftName
+      ? `${aircraftName}${String(fields.perfVstall||'').trim()?` · Vs ${String(fields.perfVstall).trim()} kt`:''} — values from the filed flight plan.`
+      : 'Performance values come from the filed flight plan.';
+    renderNavFrequencies();
+  }
+
+  function renderNavFrequencies(){
+    const list=document.getElementById('navFrequencyList');
+    if(!list) return;
+    const rows=relevantFrequencies();
+    if(!rows.length){
+      list.innerHTML='';
+      document.getElementById('navFrequencyStatus').textContent='No filed departure or arrival airport with published frequencies.';
+      return;
+    }
+    document.getElementById('navFrequencyStatus').textContent='Ground + Tower for the filed airports and Centers along the route. Green is online.';
+    list.innerHTML=rows.map(item=>{
+      const online=latestOnlinePositions.has(`${item.airport}_${item.position}`);
+      return `<div class="frequency-row"><span class="frequency-dot ${online?'online':''}" title="${online?'Online':'Offline'}"></span><span class="frequency-name">${item.label}</span><span class="frequency-value">${item.frequency}</span></div>`;
+    }).join('');
   }
 
   function formatNm(value){ return Number.isFinite(Number(value)) ? `${Number(value).toFixed(1)} NM` : '—'; }
@@ -5274,17 +5378,20 @@
     document.getElementById('navigationTitle').textContent=data.plan?.name||data.requestedCallsign||'Live flight';
     document.getElementById('navigationSubtitle').textContent=`${data.plan?.fields?.depAirport||'----'} → ${data.plan?.fields?.arrAirport||'----'} · tracking ${data.requestedCallsign||'filed callsign'}`;
     document.getElementById('navigationFeedSource').textContent=data.feedSource==='websocket'?'WebSocket relay':'Server cache';
+    const ownDisplayCallsign=data.aircraft?(data.aircraft.displayCallsign||data.aircraft.callsign):null;
     document.getElementById('navigationStatus').textContent=data.aircraft
-      ? `${data.matchingCallsign} · ${data.aircraft.flightLevel} · ${Math.round(data.aircraft.groundSpeed)} KT · ${formatNm(data.route?.remainingNm)} remaining${data.route?.nextWaypoint?.code?` · next ${data.route.nextWaypoint.code}`:''}`
+      ? `${ownDisplayCallsign} · ${data.aircraft.flightLevel} · ${Math.round(data.aircraft.groundSpeed)} KT · ${formatNm(data.route?.remainingNm)} remaining${data.route?.nextWaypoint?.code?` · next ${data.route.nextWaypoint.code}`:''}`
       : `${data.requestedCallsign||'Filed aircraft'} is not currently visible. Other traffic remains displayed.`;
-    document.getElementById('navAircraft').textContent=data.aircraft?`${data.aircraft.callsign} · ${data.aircraft.aircraftType||'Unknown type'}`:'Not found';
+    document.getElementById('navAircraft').textContent=data.aircraft?`${ownDisplayCallsign} · ${data.aircraft.aircraftType||'Unknown type'}`:'Not found';
     document.getElementById('navAltitude').textContent=data.aircraft?`${data.aircraft.flightLevel} · ${Math.round(data.aircraft.altitude).toLocaleString()} ft`:'—';
     document.getElementById('navGroundSpeed').textContent=data.aircraft?`${Math.round(data.aircraft.groundSpeed)} kt`:'—';
     document.getElementById('navHeading').textContent=data.aircraft?`${Math.round(data.aircraft.heading)}°`:'—';
+    document.getElementById('navTargetHeading').textContent=formatTargetHeading(data);
     document.getElementById('navNextWaypoint').textContent=data.route?.nextWaypoint?.code||'—';
     document.getElementById('navDistanceNext').textContent=formatNm(data.route?.distanceToNextNm);
     document.getElementById('navRemaining').textContent=formatNm(data.route?.remainingNm);
     document.getElementById('navEta').textContent=formatEta(data.route?.etaMinutes);
+    renderNavigationSidePanels(data);
     renderNavigationMap(data);
     renderTrafficAdvisories(data);
     renderFlightMilestones(data);
@@ -5306,6 +5413,7 @@
 
   function stopNavigationTracking(){
     if(navigationTimer){ clearInterval(navigationTimer); navigationTimer=null; }
+    if(navigationNetworkTimer){ clearInterval(navigationNetworkTimer); navigationNetworkTimer=null; }
   }
 
   function startNavigationTracking(){
@@ -5317,6 +5425,9 @@
     }
     refreshNavigationData();
     navigationTimer=setInterval(refreshNavigationData,2000);
+    // Keep the frequency panel's online/offline dots current while navigating.
+    refreshNetworkStatus();
+    navigationNetworkTimer=setInterval(refreshNetworkStatus,30000);
   }
 
   async function openNavigation(){
