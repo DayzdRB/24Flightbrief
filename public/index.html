@@ -828,42 +828,349 @@
   .summary-signature-status{max-width:560px;margin:0 auto;padding:14px;border:1px dashed var(--rule);border-radius:5px;text-align:center;font-size:11px;color:var(--ink-soft);background:rgba(255,255,255,.24)}
   @media(max-width:720px){.review-grid{grid-template-columns:1fr}.wizard-progress{overflow-x:auto;flex-wrap:nowrap}.review-card dl{grid-template-columns:105px 1fr}}
 
+
+  /* ===== Application shell and primary navigation ===== */
+  body{
+    padding:0 16px 80px;
+    align-items:stretch;
+    gap:0;
+  }
+  .site-header{
+    width:calc(100% + 32px);
+    margin-left:-16px;
+    position:sticky;
+    top:0;
+    z-index:500;
+    background:rgba(10,18,22,.96);
+    border-bottom:1px solid rgba(255,255,255,.1);
+    box-shadow:0 12px 30px rgba(0,0,0,.22);
+    backdrop-filter:blur(14px);
+  }
+  .site-header-inner{
+    max-width:1180px;
+    min-height:68px;
+    margin:0 auto;
+    padding:10px 18px;
+    display:flex;
+    align-items:center;
+    gap:22px;
+  }
+  .site-brand{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:0;
+    background:none;
+    border:0;
+    color:#eef4f2;
+    text-align:left;
+  }
+  .brand-mark{
+    width:38px;
+    height:38px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:9px;
+    background:linear-gradient(145deg,var(--teal),var(--teal-dark));
+    font-family:'Big Shoulders Stencil',sans-serif;
+    font-size:17px;
+    font-weight:800;
+    letter-spacing:.02em;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+  }
+  .brand-copy strong{
+    display:block;
+    font-family:'Big Shoulders Stencil',sans-serif;
+    font-size:21px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+  .brand-copy span{
+    display:block;
+    margin-top:1px;
+    color:#8fa6a0;
+    font-size:9px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+  .primary-nav{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    margin-left:auto;
+  }
+  .nav-link{
+    background:transparent;
+    color:#afc0bc;
+    border:1px solid transparent;
+    padding:9px 12px;
+    white-space:nowrap;
+  }
+  .nav-link:hover{color:#fff;background:rgba(255,255,255,.06);}
+  .nav-link.active{
+    color:#fff;
+    border-color:rgba(67,173,153,.42);
+    background:rgba(27,127,114,.18);
+  }
+  .settings-nav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-left:7px;
+    padding:8px 11px;
+    background:rgba(255,255,255,.04);
+    border-color:rgba(255,255,255,.13);
+    color:#e3ece9;
+  }
+  .settings-nav.active{background:rgba(27,127,114,.18);border-color:rgba(67,173,153,.42);}
+  .account-dot{width:7px;height:7px;border-radius:50%;background:#697a76;box-shadow:0 0 0 3px rgba(105,122,118,.13);}
+  .account-dot.online{background:#54c69f;box-shadow:0 0 0 3px rgba(84,198,159,.13);}
+  .settings-icon{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;}
+
+  .app-shell{width:100%;max-width:1180px;margin:0 auto;}
+  .app-view{display:none;padding-top:28px;}
+  .app-view.active{display:block;}
+  #plannerView{padding-top:20px;}
+  .planner-frame{max-width:980px;margin:0 auto;}
+  .planner-toolbar{margin-bottom:14px;}
+  .planner-toolbar-copy h1{font-size:18px;}
+  .planner-toolbar-copy .sub{max-width:440px;line-height:1.45;}
+
+  /* ===== Landing page ===== */
+  .landing-hero{
+    min-height:390px;
+    position:relative;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:18px;
+    padding:54px;
+    display:flex;
+    align-items:center;
+    background:
+      linear-gradient(90deg,rgba(8,16,20,.98) 0%,rgba(8,16,20,.91) 43%,rgba(8,16,20,.3) 100%),
+      url('/MapOverview.png') center/cover no-repeat;
+    box-shadow:0 30px 70px -35px rgba(0,0,0,.9);
+  }
+  .landing-hero::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:linear-gradient(180deg,transparent 55%,rgba(10,18,22,.55));
+  }
+  .hero-content{position:relative;z-index:1;max-width:650px;}
+  .hero-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:17px;
+    color:#7ed0bc;
+    font:700 10px 'JetBrains Mono',monospace;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  .hero-kicker::before{content:"";width:28px;height:1px;background:#7ed0bc;}
+  .hero-content h1{
+    margin:0;
+    color:#f0f6f4;
+    font-family:'Big Shoulders Stencil',sans-serif;
+    font-size:clamp(46px,7vw,78px);
+    line-height:.92;
+    letter-spacing:.01em;
+    text-transform:uppercase;
+  }
+  .hero-content p{max-width:570px;margin:19px 0 25px;color:#b7c7c3;font-size:15px;line-height:1.7;}
+  .hero-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .hero-actions button{padding:11px 17px;}
+  .landing-stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-top:14px;
+  }
+  .landing-stat,.landing-card,.surface-card{
+    border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.045);
+    border-radius:12px;
+  }
+  .landing-stat{padding:17px 19px;}
+  .landing-stat span{display:block;color:#819690;font:700 9px 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;}
+  .landing-stat strong{display:block;margin-top:6px;color:#edf5f2;font-size:20px;}
+  .landing-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.8fr);gap:16px;margin-top:16px;}
+  .landing-card{padding:24px;color:#dbe5e2;}
+  .landing-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px;}
+  .landing-card h2,.page-heading h1,.settings-section h2{margin:0;color:#f0f6f4;font-family:'Big Shoulders Stencil',sans-serif;text-transform:uppercase;letter-spacing:.04em;}
+  .landing-card h2{font-size:22px;}
+  .landing-card p{color:#8fa39e;font-size:12.5px;line-height:1.6;}
+  .quick-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .quick-action{
+    min-height:116px;
+    text-align:left;
+    padding:16px;
+    color:#e8f0ee;
+    background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.11);
+  }
+  .quick-action:hover{background:rgba(27,127,114,.13);border-color:rgba(79,181,160,.38);}
+  .quick-action strong{display:block;font-size:14px;margin-bottom:7px;}
+  .quick-action span{display:block;color:#8ea29d;font-size:11px;line-height:1.45;font-weight:500;}
+  .draft-note{margin-top:10px;color:#7f928d;font:10px 'JetBrains Mono',monospace;}
+
+  /* ===== Full-page My Flights and Settings ===== */
+  .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:4px 0 18px;}
+  .page-heading h1{font-size:34px;}
+  .page-heading p{margin:5px 0 0;color:#8fa39e;font-size:12.5px;}
+  .surface-card{padding:22px;color:#dce7e4;}
+  .empty-state{padding:50px 22px;text-align:center;color:#92a49f;}
+  .empty-state strong{display:block;margin-bottom:7px;color:#e6eeec;font-size:15px;}
+  .plans-grid{display:grid;gap:10px;}
+  .plans-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:16px;
+    padding:15px 16px;
+    background:rgba(255,255,255,.025);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:9px;
+    margin:0;
+  }
+  .plan-title{color:#eef5f3;font-size:14px;font-weight:700;}
+  .plan-route{margin-top:5px;color:#91a59f;font:11px 'JetBrains Mono',monospace;}
+  .plan-meta{margin-top:7px;display:flex;gap:12px;flex-wrap:wrap;color:#718781;font-size:10px;}
+  .plan-actions{display:flex;gap:7px;align-items:center;}
+  .plan-delete{color:#e4aaa2;border-color:rgba(165,56,44,.45);}
+  .mini-plans .plans-row{padding:12px 13px;}
+  .mini-plans .plan-actions .plan-delete{display:none;}
+  .mini-plans .plan-meta{display:none;}
+  .section-note{padding:12px 14px;margin-bottom:12px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;color:#8fa39e;font-size:11.5px;line-height:1.55;}
+
+  .settings-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;}
+  .settings-profile{padding:24px;text-align:center;align-self:start;}
+  .settings-avatar{width:72px;height:72px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(145deg,var(--teal),#234841);color:white;font:800 28px 'Big Shoulders Stencil',sans-serif;border:3px solid rgba(255,255,255,.08);}
+  .settings-profile strong{display:block;color:#edf5f2;font-size:15px;}
+  .settings-profile p{margin:5px 0 17px;color:#80938e;font-size:11px;}
+  .settings-section{padding:24px;}
+  .settings-section h2{font-size:21px;margin-bottom:5px;}
+  .settings-section>p{margin:0 0 20px;color:#849993;font-size:11.5px;line-height:1.5;}
+  .settings-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;}
+  .settings-field{padding:10px 12px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(0,0,0,.12);}
+  .settings-field.full{grid-column:1/-1;}
+  .settings-field label{display:block;margin-bottom:6px;color:#8ea39d;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+  .settings-field input,.settings-field select{color:#edf5f2;background:transparent;font-family:'Inter',sans-serif;font-size:13px;}
+  .settings-field option{color:#16232b;}
+  .settings-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .settings-danger{margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:space-between;gap:15px;}
+  .settings-danger strong{display:block;color:#dce7e4;font-size:12px;}
+  .settings-danger span{display:block;margin-top:3px;color:#7f938d;font-size:10.5px;}
+
+  @media(max-width:850px){
+    .site-header-inner{gap:10px;}
+    .brand-copy span{display:none;}
+    .primary-nav{gap:2px;}
+    .nav-link{padding:8px 9px;font-size:11px;}
+    .settings-nav span:not(.account-dot){display:none;}
+    .landing-hero{padding:40px 28px;min-height:360px;}
+    .landing-grid,.settings-layout{grid-template-columns:1fr;}
+  }
+  @media(max-width:620px){
+    .site-header-inner{padding:8px 10px;min-height:60px;overflow-x:auto;}
+    .brand-copy{display:none;}
+    .brand-mark{width:34px;height:34px;flex:0 0 auto;}
+    .primary-nav{margin-left:0;}
+    .nav-link{font-size:10.5px;padding:8px 7px;}
+    .settings-nav{margin-left:0;padding:8px;}
+    .landing-hero{padding:32px 20px;min-height:390px;background-position:60% center;}
+    .hero-content h1{font-size:48px;}
+    .landing-stats{grid-template-columns:1fr;}
+    .quick-actions,.settings-form{grid-template-columns:1fr;}
+    .page-heading{align-items:flex-start;flex-direction:column;}
+    .plans-row{grid-template-columns:1fr;}
+    .plan-actions{justify-content:flex-start;}
+    .settings-danger{align-items:flex-start;flex-direction:column;}
+  }
+
 </style>
 </head>
 <body>
 
-  <div class="toolbar no-export">
-    <div>
-      <h1>24FlightBrief</h1>
-      <div class="sub">Flight planning for ATC24</div>
+  <header class="site-header no-export">
+    <div class="site-header-inner">
+      <button class="site-brand" type="button" data-view="home" aria-label="Go to the 24FlightBrief home page">
+        <span class="brand-mark">24</span>
+        <span class="brand-copy"><strong>24FlightBrief</strong><span>Flight planning for ATC24</span></span>
+      </button>
+      <nav class="primary-nav" aria-label="Primary navigation">
+        <button class="nav-link active" type="button" data-view="home">Home</button>
+        <button class="nav-link" type="button" data-view="planner">Create Flight Plan</button>
+        <button class="nav-link" type="button" data-view="flights">My Flights</button>
+      </nav>
+      <button class="settings-nav" id="settingsNavBtn" type="button" data-view="settings">
+        <span class="account-dot" id="accountDot"></span>
+        <svg class="settings-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20.3h-3v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7.02 15a1.7 1.7 0 0 0-1.56-1.03H5.4v-3h.06A1.7 1.7 0 0 0 7.02 9.94a1.7 1.7 0 0 0-.34-1.88L6.62 8l2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56V4.7h3v.02a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 8l-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.04v3h-.04A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+        <span id="headerAccountLabel">Settings</span>
+      </button>
     </div>
-    <div class="btn-row" id="accountRow">
-      <span id="accountStatus" style="font-size:11.5px;color:#c7d4d1;">Not logged in</span>
-      <button class="btn-ghost btn-small" id="loginBtn">Log in with Discord</button>
-      <button class="btn-ghost btn-small" id="logoutBtn" style="display:none;">Log out</button>
-      <button class="btn-ghost btn-small" id="myPlansBtn" style="display:none;">My Flight Plans</button>
-    </div>
-    <div class="btn-row">
-      <button class="btn-ghost" id="resetBtn">Reset form</button>
-      <button class="btn-ghost" id="editBtn" style="display:none;">Edit</button>
-      <button class="btn-primary" id="createPlanBtn">Create Flight Plan</button>
-      <button class="btn-ghost hidden-until-filed" id="savePlanBtn">Save to my account</button>
-      <button class="btn-ghost hidden-until-filed" id="customsLinkBtn" style="display:none;">Copy customs link</button>
-      <button class="btn-ghost hidden-until-filed" id="copyPlanBtn">Copy /createflightplan command</button>
-      <button class="btn-ghost hidden-until-filed" id="copyImgBtn">Copy as image</button>
-      <button class="btn-amber hidden-until-filed" id="exportImgBtn">Download PNG</button>
-      <button class="btn-primary hidden-until-filed" id="exportPdfBtn">Download PDF</button>
-    </div>
-  </div>
+  </header>
 
-  <div class="toolbar no-export" id="plansPanel" style="display:none;">
-    <div style="width:100%;">
-      <h1 style="font-size:15px;">My Flight Plans</h1>
-      <div id="plansList" style="margin-top:10px;font-size:12.5px;color:#dfe9e6;">Loading…</div>
-    </div>
-  </div>
+  <main class="app-shell">
+    <section class="app-view active" id="homeView" data-app-view="home">
+      <div class="landing-hero">
+        <div class="hero-content">
+          <div class="hero-kicker">ATC24 Flight Operations</div>
+          <h1>Build the brief.<br>Fly the route.</h1>
+          <p>Create validated ATC24 flight plans, calculate performance, prepare customs documentation, and keep every operational detail in one place.</p>
+          <div class="hero-actions">
+            <button class="btn-primary" type="button" id="homeCreateBtn">Create Flight Plan</button>
+            <button class="btn-ghost" type="button" id="homeFlightsBtn">View My Flights</button>
+          </div>
+        </div>
+      </div>
 
-  <div class="wizard-progress no-export" id="wizardProgress"></div>
+      <div class="landing-stats" aria-label="Application status">
+        <div class="landing-stat"><span>ATC24 aircraft online</span><strong id="homeAircraftCount">Checking…</strong></div>
+        <div class="landing-stat"><span>Account</span><strong id="homeLoginStatus">Guest mode</strong></div>
+        <div class="landing-stat"><span>Local draft</span><strong id="homeDraftStatus">None saved</strong></div>
+      </div>
+
+      <div class="landing-grid">
+        <section class="landing-card">
+          <div class="landing-card-head"><div><h2>Flight desk</h2><p>Start fresh, continue a draft, or open your saved flights.</p></div></div>
+          <div class="quick-actions">
+            <button class="quick-action" type="button" id="quickCreateBtn"><strong>Create a flight plan</strong><span>Open the guided planning workflow and build a new operational brief.</span></button>
+            <button class="quick-action" type="button" id="homeContinueBtn"><strong>Continue local draft</strong><span>Restore the latest automatically saved plan from this browser.</span></button>
+          </div>
+          <div class="draft-note" id="homeDraftNote">No local draft is currently stored.</div>
+        </section>
+        <section class="landing-card">
+          <div class="landing-card-head"><div><h2>Recent flights</h2><p>Your latest saved plans appear here after Discord login.</p></div><button class="btn-ghost btn-small" type="button" id="homeAllFlightsBtn">View all</button></div>
+          <div class="mini-plans" id="homeRecentPlans"><div class="empty-state"><strong>No account connected</strong>Sign in from Settings to load saved flights.</div></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="app-view" id="plannerView" data-app-view="planner">
+      <div class="planner-frame">
+        <div class="toolbar planner-toolbar no-export">
+          <div class="planner-toolbar-copy">
+            <h1>Create Flight Plan</h1>
+            <div class="sub">Complete the guided brief, then review, save, or export it.</div>
+          </div>
+          <div class="btn-row">
+            <button class="btn-ghost" id="resetBtn">Reset form</button>
+            <button class="btn-ghost" id="editBtn" style="display:none;">Edit</button>
+            <button class="btn-primary" id="createPlanBtn">Create Flight Plan</button>
+            <button class="btn-ghost hidden-until-filed" id="savePlanBtn">Save to my account</button>
+            <button class="btn-ghost hidden-until-filed" id="customsLinkBtn" style="display:none;">Copy customs link</button>
+            <button class="btn-ghost hidden-until-filed" id="copyPlanBtn">Copy /createflightplan command</button>
+            <button class="btn-ghost hidden-until-filed" id="copyImgBtn">Copy as image</button>
+            <button class="btn-amber hidden-until-filed" id="exportImgBtn">Download PNG</button>
+            <button class="btn-primary hidden-until-filed" id="exportPdfBtn">Download PDF</button>
+          </div>
+        </div>
+
+        <div class="wizard-progress no-export" id="wizardProgress"></div>
 
   <div class="sheet-shell">
     <div class="sprocket"></div>
@@ -1170,14 +1477,153 @@
         <div class="customs-link-box no-export" id="customsLinkBox"><strong>Customs inspection link</strong><br>Share this only with the cargo/customs agent. They must sign in with Discord.<input id="customsUrl" readonly aria-label="Customs inspection link" title="Click to select the full link"></div>
       </div>
       <div class="wizard-nav no-export" id="wizardNav"><button class="btn-ghost" id="wizardPrev" type="button">Previous</button><span class="autosave-state" id="autosaveState">Not saved yet</span><button class="btn-primary" id="wizardNext" type="button">Next</button></div>
-</div>
-  </div>
+    </div>
+      </div>
+      </div>
+    </section>
+
+    <section class="app-view" id="flightsView" data-app-view="flights">
+      <div class="page-heading">
+        <div><h1>My Flights</h1><p>Open, update, or remove flight plans saved to your Discord account.</p></div>
+        <button class="btn-primary" type="button" id="flightsCreateBtn">Create Flight Plan</button>
+      </div>
+      <div class="surface-card">
+        <div class="section-note" id="plansLoginNotice">Sign in with Discord from Settings to load and save flight plans.</div>
+        <div class="plans-grid" id="plansList"><div class="empty-state"><strong>Loading flights</strong>Checking your account…</div></div>
+      </div>
+    </section>
+
+    <section class="app-view" id="settingsView" data-app-view="settings">
+      <div class="page-heading">
+        <div><h1>Settings</h1><p>Manage your account connection and flight-planning defaults.</p></div>
+      </div>
+      <div class="settings-layout">
+        <aside class="surface-card settings-profile">
+          <div class="settings-avatar" id="settingsAvatar">24</div>
+          <strong id="accountStatus">Not logged in</strong>
+          <p id="settingsAccountDetail">Connect Discord to save and reopen flight plans.</p>
+          <button class="btn-primary" id="loginBtn" type="button">Log in with Discord</button>
+          <button class="btn-ghost" id="logoutBtn" type="button" style="display:none;">Log out</button>
+        </aside>
+        <section class="surface-card settings-section">
+          <h2>Planning defaults</h2>
+          <p>These preferences are applied to new plans on this browser. Roblox username is also saved to your account when logged in.</p>
+          <div class="settings-form">
+            <div class="settings-field full"><label for="settingsRobloxUsername">Roblox username</label><input id="settingsRobloxUsername" maxlength="40" placeholder="Your Roblox username"></div>
+            <div class="settings-field"><label for="settingsDefaultCallsign">Default callsign</label><input id="settingsDefaultCallsign" maxlength="24" placeholder="e.g. SBI412"></div>
+            <div class="settings-field"><label for="settingsDefaultRules">Default flight rules</label><select id="settingsDefaultRules"><option value="">No default</option><option value="IFR">IFR</option><option value="VFR">VFR</option></select></div>
+            <div class="settings-field full"><label for="settingsDefaultAltitude">Default cruise altitude</label><input id="settingsDefaultAltitude" maxlength="12" placeholder="e.g. FL250"></div>
+          </div>
+          <div class="settings-actions"><button class="btn-primary" type="button" id="saveSettingsBtn">Save settings</button></div>
+          <div class="settings-danger">
+            <div><strong>Clear local autosave</strong><span>Removes the draft stored in this browser. Saved account plans are unaffected.</span></div>
+            <button class="btn-danger-outline" type="button" id="clearDraftBtn">Clear draft</button>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="/aircraft-data.js"></script>
 <script>
 (function(){
+
+  // ===============================================================
+  // Application navigation and local planning preferences
+  // ===============================================================
+  const LOCAL_SETTINGS_KEY = '24fb-settings';
+  const AUTOSAVE_KEY = '24fb-autosave';
+  const viewNames = new Set(['home','planner','flights','settings']);
+  const appViews = [...document.querySelectorAll('[data-app-view]')];
+
+  function readLocalSettings(){
+    try{ return JSON.parse(localStorage.getItem(LOCAL_SETTINGS_KEY) || '{}') || {}; }
+    catch(error){ return {}; }
+  }
+  function updateDraftStatus(){
+    const hasDraft = Boolean(localStorage.getItem(AUTOSAVE_KEY));
+    document.getElementById('homeDraftStatus').textContent = hasDraft ? 'Draft available' : 'None saved';
+    document.getElementById('homeDraftNote').textContent = hasDraft
+      ? 'A local draft is ready to restore.'
+      : 'No local draft is currently stored.';
+    document.getElementById('homeContinueBtn').disabled = !hasDraft;
+  }
+  function navigateTo(view, pushHistory=true){
+    const target = viewNames.has(view) ? view : 'home';
+    appViews.forEach(section=>section.classList.toggle('active', section.dataset.appView === target));
+    document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active', button.dataset.view === target));
+    if(pushHistory){
+      const hash = target === 'home' ? '#home' : `#${target}`;
+      if(location.hash !== hash) history.pushState({view:target}, '', hash);
+    }
+    if(target === 'flights') loadPlansList();
+    if(target === 'settings') loadSettingsView();
+    const titles={home:'24FlightBrief — Flight Planning for ATC24',planner:'Create Flight Plan — 24FlightBrief',flights:'My Flights — 24FlightBrief',settings:'Settings — 24FlightBrief'};
+    document.title=titles[target];
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>navigateTo(button.dataset.view)));
+  window.addEventListener('popstate',()=>navigateTo(location.hash.replace('#','') || 'home', false));
+  document.getElementById('homeCreateBtn').addEventListener('click',()=>navigateTo('planner'));
+  document.getElementById('quickCreateBtn').addEventListener('click',()=>navigateTo('planner'));
+  document.getElementById('homeFlightsBtn').addEventListener('click',()=>navigateTo('flights'));
+  document.getElementById('homeAllFlightsBtn').addEventListener('click',()=>navigateTo('flights'));
+  document.getElementById('flightsCreateBtn').addEventListener('click',()=>navigateTo('planner'));
+
+  function applyLocalSettings(overwrite=false){
+    const settings = readLocalSettings();
+    const setIfAllowed = (id,value)=>{
+      const input=document.getElementById(id);
+      if(input && value && (overwrite || !input.value.trim())) input.value=value;
+    };
+    setIfAllowed('fdCallsign', settings.defaultCallsign);
+    setIfAllowed('fdPilotUsername', settings.robloxUsername);
+    setIfAllowed('cruiseAlt', settings.defaultAltitude);
+    const rules=document.getElementById('flightRules');
+    if(rules && settings.defaultRules && (overwrite || !rules.value)) rules.value=settings.defaultRules;
+  }
+  function loadSettingsView(){
+    const settings = readLocalSettings();
+    document.getElementById('settingsDefaultCallsign').value = settings.defaultCallsign || '';
+    document.getElementById('settingsDefaultRules').value = settings.defaultRules || '';
+    document.getElementById('settingsDefaultAltitude').value = settings.defaultAltitude || '';
+    const formUsername = document.getElementById('fdPilotUsername')?.value?.trim();
+    document.getElementById('settingsRobloxUsername').value = formUsername || settings.robloxUsername || '';
+  }
+  document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
+    const button=document.getElementById('saveSettingsBtn');
+    const robloxUsername=document.getElementById('settingsRobloxUsername').value.trim();
+    const localSettings={
+      robloxUsername,
+      defaultCallsign:document.getElementById('settingsDefaultCallsign').value.trim(),
+      defaultRules:document.getElementById('settingsDefaultRules').value,
+      defaultAltitude:document.getElementById('settingsDefaultAltitude').value.trim()
+    };
+    localStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(localSettings));
+    document.getElementById('fdPilotUsername').value=robloxUsername;
+    button.disabled=true;
+    button.textContent='Saving…';
+    try{
+      if(currentUser){
+        const res=await fetch('/api/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({robloxUsername})});
+        if(!res.ok) throw new Error('profile save failed');
+      }
+      button.textContent='Saved';
+    }catch(error){
+      button.textContent='Saved locally';
+    }finally{
+      setTimeout(()=>{button.disabled=false;button.textContent='Save settings';},1300);
+    }
+  });
+  document.getElementById('clearDraftBtn').addEventListener('click',()=>{
+    if(!localStorage.getItem(AUTOSAVE_KEY)){ flashBtn('clearDraftBtn','No draft stored'); return; }
+    if(!confirm('Clear the locally autosaved draft? Saved account plans will not be affected.')) return;
+    localStorage.removeItem(AUTOSAVE_KEY);
+    updateDraftStatus();
+    flashBtn('clearDraftBtn','Draft cleared');
+  });
 
   // ATIS is fetched via our own /api/atis backend (see api/atis.js),
   // which proxies 24data server-side per their terms of use.
@@ -2188,6 +2634,7 @@
       const data = await res.json();
       latestOnlinePositions = new Set(data.onlinePositions || []);
       activeAircraftCallsigns = Array.isArray(data.aircraftCallsigns) ? data.aircraftCallsigns : [];
+      document.getElementById('homeAircraftCount').textContent = String(activeAircraftCallsigns.length);
       if(callsignMenuOpen) renderCallsignMenu();
       renderFrequencies();
       const checked = data.callsign;
@@ -2206,6 +2653,7 @@
       frequencyStatus.textContent = `Departure/arrival Ground + Tower and Centers crossed en route. Updated ${new Date(data.fetchedAt || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}; green is online, red is offline.`;
       return checked?.valid === true;
     }catch(error){
+      document.getElementById('homeAircraftCount').textContent = 'Unavailable';
       renderFrequencies();
       callsignStatus.className = 'callsign-status is-error';
       callsignStatus.textContent = 'Could not verify the in-game callsign right now. Please try again.';
@@ -3224,7 +3672,10 @@
     document.body.classList.remove('filed');
     document.getElementById('editBtn').style.display = 'none';
     document.getElementById('createPlanBtn').style.display = 'inline-flex';
-    localStorage.removeItem('24fb-autosave');
+    localStorage.removeItem(AUTOSAVE_KEY);
+    applyLocalSettings(true);
+    if(currentUser) loadRobloxUsername();
+    updateDraftStatus();
     showWizardStep(0);
   });
 
@@ -3431,21 +3882,40 @@
       const res = await fetch('/api/auth/me');
       if(res.ok){
         currentUser = await res.json();
-        document.getElementById('accountStatus').textContent = `Logged in as ${currentUser.username}`;
+        document.getElementById('accountStatus').textContent = currentUser.username;
+        document.getElementById('settingsAccountDetail').textContent = 'Discord connected. Saved flight plans are available.';
+        document.getElementById('settingsAvatar').textContent = (currentUser.username || '24').slice(0,2).toUpperCase();
+        document.getElementById('headerAccountLabel').textContent = currentUser.username;
+        document.getElementById('homeLoginStatus').textContent = currentUser.username;
+        document.getElementById('accountDot').classList.add('online');
         document.getElementById('loginBtn').style.display = 'none';
         document.getElementById('logoutBtn').style.display = 'inline-flex';
-        document.getElementById('myPlansBtn').style.display = 'inline-flex';
-        loadRobloxUsername();
+        document.getElementById('plansLoginNotice').style.display = 'none';
+        await loadRobloxUsername();
+        loadPlansList();
       } else {
         currentUser = null;
         document.getElementById('accountStatus').textContent = 'Not logged in';
+        document.getElementById('settingsAccountDetail').textContent = 'Connect Discord to save and reopen flight plans.';
+        document.getElementById('settingsAvatar').textContent = '24';
+        document.getElementById('headerAccountLabel').textContent = 'Settings';
+        document.getElementById('homeLoginStatus').textContent = 'Guest mode';
+        document.getElementById('accountDot').classList.remove('online');
         document.getElementById('loginBtn').style.display = 'inline-flex';
         document.getElementById('logoutBtn').style.display = 'none';
-        document.getElementById('myPlansBtn').style.display = 'none';
+        document.getElementById('plansLoginNotice').style.display = 'block';
+        renderSignedOutPlans();
       }
     }catch(e){
-      // backend not deployed yet — fail quietly, login just won't do anything
-      document.getElementById('accountStatus').textContent = 'Not logged in';
+      currentUser = null;
+      document.getElementById('accountStatus').textContent = 'Account unavailable';
+      document.getElementById('homeLoginStatus').textContent = 'Guest mode';
+      document.getElementById('headerAccountLabel').textContent = 'Settings';
+      document.getElementById('accountDot').classList.remove('online');
+      document.getElementById('loginBtn').style.display = 'inline-flex';
+      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('plansLoginNotice').style.display = 'block';
+      renderSignedOutPlans();
     }
   }
 
@@ -3457,13 +3927,16 @@
         const profile = await res.json();
         const input = document.getElementById('fdPilotUsername');
         if(profile.robloxUsername && !input.value.trim()) input.value = profile.robloxUsername;
+        if(profile.robloxUsername) document.getElementById('settingsRobloxUsername').value = profile.robloxUsername;
       }
     }catch(e){}
   }
   async function saveRobloxUsername(){
-    if(!currentUser) return;
     const robloxUsername = document.getElementById('fdPilotUsername').value.trim();
-    if(!robloxUsername) return;
+    const settings=readLocalSettings();
+    localStorage.setItem(LOCAL_SETTINGS_KEY,JSON.stringify({...settings,robloxUsername}));
+    document.getElementById('settingsRobloxUsername').value=robloxUsername;
+    if(!currentUser || !robloxUsername) return;
     await fetch('/api/profile', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({robloxUsername})}).catch(()=>{});
   }
 
@@ -3531,12 +4004,25 @@
   function scheduleAutosave(){
     clearTimeout(autosaveTimer);
     document.getElementById('autosaveState').textContent='Saving…';
-    autosaveTimer=setTimeout(()=>{ try{localStorage.setItem('24fb-autosave',JSON.stringify(serializeForm())); document.getElementById('autosaveState').textContent='Draft autosaved';}catch(e){document.getElementById('autosaveState').textContent='Autosave failed';}},700);
+    autosaveTimer=setTimeout(()=>{ try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify(serializeForm())); document.getElementById('autosaveState').textContent='Draft autosaved'; updateDraftStatus();}catch(e){document.getElementById('autosaveState').textContent='Autosave failed';}},700);
   }
   manifestEl.addEventListener('input',scheduleAutosave);
   reviewPage.addEventListener('input',scheduleAutosave);
   includePilotSignature.addEventListener('change',scheduleAutosave);
-  try{ const draft=localStorage.getItem('24fb-autosave'); if(draft && confirm('Restore your autosaved flight-plan draft?')) loadFormData(JSON.parse(draft)); }catch(e){}
+  document.getElementById('homeContinueBtn').addEventListener('click',()=>{
+    try{
+      const draft=localStorage.getItem(AUTOSAVE_KEY);
+      if(!draft) return updateDraftStatus();
+      loadFormData(JSON.parse(draft));
+      navigateTo('planner');
+      document.getElementById('autosaveState').textContent='Local draft restored';
+    }catch(error){
+      localStorage.removeItem(AUTOSAVE_KEY);
+      updateDraftStatus();
+      alert('The local draft could not be restored and was removed.');
+    }
+  });
+  updateDraftStatus();
   document.getElementById('customsLinkBtn').addEventListener('click', async ()=>{
     const input = document.getElementById('customsUrl');
     const url = input?.value?.trim();
@@ -3572,8 +4058,7 @@
   document.getElementById('loginBtn').addEventListener('click', ()=>{ window.location.href = '/api/auth/login'; });
   document.getElementById('logoutBtn').addEventListener('click', async ()=>{
     await fetch('/api/auth/logout', { method:'POST' }).catch(()=>{});
-  
-  refreshAccountStatus();
+    await refreshAccountStatus();
   });
 
   document.getElementById('savePlanBtn').addEventListener('click', async ()=>{
@@ -3616,50 +4101,93 @@
     }
   });
 
-  async function loadPlansList(){
-    const list = document.getElementById('plansList');
-    list.textContent = 'Loading…';
-    try{
-      const res = await fetch('/api/plans');
-      const plans = await res.json();
-      if(!plans.length){ list.textContent = 'No saved flight plans yet.'; return; }
-      list.innerHTML = '';
-      plans.forEach(p=>{
-        const row = document.createElement('div');
-        row.className = 'plans-row';
-        row.innerHTML = `<span>${p.name} <span style="opacity:.6;">(${new Date(p.createdAt).toLocaleString()})</span></span>`;
-        const loadBtn = document.createElement('button');
-        loadBtn.className = 'btn-ghost btn-small';
-        loadBtn.textContent = 'Load';
-        loadBtn.addEventListener('click', ()=>{
-          markPlanLoaded(p);
-          loadFormData(p.data);
-          buildReview();
-          document.getElementById('plansPanel').style.display = 'none';
-        });
-        const delBtn = document.createElement('button');
-        delBtn.className = 'btn-ghost btn-small';
-        delBtn.textContent = 'Delete';
-        delBtn.addEventListener('click', async ()=>{
-          await fetch(`/api/plans/${p.id}`, { method:'DELETE' }).catch(()=>{});
-          if(currentPlanId === p.id) markPlanLoaded(null);
-          loadPlansList();
-        });
-        const btnWrap = document.createElement('span');
-        btnWrap.append(loadBtn, delBtn);
-        row.appendChild(btnWrap);
-        list.appendChild(row);
+  function planField(plan, id){ return plan?.data?.fields?.[id] || ''; }
+  function planCard(plan, compact=false){
+    const row=document.createElement('article');
+    row.className='plans-row';
+    const copy=document.createElement('div');
+    const title=document.createElement('div');
+    title.className='plan-title';
+    title.textContent=plan.name || 'Untitled plan';
+    const departure=planField(plan,'depAirport') || '----';
+    const arrival=planField(plan,'arrAirport') || '----';
+    const route=document.createElement('div');
+    route.className='plan-route';
+    route.textContent=`${departure} → ${arrival}`;
+    const meta=document.createElement('div');
+    meta.className='plan-meta';
+    const aircraft=planField(plan,'fdAircraft');
+    const flightDate=planField(plan,'flightDate');
+    const updated=plan.updatedAt || plan.createdAt;
+    [aircraft,flightDate,updated ? `Updated ${new Date(updated).toLocaleString()}` : ''].filter(Boolean).forEach(text=>{
+      const item=document.createElement('span'); item.textContent=text; meta.appendChild(item);
+    });
+    copy.append(title,route,meta);
+    const actions=document.createElement('div');
+    actions.className='plan-actions';
+    const openBtn=document.createElement('button');
+    openBtn.className='btn-primary btn-small';
+    openBtn.type='button';
+    openBtn.textContent='Open';
+    openBtn.addEventListener('click',()=>{
+      markPlanLoaded(plan);
+      loadFormData(plan.data);
+      buildReview();
+      showWizardStep(0);
+      navigateTo('planner');
+    });
+    actions.appendChild(openBtn);
+    if(!compact){
+      const delBtn=document.createElement('button');
+      delBtn.className='btn-ghost btn-small plan-delete';
+      delBtn.type='button';
+      delBtn.textContent='Delete';
+      delBtn.addEventListener('click',async()=>{
+        if(!confirm(`Delete “${plan.name || 'Untitled plan'}”? This cannot be undone.`)) return;
+        delBtn.disabled=true;
+        await fetch(`/api/plans/${encodeURIComponent(plan.id)}`,{method:'DELETE'}).catch(()=>{});
+        if(currentPlanId===plan.id) markPlanLoaded(null);
+        loadPlansList();
       });
-    }catch(e){
-      list.textContent = 'Could not reach the backend yet.';
+      actions.appendChild(delBtn);
+    }
+    row.append(copy,actions);
+    return row;
+  }
+  function renderSignedOutPlans(){
+    const list=document.getElementById('plansList');
+    list.innerHTML='<div class="empty-state"><strong>Discord login required</strong>Open Settings to connect your account and load saved flights.</div>';
+    const recent=document.getElementById('homeRecentPlans');
+    recent.innerHTML='<div class="empty-state"><strong>No account connected</strong>Sign in from Settings to load saved flights.</div>';
+  }
+  async function loadPlansList(){
+    if(!currentUser) return renderSignedOutPlans();
+    const list=document.getElementById('plansList');
+    const recent=document.getElementById('homeRecentPlans');
+    list.innerHTML='<div class="empty-state"><strong>Loading flights</strong>Retrieving saved plans…</div>';
+    recent.innerHTML='<div class="empty-state"><strong>Loading</strong>Retrieving recent plans…</div>';
+    try{
+      const res=await fetch('/api/plans');
+      if(!res.ok) throw new Error('plans unavailable');
+      const plans=await res.json();
+      list.innerHTML='';
+      recent.innerHTML='';
+      if(!plans.length){
+        list.innerHTML='<div class="empty-state"><strong>No saved flight plans</strong>Create a flight plan, finalize it, then save it to your account.</div>';
+        recent.innerHTML='<div class="empty-state"><strong>No recent flights</strong>Your first saved plan will appear here.</div>';
+        return;
+      }
+      plans.forEach(plan=>list.appendChild(planCard(plan,false)));
+      plans.slice(0,3).forEach(plan=>recent.appendChild(planCard(plan,true)));
+    }catch(error){
+      list.innerHTML='<div class="empty-state"><strong>Could not load flights</strong>The saved-plan service is currently unavailable.</div>';
+      recent.innerHTML='<div class="empty-state"><strong>Flights unavailable</strong>Try again later from My Flights.</div>';
     }
   }
 
-  document.getElementById('myPlansBtn').addEventListener('click', ()=>{
-    const panel = document.getElementById('plansPanel');
-    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
-    if(panel.style.display !== 'none') loadPlansList();
-  });
+  applyLocalSettings(false);
+  updateDraftStatus();
+  navigateTo(location.hash.replace('#','') || 'home', false);
 })();
 </script>
 </body>
