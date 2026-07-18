@@ -2,13 +2,9 @@
 // DELETE /api/plans/:id -> delete a saved flight plan
 
 const { methodNotAllowed, readJsonBody, sendHandlerError, setNoStore } = require('../../lib/http');
-const { redisDel, redisGet, redisSet } = require('../../lib/redis');
+const { ensurePlanShape, loadPlans, publicPlan, savePlans } = require('../../lib/flight-plans');
+const { redisDel } = require('../../lib/redis');
 const { getSessionUser } = require('../../lib/session');
-
-async function loadPlans(userId) {
-  const raw = await redisGet(`plans:${userId}`);
-  return raw ? JSON.parse(raw) : [];
-}
 
 module.exports = async (req, res) => {
   setNoStore(res);
@@ -25,12 +21,17 @@ module.exports = async (req, res) => {
     const index = plans.findIndex(plan => plan.id === id);
     if (index < 0) return res.status(404).json({ error: 'Not found' });
 
+    await ensurePlanShape(plans[index], user.id);
+
     if (req.method === 'DELETE') {
       const [deletedPlan] = plans.splice(index, 1);
-      await redisSet(`plans:${user.id}`, JSON.stringify(plans));
-      if (deletedPlan.customsToken) {
-        await redisDel(`customs-token:${deletedPlan.customsToken}`);
-      }
+      await savePlans(user.id, plans);
+      const tokens = new Set([
+        deletedPlan.customsToken,
+        deletedPlan.customsTokens?.departure,
+        deletedPlan.customsTokens?.arrival,
+      ].filter(Boolean));
+      await Promise.all([...tokens].map(token => redisDel(`customs-token:${token}`)));
       return res.status(200).json({ ok: true });
     }
 
@@ -45,8 +46,8 @@ module.exports = async (req, res) => {
       updatedAt: Date.now(),
     };
 
-    await redisSet(`plans:${user.id}`, JSON.stringify(plans));
-    return res.status(200).json(plans[index]);
+    await savePlans(user.id, plans);
+    return res.status(200).json(publicPlan(plans[index]));
   } catch (error) {
     console.error('plans/[id] error:', error);
     return sendHandlerError(res, error);
