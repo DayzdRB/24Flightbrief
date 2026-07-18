@@ -429,12 +429,14 @@
   }
   .map-layer-toggle.active{background:var(--teal);color:#fff;border-color:var(--teal);}
   .route-map-wrap{
+    width:100%;
+    max-width:750px;
+    margin-inline:auto;
     border:1.5px solid var(--ink);
     border-radius:6px;
     overflow:hidden;
     background:#d3ebfc;
-    max-width:750px;
-    aspect-ratio:2048 / 1692;
+    aspect-ratio:963.55 / 920.03;
   }
   .route-map-wrap svg{display:block;width:100%;height:100%;}
   .map-chart-base,.map-waypoint-layer,.map-airport-assets{pointer-events:none;}
@@ -1408,7 +1410,7 @@
           <button class="map-layer-toggle" id="routeLineToggle" type="button" aria-pressed="false">Route line</button>
         </div>
         <div class="route-map-wrap">
-          <svg id="routeMapSvg" viewBox="0 0 963.55 920.03" role="img" aria-label="ATC24 SVG route map" xmlns="http://www.w3.org/2000/svg">
+          <svg id="routeMapSvg" viewBox="0 0 963.55 920.03" preserveAspectRatio="xMidYMid meet" role="img" aria-label="ATC24 SVG route map" xmlns="http://www.w3.org/2000/svg">
             <image class="map-chart-base" href="maps/coast.svg" x="0" y="0" width="963.55" height="920.03" preserveAspectRatio="none"></image>
             <image class="map-chart-base" href="maps/boundaries.svg" x="0" y="0" width="963.55" height="920.03" preserveAspectRatio="none"></image>
             <g class="map-airport-assets" id="mapAirportAssets"></g>
