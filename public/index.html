@@ -320,6 +320,14 @@
     color:var(--teal-dark);
   }
   .airport-resolved.is-error{color:var(--red);}
+  .runway-field{position:relative;}
+  .runway-field select{font-weight:700;padding-right:18px;background-image:linear-gradient(45deg,transparent 50%,var(--rule-strong) 50%),linear-gradient(135deg,var(--rule-strong) 50%,transparent 50%);background-position:calc(100% - 10px) 52%,calc(100% - 6px) 52%;background-size:4px 4px,4px 4px;background-repeat:no-repeat;}
+  .runway-status{display:block;min-height:13px;margin-top:3px;font-family:'Inter',sans-serif;font-size:9.5px;line-height:1.3;color:var(--teal-dark);}
+  .runway-status.is-warning{color:#8a5b08;}
+  .map-selected-runway-ring{fill:rgba(255,208,111,.15);stroke:#bd7915;stroke-width:2.2;vector-effect:non-scaling-stroke;}
+  .map-selected-runway-label{font:800 7px 'JetBrains Mono',monospace;fill:#6b4100;paint-order:stroke;stroke:#fff;stroke-width:2px;stroke-linejoin:round;}
+  .navigation-selected-runway-ring{fill:rgba(255,208,111,.15);stroke:#ffd06f;stroke-width:3;vector-effect:non-scaling-stroke;}
+  .navigation-selected-runway-label{font:800 8px 'JetBrains Mono',monospace;fill:#ffd06f;paint-order:stroke;stroke:#0b1418;stroke-width:2.6px;stroke-linejoin:round;}
 
   /* sub-section title (inside a panel, for dynamic lists) */
   .sub-title{
@@ -560,6 +568,23 @@
     font-size:18px;
     font-weight:700;
     fill:#f4f8f7;
+    paint-order:stroke;
+    stroke:#16232b;
+    stroke-width:5px;
+    stroke-linejoin:round;
+  }
+  .map-selected-runway-ring{
+    fill:rgba(255,207,92,.18);
+    stroke:#ffcf5c;
+    stroke-width:4;
+    vector-effect:non-scaling-stroke;
+  }
+  .map-selected-runway-ring.is-arrival{stroke:#ff9b8f;}
+  .map-selected-runway-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:800;
+    fill:#fff7d8;
     paint-order:stroke;
     stroke:#16232b;
     stroke-width:5px;
@@ -1400,8 +1425,10 @@
         </div>
         <div class="grid airport-grid">
           <div class="field airport-field"><label>Departure Airport <span class="req-mark">*</span></label><input type="text" id="depAirport" data-required="1" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IRFD" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="depAirportMenu"><div class="airport-menu no-export" id="depAirportMenu" role="listbox"></div><span class="airport-resolved" id="depAirportResolved"></span></div>
+          <div class="field runway-field"><label>Departure Runway</label><select id="depRunway"><option value="AUTO">Auto from ATIS</option></select><input type="hidden" id="depRunwayEffective"><span class="runway-status" id="depRunwayStatus">Choose an airport to load runways.</span></div>
           <div class="field"><label>Departure Procedure (SID)</label><input type="text" placeholder="If applicable"></div>
           <div class="field airport-field"><label>Arrival Airport <span class="req-mark">*</span></label><input type="text" id="arrAirport" data-required="1" autocomplete="off" spellcheck="false" placeholder="ICAO or name, e.g. IPPH" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="arrAirportMenu"><div class="airport-menu no-export" id="arrAirportMenu" role="listbox"></div><span class="airport-resolved" id="arrAirportResolved"></span></div>
+          <div class="field runway-field"><label>Arrival Runway</label><select id="arrRunway"><option value="AUTO">Auto from ATIS</option></select><input type="hidden" id="arrRunwayEffective"><span class="runway-status" id="arrRunwayStatus">Choose an airport to load runways.</span></div>
           <div class="field"><label>Arrival Procedure (STAR)</label><input type="text" placeholder="If applicable"></div>
         </div>
         <datalist id="waypointOptions"></datalist>
@@ -2860,42 +2887,402 @@
   const waypointLayerToggle = document.getElementById('waypointLayerToggle');
   const navigationWaypointToggle = document.getElementById('navigationWaypointToggle');
   const routeLineToggle = document.getElementById('routeLineToggle');
-  // Runway designators derived from the RWY_*.svg centerline geometry: the
-  // number comes from the approach course (heading/10), and L/C/R from each
-  // parallel centerline's lateral offset as seen on approach. Coordinates are
-  // in the shared -600..600 map space, anchored at each threshold.
-  const RUNWAY_LABELS = {
-    IBLT: [{x:-112.5,y:175.13,hdg:193.9,label:'19'},{x:-112.5,y:175.13,hdg:13.9,label:'01'}],
-    IBRD: [{x:-14.47,y:-389.11,hdg:260.0,label:'26'},{x:-14.47,y:-389.11,hdg:80.0,label:'08'}],
-    IBTH: [{x:57.56,y:-45.01,hdg:270.0,label:'27'},{x:57.56,y:-45.01,hdg:90.0,label:'09'}],
-    IDCS: [{x:-35.26,y:-453.99,hdg:252.9,label:'25'},{x:-62.93,y:-445.47,hdg:72.9,label:'07'}],
-    IGAR: [{x:-149.87,y:222.21,hdg:222.1,label:'22'},{x:-176.94,y:252.13,hdg:42.1,label:'04'}],
-    IHEN: [{x:171.13,y:411.92,hdg:172.0,label:'17'},{x:171.13,y:411.92,hdg:352.0,label:'35'}],
-    IIAB: [{x:256.12,y:408.64,hdg:275.0,label:'27L'},{x:256.37,y:405.75,hdg:275.0,label:'27R'},{x:207.94,y:404.43,hdg:95.0,label:'09R'},{x:208.19,y:401.53,hdg:95.0,label:'09L'}],
-    IJAF: [{x:479.16,y:-3.7,hdg:250.9,label:'25'},{x:443.89,y:8.53,hdg:70.9,label:'07'}],
-    IKFL: [{x:-437.43,y:-35.66,hdg:157.0,label:'16'},{x:-452.98,y:-7.66,hdg:67.0,label:'07'},{x:-412.75,y:-24.74,hdg:247.0,label:'25'},{x:-420.36,y:4.57,hdg:337.0,label:'34'}],
-    ILAR: [{x:232.67,y:314.34,hdg:243.9,label:'24'},{x:192.51,y:334.04,hdg:63.9,label:'06'}],
-    ILKL: [{x:225.9,y:-165.15,hdg:268.9,label:'27'},{x:225.9,y:-165.15,hdg:88.9,label:'09'}],
-    IMLR: [{x:-175.33,y:139.63,hdg:246.0,label:'25'},{x:-213.67,y:156.7,hdg:66.0,label:'07'}],
-    IPAP: [{x:314.96,y:321.56,hdg:174.1,label:'17'},{x:319.47,y:364.68,hdg:354.1,label:'35'}],
-    IPPH: [{x:170.05,y:-225.82,hdg:151.0,label:'15'},{x:162.32,y:-212.14,hdg:111.0,label:'11'},{x:208.22,y:-194.49,hdg:291.0,label:'29'},{x:192.23,y:-185.8,hdg:331.0,label:'33'}],
-    IRFD: [{x:-8.82,y:195.93,hdg:247.0,label:'25L'},{x:-1.37,y:188.69,hdg:247.0,label:'25C'},{x:-13.94,y:190.81,hdg:247.0,label:'25R'},{x:-51.52,y:214.09,hdg:67.0,label:'07R'},{x:-42.7,y:206.27,hdg:67.0,label:'07C'},{x:-54.5,y:208.06,hdg:67.0,label:'07L'}],
-    ISAU: [{x:-441.9,y:273.97,hdg:266.2,label:'27'},{x:-480.24,y:276.49,hdg:86.2,label:'09'}],
-    ISCM: [{x:360.79,y:-50.09,hdg:126.2,label:'13'},{x:360.79,y:-50.09,hdg:306.2,label:'31'}],
-    ISKP: [{x:265.43,y:122.69,hdg:231.1,label:'23'},{x:243.45,y:140.45,hdg:51.1,label:'05'}],
-    ITEY: [{x:-426.81,y:-103.15,hdg:133.0,label:'13'},{x:-404.42,y:-82.27,hdg:313.0,label:'31'}],
-    ITKO: [{x:-104.5,y:-345.02,hdg:128.1,label:'13'},{x:-58.7,y:-337.97,hdg:200.1,label:'20'},{x:-64.18,y:-313.39,hdg:308.1,label:'31'}],
-    ITRC: [{x:-21.33,y:303.55,hdg:180.3,label:'18'},{x:-21.33,y:303.55,hdg:0.3,label:'36'}],
-    IZOL: [{x:423.03,y:25.76,hdg:106.0,label:'11'},{x:472.12,y:39.85,hdg:286.0,label:'29'}]
-  };
+  // Runway designators follow the supplied airport charts and live ATIS data.
+  // L/C/R assignments use the parallel centerlines as seen on approach.
+  // Coordinates are in the shared -600..600 map space, anchored at each threshold.
+  // Threshold coordinates extracted from each RWY_*.svg centerline. These
+  // points are also used by the route planner and live navigation service.
+  const RUNWAY_DATA = {
+  "IBLT": [
+    {
+      "label": "01",
+      "x": -113.44,
+      "y": 178.93,
+      "heading": 13.9
+    },
+    {
+      "label": "19",
+      "x": -111.56,
+      "y": 171.34,
+      "heading": 193.9
+    }
+  ],
+  "IBRD": [
+    {
+      "label": "08",
+      "x": -17.45,
+      "y": -388.59,
+      "heading": 80.0
+    },
+    {
+      "label": "26",
+      "x": -11.48,
+      "y": -389.64,
+      "heading": 260.0
+    }
+  ],
+  "IBTH": [
+    {
+      "label": "09",
+      "x": 53.32,
+      "y": -45.01,
+      "heading": 90.0
+    },
+    {
+      "label": "27",
+      "x": 61.79,
+      "y": -45.01,
+      "heading": 270.0
+    }
+  ],
+  "IDCS": [
+    {
+      "label": "07",
+      "x": -51.08,
+      "y": -449.12,
+      "heading": 72.9
+    },
+    {
+      "label": "25",
+      "x": -47.11,
+      "y": -450.34,
+      "heading": 252.9
+    }
+  ],
+  "IGAR": [
+    {
+      "label": "04",
+      "x": -168.62,
+      "y": 242.93,
+      "heading": 42.1
+    },
+    {
+      "label": "22",
+      "x": -158.19,
+      "y": 231.41,
+      "heading": 222.1
+    }
+  ],
+  "IHEN": [
+    {
+      "label": "17",
+      "x": 170.67,
+      "y": 408.68,
+      "heading": 172.0
+    },
+    {
+      "label": "35",
+      "x": 171.59,
+      "y": 415.16,
+      "heading": 352.0
+    }
+  ],
+  "IIAB": [
+    {
+      "label": "09L",
+      "x": 220.55,
+      "y": 402.61,
+      "heading": 95.0
+    },
+    {
+      "label": "09R",
+      "x": 220.29,
+      "y": 405.51,
+      "heading": 95.0
+    },
+    {
+      "label": "27L",
+      "x": 243.77,
+      "y": 407.56,
+      "heading": 275.0
+    },
+    {
+      "label": "27R",
+      "x": 244.02,
+      "y": 404.67,
+      "heading": 275.0
+    }
+  ],
+  "IJAF": [
+    {
+      "label": "07",
+      "x": 455.61,
+      "y": 4.47,
+      "heading": 70.9
+    },
+    {
+      "label": "25",
+      "x": 467.44,
+      "y": 0.37,
+      "heading": 250.9
+    }
+  ],
+  "IKFL": [
+    {
+      "label": "07",
+      "x": -441.56,
+      "y": -12.51,
+      "heading": 67.0
+    },
+    {
+      "label": "16",
+      "x": -432.59,
+      "y": -24.24,
+      "heading": 157.0
+    },
+    {
+      "label": "25",
+      "x": -424.16,
+      "y": -19.89,
+      "heading": 247.0
+    },
+    {
+      "label": "34",
+      "x": -425.2,
+      "y": -6.85,
+      "heading": 337.0
+    }
+  ],
+  "ILAR": [
+    {
+      "label": "06",
+      "x": 203.65,
+      "y": 328.58,
+      "heading": 63.9
+    },
+    {
+      "label": "24",
+      "x": 221.54,
+      "y": 319.8,
+      "heading": 243.9
+    }
+  ],
+  "ILKL": [
+    {
+      "label": "09",
+      "x": 222.32,
+      "y": -165.08,
+      "heading": 88.9
+    },
+    {
+      "label": "27",
+      "x": 229.47,
+      "y": -165.22,
+      "heading": 268.9
+    }
+  ],
+  "IMLR": [
+    {
+      "label": "07",
+      "x": -202.34,
+      "y": 151.66,
+      "heading": 66.0
+    },
+    {
+      "label": "25",
+      "x": -186.66,
+      "y": 144.67,
+      "heading": 246.0
+    }
+  ],
+  "IPAP": [
+    {
+      "label": "17",
+      "x": 316.24,
+      "y": 333.9,
+      "heading": 174.1
+    },
+    {
+      "label": "35",
+      "x": 318.18,
+      "y": 352.35,
+      "heading": 354.1
+    }
+  ],
+  "IPPH": [
+    {
+      "label": "11",
+      "x": 173.89,
+      "y": -207.69,
+      "heading": 111.0
+    },
+    {
+      "label": "15",
+      "x": 176.06,
+      "y": -214.97,
+      "heading": 151.0
+    },
+    {
+      "label": "29",
+      "x": 196.65,
+      "y": -198.94,
+      "heading": 291.0
+    },
+    {
+      "label": "33",
+      "x": 186.21,
+      "y": -196.65,
+      "heading": 331.0
+    }
+  ],
+  "IRFD": [
+    {
+      "label": "07L",
+      "x": -43.09,
+      "y": 203.21,
+      "heading": 67.0
+    },
+    {
+      "label": "07C",
+      "x": -31.29,
+      "y": 201.42,
+      "heading": 67.0
+    },
+    {
+      "label": "07R",
+      "x": -40.11,
+      "y": 209.23,
+      "heading": 67.0
+    },
+    {
+      "label": "25L",
+      "x": -20.24,
+      "y": 200.78,
+      "heading": 247.0
+    },
+    {
+      "label": "25C",
+      "x": -12.79,
+      "y": 193.55,
+      "heading": 247.0
+    },
+    {
+      "label": "25R",
+      "x": -25.36,
+      "y": 195.66,
+      "heading": 247.0
+    }
+  ],
+  "ISAU": [
+    {
+      "label": "08",
+      "x": -467.87,
+      "y": 275.68,
+      "heading": 86.2
+    },
+    {
+      "label": "26",
+      "x": -454.27,
+      "y": 274.78,
+      "heading": 266.2
+    }
+  ],
+  "ISCM": [
+    {
+      "label": "13",
+      "x": 356.8,
+      "y": -53.0,
+      "heading": 126.2
+    },
+    {
+      "label": "31",
+      "x": 364.77,
+      "y": -47.18,
+      "heading": 306.2
+    }
+  ],
+  "ISKP": [
+    {
+      "label": "05",
+      "x": 253.1,
+      "y": 132.65,
+      "heading": 51.1
+    },
+    {
+      "label": "23",
+      "x": 255.78,
+      "y": 130.49,
+      "heading": 231.1
+    }
+  ],
+  "ITEY": [
+    {
+      "label": "13",
+      "x": -417.74,
+      "y": -94.69,
+      "heading": 133.0
+    },
+    {
+      "label": "31",
+      "x": -413.49,
+      "y": -90.73,
+      "heading": 313.0
+    }
+  ],
+  "ITKO": [
+    {
+      "label": "02",
+      "x": -70.1,
+      "y": -306.9,
+      "heading": 20.1
+    },
+    {
+      "label": "13",
+      "x": -94.74,
+      "y": -337.37,
+      "heading": 128.1
+    },
+    {
+      "label": "20",
+      "x": -62.96,
+      "y": -326.32,
+      "heading": 200.1
+    },
+    {
+      "label": "31",
+      "x": -73.94,
+      "y": -321.05,
+      "heading": 308.1
+    }
+  ],
+  "ITRC": [
+    {
+      "label": "18",
+      "x": -21.31,
+      "y": 300.04,
+      "heading": 180.3
+    },
+    {
+      "label": "36",
+      "x": -21.35,
+      "y": 307.07,
+      "heading": 0.3
+    }
+  ],
+  "IZOL": [
+    {
+      "label": "10",
+      "x": 434.95,
+      "y": 29.18,
+      "heading": 106.0
+    },
+    {
+      "label": "28",
+      "x": 460.2,
+      "y": 36.42,
+      "heading": 286.0
+    }
+  ]
+};
+  const RUNWAY_LABELS = RUNWAY_DATA;
+
   function runwayLabelMarkup(){
-    return Object.values(RUNWAY_LABELS).flat().map(item=>{
-      const radians=item.hdg*Math.PI/180;
-      // Nudge the label from the threshold back along the approach path so it
-      // sits on the centerline start rather than on the runway markings.
-      const x=item.x-Math.sin(radians)*7;
-      const y=item.y+Math.cos(radians)*7;
-      return `<g class="map-runway-asset map-runway-point" data-x="${x.toFixed(2)}" data-y="${y.toFixed(2)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><text class="map-runway-label" x="0" y="2" text-anchor="middle">${item.label}</text></g>`;
+    return Object.values(RUNWAY_DATA).flat().map(item=>{
+      const radians=item.heading*Math.PI/180;
+      // Place the designator just inside the threshold, aligned with the runway.
+      const x=item.x+Math.sin(radians)*2.2;
+      const y=item.y-Math.cos(radians)*2.2;
+      return `<g class="map-runway-asset map-runway-point" data-x="${x.toFixed(2)}" data-y="${y.toFixed(2)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${item.heading.toFixed(1)})"><text class="map-runway-label" x="0" y="2" text-anchor="middle">${item.label}</text></g>`;
     }).join('');
   }
   document.getElementById('mapAirportAssets').innerHTML = mapAssetMarkup() + runwayLabelMarkup();
@@ -3107,7 +3494,7 @@
     const lineScale = Math.max(.34, Math.pow(scale, .28));
     const markerScale = Math.pow(scale, 1.12);
     const chartWaypointScale = Math.pow(scale, .80);
-    setAnchoredScale(svg, '.map-route-marker, .map-airport-marker', markerScale);
+    setAnchoredScale(svg, '.map-route-marker, .map-airport-marker, .map-selected-runway-marker', markerScale);
     setAnchoredScale(svg, '.map-waypoint-point, .map-runway-point', chartWaypointScale);
     svg.querySelectorAll('.map-route-casing').forEach(node=>node.style.strokeWidth = `${9 * lineScale}px`);
     svg.querySelectorAll('.map-route-line').forEach(node=>node.style.strokeWidth = `${5 * lineScale}px`);
@@ -3190,8 +3577,8 @@
 
     let routeLineSvg = '';
     let routeMarkerSvg = '';
-    const depPos = mapPoint(AIRPORTS[dep]), arrPos = mapPoint(AIRPORTS[arr]);
-    if(depPos && arrPos){
+    const nodes = plannedRouteMapNodes();
+    if(nodes.length >= 2){
       let dash, stroke, label = '';
       if(routeType === 'direct'){
         dash = 'none'; stroke = '#1b7f72'; label = 'DCT';
@@ -3201,16 +3588,6 @@
         dash = '14 8'; stroke = '#5c6f6a';
       }
 
-      const routeFixes = [];
-      if(routeType === 'waypoints'){
-        waypointBody.querySelectorAll('.wp-input').forEach(input=>{
-          const code = waypointKey(input.value);
-          const pos = mapPoint(WAYPOINTS[code]);
-          if(code && pos) routeFixes.push({code, ...pos});
-        });
-      }
-
-      const nodes = [depPos, ...routeFixes, arrPos];
       const showLine = routeType !== 'waypoints' || waypointRouteLineVisible;
       if(showLine){
         const points = nodes.map(pos=>`${pos.x},${pos.y}`).join(' ');
@@ -3219,13 +3596,20 @@
         routeLineSvg += `<polyline class="map-route-line" points="${points}" stroke="${stroke}"${dashAttr}/>`;
       }
 
-      routeFixes.forEach(fix=>{
+      nodes.filter(node=>node.kind === 'waypoint').forEach(fix=>{
         routeMarkerSvg += `<g class="map-route-marker" data-x="${fix.x}" data-y="${fix.y}" transform="translate(${fix.x} ${fix.y})"><circle class="map-route-waypoint" cx="0" cy="0" r="14"/><text class="map-route-waypoint-label" x="0" y="-21" text-anchor="middle">${fix.code}</text></g>`;
       });
 
+      nodes.filter(node=>node.kind === 'departure-runway' || node.kind === 'arrival-runway').forEach(node=>{
+        const arrivalClass = node.kind === 'arrival-runway' ? ' is-arrival' : '';
+        const prefix = node.kind === 'arrival-runway' ? 'ARR' : 'DEP';
+        routeMarkerSvg += `<g class="map-selected-runway-marker" data-x="${node.x}" data-y="${node.y}" transform="translate(${node.x} ${node.y})"><circle class="map-selected-runway-ring${arrivalClass}" cx="0" cy="0" r="11"/><text class="map-selected-runway-label" x="0" y="-17" text-anchor="middle">${prefix} RWY ${node.runway}</text></g>`;
+      });
+
       if(label){
-        const midX = (depPos.x + arrPos.x) / 2;
-        const midY = (depPos.y + arrPos.y) / 2;
+        const first = nodes[0], last = nodes[nodes.length - 1];
+        const midX = (first.x + last.x) / 2;
+        const midY = (first.y + last.y) / 2;
         routeMarkerSvg += `<g class="map-route-marker" data-x="${midX}" data-y="${midY}" transform="translate(${midX} ${midY})"><text class="map-route-label" x="0" y="-28" text-anchor="middle">${label}</text></g>`;
       }
     }
@@ -3263,6 +3647,12 @@
   // ===== Route diagram =====
   const depAirport = document.getElementById('depAirport');
   const arrAirport = document.getElementById('arrAirport');
+  const depRunway = document.getElementById('depRunway');
+  const arrRunway = document.getElementById('arrRunway');
+  const depRunwayEffective = document.getElementById('depRunwayEffective');
+  const arrRunwayEffective = document.getElementById('arrRunwayEffective');
+  const depRunwayStatus = document.getElementById('depRunwayStatus');
+  const arrRunwayStatus = document.getElementById('arrRunwayStatus');
   const depAirportResolved = document.getElementById('depAirportResolved');
   const arrAirportResolved = document.getElementById('arrAirportResolved');
   const depAirportMenu = document.getElementById('depAirportMenu');
@@ -3282,17 +3672,13 @@
   const STUDS_PER_NAUTICAL_MILE = 3307.14286;
 
   function routeDistanceNm(){
-    const dep = AIRPORTS[airportCode(depAirport.value)];
-    const arr = AIRPORTS[airportCode(arrAirport.value)];
-    if(!dep || !arr) return null;
-    const fixes = routeType === 'waypoints'
-      ? [...waypointBody.querySelectorAll('.wp-input')]
-          .map(input => WAYPOINTS[waypointKey(input.value)])
-          .filter(Boolean)
-      : [];
-    const nodes = [dep, ...fixes, arr];
+    const nodes = plannedRouteMapNodes();
+    if(nodes.length < 2) return null;
     let studs = 0;
-    for(let i=1;i<nodes.length;i++) studs += Math.hypot(nodes[i].x-nodes[i-1].x,nodes[i].y-nodes[i-1].y) * MAP_STUDS_PER_NORMALIZED_UNIT;
+    for(let i=1;i<nodes.length;i++){
+      const normalizedDistance = Math.hypot(nodes[i].x-nodes[i-1].x, nodes[i].y-nodes[i-1].y) / MAP_VIEWBOX_WIDTH;
+      studs += normalizedDistance * MAP_STUDS_PER_NORMALIZED_UNIT;
+    }
     return studs / STUDS_PER_NAUTICAL_MILE;
   }
 
@@ -3995,12 +4381,13 @@
   const routeSvg = document.getElementById('routeSvg');
   let wpIdx = 0;
 
-  const DEFAULT_DEPARTURE_RUNWAYS = {
-    IRFD: {runway:'25', heading:250}
-  };
-
   function routeNodePosition(node){
     if(node.kind === 'wp') return WAYPOINTS[waypointKey(node.label)] || null;
+    if(node.kind === 'dep' || node.kind === 'arr'){
+      const role = node.kind === 'dep' ? 'departure' : 'arrival';
+      const runway = effectiveRunwaySelection(role);
+      return runway.geometry ? normalizedMapPosition(runway.geometry) : AIRPORTS[airportCode(node.label)] || null;
+    }
     return AIRPORTS[airportCode(node.label)] || null;
   }
 
@@ -4012,23 +4399,172 @@
   }
 
   function formatHeading(value){
-    return value === null ? '---°' : `${String(value).padStart(3, '0')}°`;
+    return value === null ? '---°' : `${String(Math.round(value) % 360 || 360).padStart(3, '0')}°`;
+  }
+
+  function normalizeRunwayDesignator(value){
+    const match = String(value || '').trim().toUpperCase().match(/^(\d{1,2})([LCR]?)$/);
+    if(!match) return '';
+    const number = Number(match[1]);
+    if(!number || number > 36) return '';
+    return String(number).padStart(2, '0') + match[2];
   }
 
   function runwayHeadingFromDesignator(designator){
-    const number = parseInt(String(designator || '').match(/\d{1,2}/)?.[0] || '', 10);
-    if(!number || number < 1 || number > 36) return null;
+    const normalized = normalizeRunwayDesignator(designator);
+    if(!normalized) return null;
+    const number = Number(normalized.slice(0,2));
     return number === 36 ? 360 : number * 10;
   }
 
-  function departureRunwayInfo(){
-    const atisText = String(document.getElementById('departureAtisPaste')?.value || '').toUpperCase();
-    const match = atisText.match(/(?:ACTIVE\s+)?RWY\s+(\d{1,2}[LRC]?)/);
-    if(match){
-      return {runway:match[1], heading:runwayHeadingFromDesignator(match[1]), source:'ATIS'};
-    }
-    return DEFAULT_DEPARTURE_RUNWAYS[airportCode(depAirport.value)] || null;
+  function reciprocalRunwayDesignator(designator){
+    const normalized = normalizeRunwayDesignator(designator);
+    if(!normalized) return '';
+    const number = Number(normalized.slice(0,2));
+    const reciprocalNumber = ((number + 17) % 36) + 1;
+    const side = normalized.slice(2);
+    const reciprocalSide = side === 'L' ? 'R' : side === 'R' ? 'L' : side;
+    return String(reciprocalNumber).padStart(2,'0') + reciprocalSide;
   }
+
+  function parseAtisReport(value){
+    const text = String(value || '').toUpperCase().replace(/\r/g, '');
+    const dep = text.match(/\bDEP(?:ARTURE)?\s+RWY\s+(\d{1,2}[LCR]?)/);
+    const arr = text.match(/\bARR(?:IVAL)?\s+RWY\s+(\d{1,2}[LCR]?)/);
+    const active = text.match(/\b(?:ACTIVE\s+)?RWY\s+(\d{1,2}[LCR]?)/);
+    const info = text.match(/\bINFO(?:RMATION)?\s+([A-Z])\b/);
+    const wind = text.match(/(?:^|\n|\s)(\d{3}\/\d{2,3}(?:G\d{2,3})?)(?=\s|$)/)
+      || text.match(/\bWIND\s+(\d{2,3}\/\d{1,3}|\d{3}\d{2}(?:G\d{2})?KT)/);
+    const altimeter = text.match(/(?:^|\s)(Q\d{3,4}|A\d{4})(?=\s|$)/)
+      || text.match(/(?:ALTIM(?:ETER)?|QNH)\s+([\d.]+)/);
+    return {
+      info: info?.[1] || '',
+      departureRunway: normalizeRunwayDesignator(dep?.[1]),
+      arrivalRunway: normalizeRunwayDesignator(arr?.[1]),
+      activeRunway: normalizeRunwayDesignator(active?.[1]),
+      wind: wind?.[1] || '',
+      altimeter: altimeter?.[1] || ''
+    };
+  }
+
+  function findRunwayGeometry(airport, designator){
+    const wanted = normalizeRunwayDesignator(designator);
+    return (RUNWAY_DATA[airportCode(airport)] || []).find(item=>normalizeRunwayDesignator(item.label) === wanted) || null;
+  }
+
+  function normalizedMapPosition(point){
+    return point ? {x:(point.x - MAP_VIEWBOX_MIN_X) / MAP_VIEWBOX_WIDTH, y:(point.y - MAP_VIEWBOX_MIN_Y) / MAP_VIEWBOX_HEIGHT} : null;
+  }
+
+  function effectiveRunwaySelection(role){
+    const departure = role === 'departure';
+    const airport = airportCode(departure ? depAirport.value : arrAirport.value);
+    const select = departure ? depRunway : arrRunway;
+    const reportInput = document.getElementById(departure ? 'departureAtisPaste' : 'arrivalAtisPaste');
+    const manual = select?.value && select.value !== 'AUTO' ? normalizeRunwayDesignator(select.value) : '';
+    const parsed = parseAtisReport(reportInput?.value || '');
+    const atisRunway = departure
+      ? (parsed.departureRunway || parsed.activeRunway || parsed.arrivalRunway)
+      : (parsed.arrivalRunway || parsed.activeRunway || parsed.departureRunway);
+    const runway = manual || atisRunway;
+    return {
+      airport,
+      runway,
+      source: manual ? 'Manual' : atisRunway ? 'ATIS' : 'Auto',
+      geometry: findRunwayGeometry(airport, runway),
+      parsed
+    };
+  }
+
+  function populateRunwayControl(role){
+    const departure = role === 'departure';
+    const airport = airportCode(departure ? depAirport.value : arrAirport.value);
+    const select = departure ? depRunway : arrRunway;
+    const effectiveField = departure ? depRunwayEffective : arrRunwayEffective;
+    const status = departure ? depRunwayStatus : arrRunwayStatus;
+    const previous = select.value || 'AUTO';
+    const mapped = RUNWAY_DATA[airport] || [];
+    select.innerHTML = '<option value="AUTO">Auto from ATIS</option>' + mapped.map(item=>{
+      const value = normalizeRunwayDesignator(item.label);
+      return `<option value="${value}">Runway ${value}</option>`;
+    }).join('');
+    select.value = previous !== 'AUTO' && mapped.some(item=>normalizeRunwayDesignator(item.label) === normalizeRunwayDesignator(previous))
+      ? normalizeRunwayDesignator(previous)
+      : 'AUTO';
+
+    const selection = effectiveRunwaySelection(role);
+    effectiveField.value = selection.runway;
+    status.classList.remove('is-warning');
+    if(!airport){
+      status.textContent = 'Choose an airport to load runways.';
+    } else if(select.value !== 'AUTO'){
+      status.textContent = `Manual: RWY ${selection.runway}`;
+    } else if(selection.runway && selection.geometry){
+      status.textContent = `Auto: RWY ${selection.runway} from ATIS`;
+    } else if(selection.runway){
+      status.textContent = `Auto: RWY ${selection.runway} from ATIS; threshold geometry unavailable`;
+      status.classList.add('is-warning');
+    } else if(mapped.length){
+      status.textContent = 'Auto is waiting for ATIS runway information.';
+    } else {
+      status.textContent = 'No mapped runway geometry; routing will use the airport position.';
+      status.classList.add('is-warning');
+    }
+    return selection;
+  }
+
+  function refreshRunwayControls(options={}){
+    populateRunwayControl('departure');
+    populateRunwayControl('arrival');
+    if(options.render !== false){
+      renderRouteDiagram();
+      renderRouteMap();
+    }
+  }
+
+  function effectiveRunwaySummary(role){
+    const selection = effectiveRunwaySelection(role);
+    return selection.runway ? `RWY ${selection.runway} (${selection.source})` : '—';
+  }
+
+  function plannedRouteMapNodes(){
+    const depCode = airportCode(depAirport.value);
+    const arrCode = airportCode(arrAirport.value);
+    const nodes = [];
+    const depSelection = effectiveRunwaySelection('departure');
+    const depAirportPos = mapPoint(AIRPORTS[depCode]);
+    if(depSelection.geometry){
+      const threshold = depSelection.geometry;
+      nodes.push({x:threshold.x, y:threshold.y, code:depCode, kind:'departure-runway', runway:normalizeRunwayDesignator(threshold.label), heading:threshold.heading});
+      const reciprocal = findRunwayGeometry(depCode, reciprocalRunwayDesignator(threshold.label));
+      if(reciprocal){
+        nodes.push({x:reciprocal.x, y:reciprocal.y, code:depCode, kind:'runway-rollout', runway:normalizeRunwayDesignator(reciprocal.label), heading:threshold.heading});
+        const radians = Number(threshold.heading) * Math.PI / 180;
+        nodes.push({x:reciprocal.x + Math.sin(radians) * 8, y:reciprocal.y - Math.cos(radians) * 8, code:depCode, kind:'runway-heading', runway:normalizeRunwayDesignator(threshold.label), heading:threshold.heading});
+      }
+    } else if(depAirportPos){
+      nodes.push({x:depAirportPos.x, y:depAirportPos.y, code:depCode, kind:'departure'});
+    }
+
+    if(routeType === 'waypoints'){
+      waypointBody.querySelectorAll('.wp-input').forEach(input=>{
+        const code = waypointKey(input.value);
+        const pos = mapPoint(WAYPOINTS[code]);
+        if(code && pos) nodes.push({code, ...pos, kind:'waypoint'});
+      });
+    }
+
+    const arrSelection = effectiveRunwaySelection('arrival');
+    const arrAirportPos = mapPoint(AIRPORTS[arrCode]);
+    if(arrSelection.geometry){
+      const threshold = arrSelection.geometry;
+      nodes.push({x:threshold.x, y:threshold.y, code:arrCode, kind:'arrival-runway', runway:normalizeRunwayDesignator(threshold.label), heading:threshold.heading});
+    } else if(arrAirportPos){
+      nodes.push({x:arrAirportPos.x, y:arrAirportPos.y, code:arrCode, kind:'arrival'});
+    }
+    return nodes;
+  }
+
 
   function renderRouteDiagram(){
     const nodes = [];
@@ -4078,12 +4614,22 @@
         svg += `<text x="${x}" y="${cy+27}" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" letter-spacing="1" fill="#6b7c78">${n.kind==='dep'?'DEP':n.kind==='arr'?'ARR':'FIX'}</text>`;
       });
 
-      const runway = routeType === 'waypoints' ? departureRunwayInfo() : null;
-      if(runway && nodes[0]?.kind === 'dep' && runway.heading){
-        const runwayText = `RWY ${runway.runway} · ${formatHeading(runway.heading)}`;
-        const runwayWidth = Math.max(96, runwayText.length * 6.7 + 18);
+      const depSelection = effectiveRunwaySelection('departure');
+      const arrSelection = effectiveRunwaySelection('arrival');
+      if(nodes[0]?.kind === 'dep' && depSelection.runway){
+        const heading = depSelection.geometry?.heading ?? runwayHeadingFromDesignator(depSelection.runway);
+        const runwayText = `DEP RWY ${depSelection.runway} · ${formatHeading(heading)}`;
+        const runwayWidth = Math.max(112, runwayText.length * 6.7 + 18);
         svg += `<rect x="${pad-runwayWidth/2}" y="${cy+38}" width="${runwayWidth}" height="20" rx="10" fill="#16232b"/>`;
         svg += `<text x="${pad}" y="${cy+52}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700" fill="#f4f8f7">${runwayText}</text>`;
+      }
+      if(nodes.at(-1)?.kind === 'arr' && arrSelection.runway){
+        const heading = arrSelection.geometry?.heading ?? runwayHeadingFromDesignator(arrSelection.runway);
+        const runwayText = `ARR RWY ${arrSelection.runway} · ${formatHeading(heading)}`;
+        const runwayWidth = Math.max(112, runwayText.length * 6.7 + 18);
+        const x = pad + (nodes.length - 1) * spacing;
+        svg += `<rect x="${x-runwayWidth/2}" y="${cy+38}" width="${runwayWidth}" height="20" rx="10" fill="#6f2c26"/>`;
+        svg += `<text x="${x}" y="${cy+52}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="700" fill="#fff4f2">${runwayText}</text>`;
       }
     }
     routeSvg.innerHTML = svg;
@@ -4177,12 +4723,14 @@
     wpIdx = waypointBody.children.length;
   }
   document.getElementById('addWaypointBtn').addEventListener('click', makeWaypointRow);
-  depAirport.addEventListener('input', ()=>{ refreshAirportField(depAirport, depAirportResolved); scheduleNetworkRefresh(); });
-  arrAirport.addEventListener('input', ()=>{ refreshAirportField(arrAirport, arrAirportResolved); scheduleNetworkRefresh(); });
-  depAirport.addEventListener('change', ()=>{ refreshAirportField(depAirport, depAirportResolved, true); scheduleNetworkRefresh(); });
-  arrAirport.addEventListener('change', ()=>{ refreshAirportField(arrAirport, arrAirportResolved, true); scheduleNetworkRefresh(); });
-  depAirport.addEventListener('blur', ()=>{ refreshAirportField(depAirport, depAirportResolved, true); scheduleNetworkRefresh(); });
-  arrAirport.addEventListener('blur', ()=>{ refreshAirportField(arrAirport, arrAirportResolved, true); scheduleNetworkRefresh(); });
+  depAirport.addEventListener('input', ()=>{ refreshAirportField(depAirport, depAirportResolved); refreshRunwayControls(); scheduleNetworkRefresh(); });
+  arrAirport.addEventListener('input', ()=>{ refreshAirportField(arrAirport, arrAirportResolved); refreshRunwayControls(); scheduleNetworkRefresh(); });
+  depAirport.addEventListener('change', ()=>{ refreshAirportField(depAirport, depAirportResolved, true); refreshRunwayControls(); scheduleNetworkRefresh(); });
+  arrAirport.addEventListener('change', ()=>{ refreshAirportField(arrAirport, arrAirportResolved, true); refreshRunwayControls(); scheduleNetworkRefresh(); });
+  depAirport.addEventListener('blur', ()=>{ refreshAirportField(depAirport, depAirportResolved, true); refreshRunwayControls(); scheduleNetworkRefresh(); });
+  arrAirport.addEventListener('blur', ()=>{ refreshAirportField(arrAirport, arrAirportResolved, true); refreshRunwayControls(); scheduleNetworkRefresh(); });
+  depRunway.addEventListener('change', ()=>refreshRunwayControls());
+  arrRunway.addEventListener('change', ()=>refreshRunwayControls());
 
   // ===== ATIS =====
   const atisPanels = {
@@ -4207,39 +4755,38 @@
   function parseAtisInto(panelKey){
     const panel = atisPanels[panelKey];
     if(!panel) return 0;
-    const text = panel.input.value.toUpperCase();
+    const parsed = parseAtisReport(panel.input.value);
     panel.chips.innerHTML = '';
-    const patterns = {
-      'INFO':  /INFO(?:RMATION)?\s+([A-Z])/,
-      'RWY':   /(?:ACTIVE\s+)?RWY\s+(\d{1,2}[LRC]?)/,
-      'WIND':  /WIND\s+(\d{2,3}\/\d{1,3}|\d{3}\d{2}(?:G\d{2})?KT)/,
-      'ALTIM': /(?:ALTIM(?:ETER)?|QNH)\s+([\d.]+)/,
-    };
-    let found = 0;
-    Object.entries(patterns).forEach(([label, re])=>{
-      const match = text.match(re);
-      if(!match) return;
+    const values = [
+      ['INFO', parsed.info],
+      ['DEP RWY', parsed.departureRunway],
+      ['ARR RWY', parsed.arrivalRunway],
+      ['WIND', parsed.wind],
+      ['ALTIM', parsed.altimeter]
+    ].filter(([,value])=>value);
+    values.forEach(([label,value])=>{
       const chip = document.createElement('span');
       chip.className = 'chip';
-      chip.textContent = `${label}: ${match[1]}`;
+      chip.textContent = `${label}: ${value}`;
       panel.chips.appendChild(chip);
-      found++;
     });
-    if(found === 0 && text.trim()){
+    if(!values.length && panel.input.value.trim()){
       const chip = document.createElement('span');
       chip.className = 'chip';
       chip.style.background = '#a5382c';
       chip.textContent = 'No recognizable fields found';
       panel.chips.appendChild(chip);
     }
-    renderRouteDiagram();
-    return found;
+    refreshRunwayControls();
+    return values.length;
   }
+
 
   document.querySelectorAll('.parse-atis-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>parseAtisInto(btn.dataset.atisPanel));
   });
-  atisPanels.departure.input.addEventListener('input', renderRouteDiagram);
+  atisPanels.departure.input.addEventListener('input', ()=>refreshRunwayControls());
+  atisPanels.arrival.input.addEventListener('input', ()=>refreshRunwayControls());
 
   function syncAtisAirportLabels(clearChanged=true){
     Object.entries(atisPanels).forEach(([key, panel])=>{
@@ -4257,6 +4804,7 @@
         panel.status.textContent = 'Ready to fetch';
       }
     });
+    refreshRunwayControls();
   }
 
   depAirport.addEventListener('input', ()=>syncAtisAirportLabels());
@@ -4284,6 +4832,7 @@
       chip.style.background = '#a5382c';
       chip.textContent = 'NO LIVE ATIS';
       panel.chips.appendChild(chip);
+      refreshRunwayControls();
       return;
     }
     panel.input.value = atisReportText(entry);
@@ -4404,6 +4953,7 @@
   updateTotals();
   setWaypointLayerVisible(true);
   setWaypointRouteLineVisible(false);
+  refreshRunwayControls({render:false});
   renderRouteDiagram();
   renderRouteMap();
   refreshSuggestion();
@@ -4658,7 +5208,10 @@
     updateTotals();
     refreshSuggestion();
     refreshBothAirportFields();
+    depRunway.value = 'AUTO'; arrRunway.value = 'AUTO';
+    depRunwayEffective.value = ''; arrRunwayEffective.value = '';
     Object.values(atisPanels).forEach(panel=>{ panel.chips.innerHTML=''; panel.status.textContent=panel.emptyText; panel.code.textContent='----'; panel.code.dataset.airport=''; });
+    refreshRunwayControls();
     document.querySelectorAll('.sigpad').forEach(c=>{ const ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); });
     includePilotSignature.checked = false;
     pilotSignatureBlock.dataset.hasInk = '0';
@@ -4773,6 +5326,8 @@
   }
 
   function loadFormData(data){
+    const savedDepRunway = data.fields?.depRunway || 'AUTO';
+    const savedArrRunway = data.fields?.arrRunway || 'AUTO';
     waypointBody.innerHTML=''; wpIdx=0;
     crewBody.innerHTML=''; crewIdx=0;
     cargoBody.innerHTML=''; cargoIdx=0;
@@ -4832,6 +5387,10 @@
     updateSoulsWeight();
     refreshSuggestion();
     refreshBothAirportFields(true);
+    refreshRunwayControls({render:false});
+    if(savedDepRunway !== 'AUTO' && [...depRunway.options].some(option=>option.value === normalizeRunwayDesignator(savedDepRunway))) depRunway.value = normalizeRunwayDesignator(savedDepRunway);
+    if(savedArrRunway !== 'AUTO' && [...arrRunway.options].some(option=>option.value === normalizeRunwayDesignator(savedArrRunway))) arrRunway.value = normalizeRunwayDesignator(savedArrRunway);
+    refreshRunwayControls({render:false});
     validateWaypointInputs();
     renderRouteDiagram();
     renderRouteMap();
@@ -5036,7 +5595,7 @@
     reviewBriefHead.innerHTML = `<strong>${briefNo}</strong><span>${airportCode(depAirport.value) || '----'} → ${airportCode(arrAirport.value) || '----'}${routeNm === null ? '' : ` · ${routeNm.toFixed(1)} NM`}</span>`;
     const cards=[
       ['Flight Details',0,[['Callsign',value('fdCallsign')],['Pilot',value('fdPilotUsername')],['Aircraft',value('fdAircraft')],['Rules',value('flightRules')],['Date',value('flightDate')]]],
-      ['Route',1,[['Departure',value('depAirport')],['Arrival',value('arrAirport')],['Cruise',value('cruiseAlt')],['Distance',routeDistanceNm() === null ? '—' : `${routeDistanceNm().toFixed(1)} NM`],['Route',waypointText]]],
+      ['Route',1,[['Departure',value('depAirport')],['Departure runway',effectiveRunwaySummary('departure')],['Arrival',value('arrAirport')],['Arrival runway',effectiveRunwaySummary('arrival')],['Cruise',value('cruiseAlt')],['Distance',routeDistanceNm() === null ? '—' : `${routeDistanceNm().toFixed(1)} NM`],['Route',waypointText]]],
       ['People',2,[['Crew',[...crewBody.querySelectorAll('tr')].map(r=>[...r.querySelectorAll('input')].map(x=>x.value).filter(Boolean).join(': ')).filter(Boolean).join(', ')||'—'],['Souls',value('soulsCount')],['Passenger weight',value('soulsWeightTotal')]]],
       ['Cargo',4,[['Items',cargoRows.join('; ')||'No cargo listed'],['Cargo weight',document.getElementById('loadCargo').value||'0 kg']]],
       ['Performance',5,[['Stall',value('perfVstall') === 'N/A' ? 'N/A' : value('perfVstall')+' kt'],['V1',value('outV1')],['Rotate',value('outVR')],['V2',value('outV2')],['Vref',value('outVref')],['Approach',value('outVapp')],['Cruise',value('outCruise')],['No-flaps landing',value('outNoFlaps')]]],
