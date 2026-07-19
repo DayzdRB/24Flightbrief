@@ -2,7 +2,7 @@
 // Returns live ATC24 traffic, route progress and customs gating for the
 // logged-in owner's saved flight plan.
 
-const { getAircraftFeed } = require('../../lib/atc24');
+const { getAircraftFeed, getFlightPlans } = require('../../lib/atc24');
 const { methodNotAllowed, sendHandlerError, setNoStore } = require('../../lib/http');
 const { ensurePlanShape, loadPlans, publicPlan, savePlans } = require('../../lib/flight-plans');
 const {
@@ -29,6 +29,37 @@ function normalizeCode(value) {
 
 function normalizeWaypoint(value) {
   return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+// Loose key used to join /acft-data feed keys (in-game callsigns) against the
+// pilot-typed `realcallsign` from FLIGHT_PLAN events, which has unreliable
+// casing/punctuation (e.g. "channex-6725" vs "Channex-6725").
+function callsignJoinKey(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+// Index recent filed flight plans so each live aircraft can be labelled with
+// the pilot's selected callsign (what mainstream ATC24 clients display)
+// instead of the raw in-game callsign.
+function buildFlightPlanIndex(plans) {
+  const byRealCallsign = new Map();
+  const byPlayerName = new Map();
+  for (const plan of plans || []) {
+    if (!plan || !String(plan.callsign || '').trim()) continue;
+    const realKey = callsignJoinKey(plan.realcallsign);
+    const playerKey = String(plan.robloxName || '').trim().toUpperCase();
+    if (realKey) byRealCallsign.set(realKey, plan);
+    if (playerKey) byPlayerName.set(playerKey, plan);
+  }
+  return { byRealCallsign, byPlayerName };
+}
+
+function selectedCallsignFor(index, feedCallsign, playerName) {
+  if (!index) return null;
+  const plan = index.byRealCallsign.get(callsignJoinKey(feedCallsign))
+    || index.byPlayerName.get(String(playerName || '').trim().toUpperCase());
+  const selected = String(plan?.callsign || '').trim();
+  return selected || null;
 }
 
 function aircraftPosition(aircraft) {
@@ -66,13 +97,14 @@ function flightLevel(altitude) {
   return `FL${String(Math.max(0, Math.round((Number(altitude) || 0) / 100))).padStart(3, '0')}`;
 }
 
-function compactAircraft(callsign, aircraft) {
+function compactAircraft(callsign, aircraft, flightPlanIndex) {
   const position = aircraftPosition(aircraft);
   if (!position) return null;
   const altitude = Number(aircraft.altitude) || 0;
   const groundSpeed = Number(aircraft.groundSpeed) || 0;
   return {
     callsign,
+    displayCallsign: selectedCallsignFor(flightPlanIndex, callsign, aircraft.playerName) || callsign,
     playerName: String(aircraft.playerName || ''),
     aircraftType: String(aircraft.aircraftType || ''),
     altitude,
@@ -127,6 +159,7 @@ function calculateRouteProgress(nodes, aircraft) {
     return {
       nextWaypoint: nodes[0] || null,
       distanceToNextStuds: nodes[0] && aircraft ? distance(aircraft.position, nodes[0].worldPosition) : null,
+      bearingToNextDeg: nodes[0] && aircraft ? bearingBetween(aircraft.position, nodes[0].worldPosition) : null,
       remainingStuds: null,
       remainingNm: null,
       progressPercent: null,
@@ -147,6 +180,7 @@ function calculateRouteProgress(nodes, aircraft) {
       nextWaypoint: nodes[1],
       distanceToNextStuds: null,
       distanceToNextNm: null,
+      bearingToNextDeg: null,
       remainingStuds: totalStuds,
       remainingNm: nm(totalStuds),
       progressPercent: 0,
@@ -187,6 +221,9 @@ function calculateRouteProgress(nodes, aircraft) {
     nextWaypoint: { code: nextWaypoint.code, kind: nextWaypoint.kind, mapPosition: nextWaypoint.mapPosition },
     distanceToNextStuds,
     distanceToNextNm: nm(distanceToNextStuds),
+    // Course the aircraft should fly (in the game's heading frame, 360 = north)
+    // to reach the next route node from its present position.
+    bearingToNextDeg: bearingBetween(aircraft.position, nextWaypoint.worldPosition),
     remainingStuds,
     remainingNm: remainingNauticalMiles,
     progressPercent: totalStuds > 0 ? Math.max(0, Math.min(100, (best.alongStuds / totalStuds) * 100)) : 0,
@@ -263,9 +300,11 @@ function trafficAdvisory(own, traffic) {
     ? 'same altitude'
     : `${Math.abs(verticalDelta).toLocaleString()} ft ${verticalDelta > 0 ? 'above' : 'below'}`;
   const clock = clockPosition(own, traffic);
+  const displayName = traffic.displayCallsign || traffic.callsign;
   return {
     level,
     callsign: traffic.callsign,
+    displayCallsign: displayName,
     flightLevel: traffic.flightLevel,
     speed: Math.round(traffic.groundSpeed),
     clock,
@@ -273,7 +312,7 @@ function trafficAdvisory(own, traffic) {
     verticalSeparation,
     cpaDistanceNm: cpaNm,
     cpaSeconds: cpa.seconds,
-    message: `${traffic.callsign}, ${clock} o’clock, ${currentNm.toFixed(1)} NM, ${verticalText}`,
+    message: `${displayName}, ${clock} o’clock, ${currentNm.toFixed(1)} NM, ${verticalText}`,
   };
 }
 
@@ -308,9 +347,13 @@ module.exports = async (req, res) => {
     const arrivalWorld = chartToWorld(arrivalChart);
 
     const feed = await getAircraftFeed();
+    // Filed callsigns arrive via the WebSocket relay only; degrade to in-game
+    // callsigns when the relay is offline.
+    const flightPlanFeed = await getFlightPlans().catch(() => ({ data: [] }));
+    const flightPlanIndex = buildFlightPlanIndex(flightPlanFeed.data);
     const matchingCallsign = Object.keys(feed.data)
       .find(callsign => callsign.toUpperCase() === requestedCallsign.toUpperCase()) || null;
-    const aircraft = matchingCallsign ? compactAircraft(matchingCallsign, feed.data[matchingCallsign]) : null;
+    const aircraft = matchingCallsign ? compactAircraft(matchingCallsign, feed.data[matchingCallsign], flightPlanIndex) : null;
     const now = Date.now();
 
     let departureDistance = null;
@@ -394,7 +437,7 @@ module.exports = async (req, res) => {
     }
 
     const allAircraft = Object.entries(feed.data)
-      .map(([callsign, data]) => compactAircraft(callsign, data))
+      .map(([callsign, data]) => compactAircraft(callsign, data, flightPlanIndex))
       .filter(Boolean);
     const nearbyAircraft = allAircraft
       .filter(item => item.callsign !== matchingCallsign)
