@@ -21,6 +21,14 @@ function cleanText(value, max = 200) {
   return String(value || '').trim().slice(0, max);
 }
 
+function fieldEnabled(value) {
+  return value === true || value === 1 || ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase());
+}
+
+function pdcActive(plan) {
+  return fieldEnabled(plan?.data?.fields?.requestPdc) || plan?.pdc?.status === 'issued';
+}
+
 function normalizeWaypoints(input) {
   if (!Array.isArray(input)) return [];
   return input
@@ -42,20 +50,47 @@ function optionalNumber(value, label, { min = 0, max = 99999 } = {}) {
   return Math.round(number);
 }
 
-function optionalAltitude(value, label) {
-  if (value === '' || value === null || value === undefined) return null;
-  const raw = String(value).trim().toUpperCase();
-  const flightLevel = raw.match(/^FL\s*(\d{1,3})$/);
-  if (flightLevel) return optionalNumber(Number(flightLevel[1]) * 100, label, { min: 0, max: 60000 });
-  const cleaned = raw.replace(/(?:FEET|FOOT|FT)$/,'').replace(/[,_\s]/g,'');
-  if (!/^\d+$/.test(cleaned)) {
-    const error = new Error(`${label} must be a flight level such as FL040 or an altitude in feet.`);
+function normalizeAltitudeChoice(input, label, defaultUnit = 'FT') {
+  let raw = input;
+  let unit = String(defaultUnit || 'FT').toUpperCase() === 'FL' ? 'FL' : 'FT';
+
+  if (input && typeof input === 'object' && !Array.isArray(input)) {
+    raw = input.value ?? input.display ?? input.feet ?? '';
+    const requestedUnit = String(input.unit || unit).toUpperCase();
+    unit = requestedUnit === 'FL' ? 'FL' : 'FT';
+  }
+
+  if (raw === '' || raw === null || raw === undefined) {
+    return { feet: null, unit, display: '' };
+  }
+
+  let text = String(raw).trim().toUpperCase();
+  if (text.startsWith('FL')) {
+    unit = 'FL';
+    text = text.replace(/^FL\s*/, '');
+  } else if (/(?:FEET|FOOT|FT)$/.test(text)) {
+    unit = 'FT';
+    text = text.replace(/(?:FEET|FOOT|FT)$/, '');
+  }
+  const digits = text.replace(/[,_\s]/g, '');
+  if (!/^\d+$/.test(digits)) {
+    const error = new Error(`${label} must contain numbers only.`);
     error.statusCode = 400;
     throw error;
   }
-  const number = Number(cleaned);
-  const feet = cleaned.length <= 3 && number <= 600 ? number * 100 : number;
-  return optionalNumber(feet, label, { min: 0, max: 60000 });
+
+  if (unit === 'FL') {
+    const level = Number(digits);
+    if (!Number.isFinite(level) || level < 0 || level > 600) {
+      const error = new Error(`${label} flight level must be between 000 and 600.`);
+      error.statusCode = 400;
+      throw error;
+    }
+    return { feet: Math.round(level * 100), unit: 'FL', display: String(Math.round(level)).padStart(3, '0') };
+  }
+
+  const feet = optionalNumber(Number(digits), label, { min: 0, max: 60000 });
+  return { feet, unit: 'FT', display: String(feet) };
 }
 
 function validateFrequency(value) {
@@ -90,12 +125,16 @@ const PDC_FIELD_KEYS = [
   'arrRunway',
   'arrRunwayEffective',
   'pdcInitialAltitude',
-  'pdcDelayedAltitude',
+  'pdcInitialAltitudeUnit',
+  'pdcInitialAltitudeDisplay',
   'pdcDelayMinutes',
+  'pdcCruiseAltitude',
+  'pdcCruiseAltitudeUnit',
+  'pdcCruiseAltitudeDisplay',
   'pdcDepartureFrequency',
-  'squawkCode',
   'pdcRemarks',
   'radarVectorsUntil',
+  'requestPdc',
 ];
 
 function pdcRouteData(data) {
@@ -146,6 +185,10 @@ module.exports = async (req, res) => {
     const plan = plans[index];
     if (await ensurePlanShape(plan, reference.ownerId)) await savePlans(reference.ownerId, plans);
 
+    if (!pdcActive(plan)) {
+      return res.status(403).json({ error: 'PDC was not requested for this flight plan.' });
+    }
+
     if (req.method === 'GET') return res.status(200).json(publicPayload(plan));
 
     const input = await readJsonBody(req);
@@ -165,11 +208,22 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Radar vectors must end at a waypoint in the cleared route.' });
     }
 
+    const filedCruiseText = String(filedFields.cruiseAlt || '').trim().toUpperCase();
+    const filedCruiseUnit = filedCruiseText.startsWith('FL') || /^\d{1,3}$/.test(filedCruiseText) ? 'FL' : 'FT';
+    const initialChoice = normalizeAltitudeChoice(input.altitude?.initial, 'Initial climb', 'FT');
+    const cruiseChoice = normalizeAltitudeChoice(
+      input.altitude?.cruise ?? filedFields.cruiseAlt,
+      'Cruising altitude',
+      filedCruiseUnit
+    );
     const altitude = {
-      initial: optionalAltitude(input.altitude?.initial, 'Initial altitude'),
-      delayed: optionalAltitude(input.altitude?.delayed, 'Delayed climb altitude'),
+      initial: initialChoice.feet,
+      initialUnit: initialChoice.unit,
+      initialDisplay: initialChoice.display,
       delayMinutes: optionalNumber(input.altitude?.delayMinutes, 'Delay time', { min: 0, max: 120 }),
-      cruise: optionalAltitude(input.altitude?.cruise ?? filedFields.cruiseAlt, 'Cruise altitude'),
+      cruise: cruiseChoice.feet,
+      cruiseUnit: cruiseChoice.unit,
+      cruiseDisplay: cruiseChoice.display,
     };
     const departureFrequency = validateFrequency(input.departureFrequency);
     const squawk = validateSquawk(input.squawk);
@@ -211,7 +265,11 @@ module.exports = async (req, res) => {
     latestPlan.data.waypoints = amendedWaypoints;
     latestPlan.data.routeType = amendedWaypoints.length ? 'waypoints' : (filedData.routeType || latestPlan.data.routeType || 'waypoints');
     latestPlan.data.fields.arrAirport = clearanceLimit;
-    if (altitude.cruise !== null) latestPlan.data.fields.cruiseAlt = String(altitude.cruise);
+    if (altitude.cruise !== null) {
+      latestPlan.data.fields.cruiseAlt = altitude.cruiseUnit === 'FL'
+        ? `FL${altitude.cruiseDisplay}`
+        : String(altitude.cruise);
+    }
     if (depRunway && depRunway !== 'AUTO') {
       latestPlan.data.fields.depRunway = depRunway;
       latestPlan.data.fields.depRunwayEffective = depRunway;
@@ -221,8 +279,13 @@ module.exports = async (req, res) => {
       latestPlan.data.fields.arrRunwayEffective = arrRunway;
     }
     latestPlan.data.fields.pdcInitialAltitude = altitude.initial === null ? '' : String(altitude.initial);
-    latestPlan.data.fields.pdcDelayedAltitude = altitude.delayed === null ? '' : String(altitude.delayed);
+    latestPlan.data.fields.pdcInitialAltitudeUnit = altitude.initialUnit;
+    latestPlan.data.fields.pdcInitialAltitudeDisplay = altitude.initialDisplay;
+    latestPlan.data.fields.pdcDelayedAltitude = '';
     latestPlan.data.fields.pdcDelayMinutes = altitude.delayMinutes === null ? '' : String(altitude.delayMinutes);
+    latestPlan.data.fields.pdcCruiseAltitude = altitude.cruise === null ? '' : String(altitude.cruise);
+    latestPlan.data.fields.pdcCruiseAltitudeUnit = altitude.cruiseUnit;
+    latestPlan.data.fields.pdcCruiseAltitudeDisplay = altitude.cruiseDisplay;
     latestPlan.data.fields.pdcDepartureFrequency = departureFrequency;
     latestPlan.data.fields.squawkCode = squawk;
     latestPlan.data.fields.pdcRemarks = remarks;

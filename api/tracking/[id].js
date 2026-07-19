@@ -141,7 +141,38 @@ function reciprocalRunwayDesignator(value) {
   return String(reciprocal).padStart(2, '0') + reciprocalSide;
 }
 
-function departureRunwayNodes(airport, designator) {
+function fieldEnabled(value) {
+  return value === true || value === 1 || ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase());
+}
+
+function inspectionActive(plan, phase) {
+  const field = phase === 'arrival' ? 'requestArrivalCustoms' : 'requestDepartureCustoms';
+  const status = plan.customs?.[phase]?.status;
+  return fieldEnabled(plan.data?.fields?.[field]) || Boolean(status && status !== 'not-requested');
+}
+
+function runwayLegState(plan, role) {
+  const defaults = role === 'arrival' ? 2 : 1;
+  const saved = plan.data?.runwayLegs?.[role];
+  const distanceNm = Math.max(0.1, Math.min(20, Number(saved?.distanceNm) || defaults));
+  return { enabled: saved?.enabled !== false, distanceNm };
+}
+
+function runwayVector(heading) {
+  const radians = Number(heading) * Math.PI / 180;
+  return { x: Math.sin(radians), y: -Math.cos(radians) };
+}
+
+function extendedRunwayMapPosition(origin, heading, distanceNm, direction = 1) {
+  const vector = runwayVector(heading);
+  const normalizedDistance = Number(distanceNm) * STUDS_PER_NAUTICAL_MILE / (WORLD.maxX - WORLD.minX);
+  return {
+    x: origin.x + vector.x * normalizedDistance * direction,
+    y: origin.y + vector.y * normalizedDistance * direction,
+  };
+}
+
+function departureRunwayNodes(airport, designator, runwayLeg) {
   const threshold = findRunway(airport, designator);
   if (!threshold) return [];
   const thresholdMap = runwayMapPosition(threshold);
@@ -162,31 +193,42 @@ function departureRunwayNodes(airport, designator) {
     heading: threshold.heading,
     mapPosition: reciprocalMap,
   });
-  const radians = Number(threshold.heading) * Math.PI / 180;
-  const extension = 8 / 1200;
-  result.push({
-    code: 'RWY HDG',
-    kind: 'runway-heading',
-    runway: normalizeRunwayDesignator(threshold.label),
-    heading: threshold.heading,
-    mapPosition: {
-      x: reciprocalMap.x + Math.sin(radians) * extension,
-      y: reciprocalMap.y - Math.cos(radians) * extension,
-    },
-  });
+  if (runwayLeg?.enabled) {
+    result.push({
+      code: `DEP ALIGN ${runwayLeg.distanceNm.toFixed(1)} NM`,
+      kind: 'departure-custom',
+      runway: normalizeRunwayDesignator(threshold.label),
+      heading: threshold.heading,
+      distanceNm: runwayLeg.distanceNm,
+      mapPosition: extendedRunwayMapPosition(reciprocalMap, threshold.heading, runwayLeg.distanceNm, 1),
+    });
+  }
   return result;
 }
 
-function arrivalRunwayNode(airport, designator) {
+function arrivalRunwayNodes(airport, designator, runwayLeg) {
   const threshold = findRunway(airport, designator);
-  if (!threshold) return null;
-  return {
+  if (!threshold) return [];
+  const thresholdMap = runwayMapPosition(threshold);
+  const result = [];
+  if (runwayLeg?.enabled) {
+    result.push({
+      code: `ARR ALIGN ${runwayLeg.distanceNm.toFixed(1)} NM`,
+      kind: 'arrival-custom',
+      runway: normalizeRunwayDesignator(threshold.label),
+      heading: threshold.heading,
+      distanceNm: runwayLeg.distanceNm,
+      mapPosition: extendedRunwayMapPosition(thresholdMap, threshold.heading, runwayLeg.distanceNm, -1),
+    });
+  }
+  result.push({
     code: `${airport} ${normalizeRunwayDesignator(threshold.label)}`,
     kind: 'arrival-runway',
     runway: normalizeRunwayDesignator(threshold.label),
     heading: threshold.heading,
-    mapPosition: runwayMapPosition(threshold),
-  };
+    mapPosition: thresholdMap,
+  });
+  return result;
 }
 
 function routeNodes(plan) {
@@ -196,7 +238,7 @@ function routeNodes(plan) {
   const nodes = [];
 
   const departureRunway = selectedRunway(fields, 'dep');
-  const departureNodes = departureRunwayNodes(departureCode, departureRunway);
+  const departureNodes = departureRunwayNodes(departureCode, departureRunway, runwayLegState(plan, 'departure'));
   if (departureNodes.length) {
     nodes.push(...departureNodes);
   } else if (AIRPORTS[departureCode]) {
@@ -213,9 +255,9 @@ function routeNodes(plan) {
   }
 
   const arrivalRunway = selectedRunway(fields, 'arr');
-  const arrivalNode = arrivalRunwayNode(arrivalCode, arrivalRunway);
-  if (arrivalNode) {
-    nodes.push(arrivalNode);
+  const arrivalNodes = arrivalRunwayNodes(arrivalCode, arrivalRunway, runwayLegState(plan, 'arrival'));
+  if (arrivalNodes.length) {
+    nodes.push(...arrivalNodes);
   } else if (AIRPORTS[arrivalCode]) {
     nodes.push({ code: arrivalCode, kind: 'arrival', mapPosition: AIRPORTS[arrivalCode] });
   }
@@ -486,12 +528,16 @@ module.exports = async (req, res) => {
       landedAtDestination = insideLandingArea
         && (positiveGroundLanding || helicopterLandingFallback);
 
+      const departureInspectionRequired = inspectionActive(plan, 'departure');
+      const arrivalInspectionRequired = inspectionActive(plan, 'arrival');
       const departureApproved = plan.customs?.departure?.status === 'approved';
+      const departureRequirementMet = !departureInspectionRequired || departureApproved;
       const flightOldEnough = plan.tracking.actualDepartureAt
         && now - plan.tracking.actualDepartureAt >= MIN_FLIGHT_TIME_BEFORE_ARRIVAL_MS;
 
       if (!plan.tracking.arrivalUnlockedAt
-          && departureApproved
+          && arrivalInspectionRequired
+          && departureRequirementMet
           && flightOldEnough
           && landedAtDestination) {
         plan.tracking.arrivalUnlockedAt = now;
@@ -601,6 +647,7 @@ module.exports = async (req, res) => {
         fields,
         waypoints: plan.data?.waypoints || [],
         routeType: plan.data?.routeType || 'waypoints',
+        runwayLegs: plan.data?.runwayLegs || null,
         customs: plan.customs,
         tracking: plan.tracking,
         pdc: plan.pdc,

@@ -455,8 +455,11 @@
   .map-chart-base{opacity:.92}.map-airport-assets{opacity:.72}.map-airport-assets image{mix-blend-mode:multiply}
   .map-waypoint-layer{opacity:1;transition:opacity .16s ease;}
   .map-waypoint-layer.is-hidden{opacity:0;pointer-events:none;}
-  .map-waypoint-dot{fill:#546762;}
-  .map-waypoint-label{fill:#546762;font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .map-waypoint-hit{fill:transparent;stroke:transparent;pointer-events:all;}
+  .map-waypoint-dot{fill:#546762;pointer-events:none;}
+  .map-waypoint-label{fill:#546762;font-family:'JetBrains Mono',monospace;font-weight:600;pointer-events:none;}
+  .map-waypoint-point:focus .map-waypoint-dot{fill:#ffcf5c;}
+  .map-waypoint-point:focus .map-waypoint-label{fill:#182329;font-weight:800;}
   .navigation-radar .map-waypoint-dot{fill:#7fe0c2;fill-opacity:.85;}
   .navigation-radar .map-waypoint-label{fill:#7fe0c2;fill-opacity:.85;}
   .map-runway-label{fill:#3d5058;font:700 6.5px 'JetBrains Mono',monospace;paint-order:stroke;stroke:rgba(255,255,255,.78);stroke-width:2px;stroke-linejoin:round;}
@@ -591,6 +594,23 @@
     stroke-width:5px;
     stroke-linejoin:round;
   }
+  .map-runway-leg-handle{cursor:ew-resize;pointer-events:auto;touch-action:none;}
+  .map-runway-leg-hit{fill:transparent;stroke:transparent;pointer-events:all;}
+  .map-runway-leg-diamond{fill:#ffcf5c;stroke:#16232b;stroke-width:3;vector-effect:non-scaling-stroke;}
+  .map-runway-leg-handle.is-arrival .map-runway-leg-diamond{fill:#ff9b8f;}
+  .map-runway-leg-label{font:800 12px 'JetBrains Mono',monospace;fill:#fff7d8;paint-order:stroke;stroke:#16232b;stroke-width:4px;stroke-linejoin:round;pointer-events:none;}
+  .runway-leg-controls{display:grid;gap:8px;max-width:750px;margin:0 auto 10px;padding:10px;border:1px solid var(--rule-strong);border-radius:6px;background:rgba(255,255,255,.4);}
+  .runway-leg-row{display:grid;grid-template-columns:minmax(190px,1fr) 90px auto auto;align-items:center;gap:8px;font-size:10.5px;}
+  .runway-leg-row label{display:flex;align-items:center;gap:7px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+  .runway-leg-row input[type=number]{width:100%;padding:6px;border:1px solid var(--rule-strong);border-radius:4px;background:#fff;}
+  .runway-leg-row .unit{font:800 10px 'JetBrains Mono',monospace;color:var(--ink-soft);}
+  .runway-leg-note{font-size:10px;color:var(--ink-soft);line-height:1.4;}
+  .service-toggle-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:12px;}
+  .service-toggle{display:flex;align-items:flex-start;gap:8px;padding:10px;border:1px solid var(--rule-strong);border-radius:5px;background:rgba(255,255,255,.38);cursor:pointer;}
+  .service-toggle input{margin-top:2px;accent-color:var(--teal);}
+  .service-toggle span{display:grid;gap:2px;font-size:10px;color:var(--ink-soft);line-height:1.35;}
+  .service-toggle strong{font-size:10.5px;color:var(--ink);text-transform:uppercase;letter-spacing:.04em;}
+  @media(max-width:720px){.runway-leg-row{grid-template-columns:1fr 78px auto}.runway-leg-row button{grid-column:1/-1}.service-toggle-grid{grid-template-columns:1fr;}}
   .wp-input.is-unknown{
     background:rgba(165,56,44,.12);
     outline:2px solid var(--red);
@@ -1530,6 +1550,21 @@
           <button class="map-layer-toggle" id="routeLineToggle" type="button" aria-pressed="false">Route line</button>
           <button class="map-layer-toggle" id="mapDistanceToggle" type="button" aria-pressed="false" title="Double-click the map to start or clear a measurement">Distance tool</button>
         </div>
+        <div class="runway-leg-controls no-export" id="runwayLegControls">
+          <div class="runway-leg-row">
+            <label><input type="checkbox" id="departureRunwayLegEnabled" checked> Departure runway-aligned waypoint</label>
+            <input type="number" id="departureRunwayLegDistance" min="0.1" max="20" step="0.1" value="1.0" aria-label="Departure runway waypoint distance">
+            <span class="unit">NM</span>
+            <button type="button" class="btn-ghost btn-small" id="resetDepartureRunwayLeg">Snap departure · 1 NM</button>
+          </div>
+          <div class="runway-leg-row">
+            <label><input type="checkbox" id="arrivalRunwayLegEnabled" checked> Arrival runway-aligned waypoint</label>
+            <input type="number" id="arrivalRunwayLegDistance" min="0.1" max="20" step="0.1" value="2.0" aria-label="Arrival runway waypoint distance">
+            <span class="unit">NM</span>
+            <button type="button" class="btn-ghost btn-small" id="snapArrivalRunwayLeg">Snap arrival · 2 NM</button>
+          </div>
+          <div class="runway-leg-note">Select a runway to add a custom waypoint on its extended centerline. Departure defaults to 1 NM and arrival to 2 NM. Drag either diamond along the runway line to extend or shorten it; drag it onto the threshold to delete it.</div>
+        </div>
         <div class="route-map-wrap">
           <div class="map-zoom-controls" data-zoom-target="routeMapSvg">
             <button type="button" class="map-zoom-btn" data-zoom="in" aria-label="Zoom in">+</button>
@@ -1670,6 +1705,11 @@
           <span class="panel-eyebrow">07</span>
           <h3>Remarks</h3>
           <div class="line"></div>
+        </div>
+        <div class="service-toggle-grid no-export" aria-label="Requested services">
+          <label class="service-toggle"><input type="checkbox" id="requestPdc"><span><strong>Request PDC</strong>Generate a controller clearance link after saving.</span></label>
+          <label class="service-toggle"><input type="checkbox" id="requestDepartureCustoms"><span><strong>Departure cargo inspection</strong>Generate a departure inspection link after saving.</span></label>
+          <label class="service-toggle"><input type="checkbox" id="requestArrivalCustoms"><span><strong>Arrival cargo inspection</strong>Unlock an arrival inspection link after landing.</span></label>
         </div>
         <textarea class="remarks" placeholder="Special handling, hazmat notes, load balance, ATC restrictions, roleplay notes..."></textarea>
       </div>
@@ -1820,7 +1860,7 @@
             <div class="navigation-stat"><span>Remaining</span><strong id="navRemaining">—</strong></div>
             <div class="navigation-stat"><span>ETA</span><strong id="navEta">—</strong></div>
           </div></section>
-          <section class="navigation-side-card"><h3>PDC clearance</h3><div class="navigation-telemetry">
+          <section class="navigation-side-card" id="navigationPdcCard"><h3>PDC clearance</h3><div class="navigation-telemetry">
             <div class="navigation-stat"><span>Controller</span><strong id="navPdcController">—</strong></div>
             <div class="navigation-stat"><span>Squawk</span><strong id="navPdcSquawk">—</strong></div>
             <div class="navigation-stat"><span>Departure frequency</span><strong id="navPdcFrequency">—</strong></div>
@@ -1829,7 +1869,7 @@
           </div></section>
           <section class="navigation-side-card"><h3>Traffic advisories</h3><div class="traffic-advisories" id="trafficAdvisories"><div class="section-note">No tracked aircraft selected.</div></div></section>
           <section class="navigation-side-card"><h3>Flight progression</h3><div class="flight-milestones" id="flightMilestones"></div></section>
-          <section class="navigation-side-card"><h3>Clearance & customs links</h3><div class="navigation-customs-actions"><button class="btn-primary" id="navPdcBtn" type="button">Copy PDC link</button><button class="btn-ghost" id="navDepartureCustomsBtn" type="button">Copy departure customs link</button><button class="btn-primary" id="navArrivalCustomsBtn" type="button" disabled>Arrival inspection locked</button></div></section>
+          <section class="navigation-side-card" id="navigationWorkflowCard"><h3>Clearance & cargo-inspection links</h3><div class="navigation-customs-actions"><button class="btn-primary" id="navPdcBtn" type="button">Copy PDC link</button><button class="btn-ghost" id="navDepartureCustomsBtn" type="button">Copy departure customs link</button><button class="btn-primary" id="navArrivalCustomsBtn" type="button" disabled>Arrival inspection locked</button></div></section>
         </aside>
       </div>
     </section>
@@ -3336,7 +3376,8 @@
   function waypointLayerMarkup(){
     return Object.entries(WAYPOINTS).map(([code,p])=>{
       const q = mapPoint(p);
-      return `<g class="map-waypoint-point" data-map-clickable="waypoint" data-chart-waypoint="${code}" data-x="${q.x}" data-y="${q.y}" transform="translate(${q.x} ${q.y})"><circle class="map-waypoint-dot" cx="0" cy="0" r="3"/><text class="map-waypoint-label" x="5" y="-3.5" font-size="8.5">${code}</text></g>`;
+      const labelWidth=Math.max(44,code.length*7+24);
+      return `<g class="map-waypoint-point" tabindex="0" role="button" aria-label="Add ${code} to route" data-map-clickable="waypoint" data-chart-waypoint="${code}" data-x="${q.x}" data-y="${q.y}" transform="translate(${q.x} ${q.y})"><circle class="map-waypoint-hit" cx="0" cy="0" r="17"/><rect class="map-waypoint-hit" x="-10" y="-23" width="${labelWidth}" height="32" rx="8"/><circle class="map-waypoint-dot" cx="0" cy="0" r="3"/><text class="map-waypoint-label" x="5" y="-3.5" font-size="8.5">${code}</text></g>`;
     }).join('');
   }
   mapWaypointLayer.innerHTML = waypointLayerMarkup();
@@ -3540,7 +3581,7 @@
     const lineScale = Math.max(.34, Math.pow(scale, .28));
     const markerScale = Math.pow(scale, 1.12);
     const chartWaypointScale = Math.pow(scale, .80);
-    setAnchoredScale(svg, '.map-route-marker, .map-airport-marker, .map-selected-runway-marker', markerScale);
+    setAnchoredScale(svg, '.map-route-marker, .map-airport-marker, .map-selected-runway-marker, .map-runway-leg-handle', markerScale);
     setAnchoredScale(svg, '.map-waypoint-point, .map-runway-point', chartWaypointScale);
     svg.querySelectorAll('.map-route-casing').forEach(node=>node.style.strokeWidth = `${9 * lineScale}px`);
     svg.querySelectorAll('.map-route-line').forEach(node=>node.style.strokeWidth = `${5 * lineScale}px`);
@@ -3552,6 +3593,7 @@
     });
     svg.querySelectorAll('.map-route-waypoint').forEach(node=>node.style.strokeWidth = `${5 * lineScale}px`);
     svg.querySelectorAll('.map-airport-pin').forEach(node=>node.style.strokeWidth = `${1.5 * lineScale}px`);
+    svg.querySelectorAll('.map-runway-leg-diamond').forEach(node=>node.style.strokeWidth = `${3 * lineScale}px`);
   }
 
   function updateNavigationOverlayScale(scale){
@@ -3655,6 +3697,13 @@
         routeMarkerSvg += `<g class="map-selected-runway-marker" data-x="${node.x}" data-y="${node.y}" transform="translate(${node.x} ${node.y})"><circle class="map-selected-runway-ring${arrivalClass}" cx="0" cy="0" r="11"/><text class="map-selected-runway-label" x="0" y="-17" text-anchor="middle">${prefix} RWY ${node.runway}</text></g>`;
       });
 
+      nodes.filter(node=>node.kind === 'departure-custom' || node.kind === 'arrival-custom').forEach(node=>{
+        const role=node.kind === 'arrival-custom' ? 'arrival' : 'departure';
+        const arrivalClass=role==='arrival'?' is-arrival':'';
+        const label=role==='arrival'?`ARR ALIGN ${Number(node.distanceNm).toFixed(1)} NM`:`DEP ALIGN ${Number(node.distanceNm).toFixed(1)} NM`;
+        routeMarkerSvg += `<g class="map-runway-leg-handle${arrivalClass}" data-map-clickable="runway-leg" data-runway-leg="${role}" data-x="${node.x}" data-y="${node.y}" transform="translate(${node.x} ${node.y})"><circle class="map-runway-leg-hit" r="18"/><rect class="map-runway-leg-diamond" x="-7" y="-7" width="14" height="14" rx="2" transform="rotate(45)"/><text class="map-runway-leg-label" x="0" y="-19" text-anchor="middle">${label}</text></g>`;
+      });
+
       if(label){
         const first = nodes[0], last = nodes[nodes.length - 1];
         const midX = (first.x + last.x) / 2;
@@ -3726,6 +3775,60 @@
 
   // 24RC draws aircraft at game position / 100 in a 1,200-unit square map.
   const STUDS_PER_NAUTICAL_MILE = 3307.14286;
+  const MAP_UNITS_PER_NAUTICAL_MILE = MAP_VIEWBOX_WIDTH * STUDS_PER_NAUTICAL_MILE / MAP_STUDS_PER_NORMALIZED_UNIT;
+  const runwayLegControls = {
+    departure: {
+      enabled: document.getElementById('departureRunwayLegEnabled'),
+      distance: document.getElementById('departureRunwayLegDistance'),
+      defaultDistance: 1,
+    },
+    arrival: {
+      enabled: document.getElementById('arrivalRunwayLegEnabled'),
+      distance: document.getElementById('arrivalRunwayLegDistance'),
+      defaultDistance: 2,
+    },
+  };
+  let runwayLegDrag = null;
+
+  function runwayLegState(role){
+    const controls=runwayLegControls[role];
+    const distance=Math.max(.1,Math.min(20,Number(controls?.distance?.value)||controls?.defaultDistance||1));
+    return {enabled:Boolean(controls?.enabled?.checked),distanceNm:Math.round(distance*10)/10};
+  }
+
+  function setRunwayLeg(role,{enabled,distanceNm}={}){
+    const controls=runwayLegControls[role];
+    if(!controls) return;
+    if(enabled!==undefined) controls.enabled.checked=Boolean(enabled);
+    if(distanceNm!==undefined&&Number.isFinite(Number(distanceNm))) controls.distance.value=(Math.max(.1,Math.min(20,Number(distanceNm)))).toFixed(1);
+  }
+
+  function runwayVector(heading){
+    const radians=Number(heading)*Math.PI/180;
+    return {x:Math.sin(radians),y:-Math.cos(radians)};
+  }
+
+  function runwayLegGeometry(role){
+    const state=runwayLegState(role);
+    if(!state.enabled) return null;
+    const selection=effectiveRunwaySelection(role);
+    if(!selection.geometry) return null;
+    const vector=runwayVector(selection.geometry.heading);
+    if(role==='departure'){
+      const reciprocal=findRunwayGeometry(selection.airport,reciprocalRunwayDesignator(selection.geometry.label));
+      if(!reciprocal) return null;
+      return {
+        role,state,selection,origin:{x:reciprocal.x,y:reciprocal.y},direction:vector,
+        point:{x:reciprocal.x+vector.x*state.distanceNm*MAP_UNITS_PER_NAUTICAL_MILE,y:reciprocal.y+vector.y*state.distanceNm*MAP_UNITS_PER_NAUTICAL_MILE},
+      };
+    }
+    const origin={x:selection.geometry.x,y:selection.geometry.y};
+    const direction={x:-vector.x,y:-vector.y};
+    return {
+      role,state,selection,origin,direction,
+      point:{x:origin.x+direction.x*state.distanceNm*MAP_UNITS_PER_NAUTICAL_MILE,y:origin.y+direction.y*state.distanceNm*MAP_UNITS_PER_NAUTICAL_MILE},
+    };
+  }
 
   function routeDistanceNm(){
     const nodes = plannedRouteMapNodes();
@@ -4634,8 +4737,8 @@
       const reciprocal = findRunwayGeometry(depCode, reciprocalRunwayDesignator(threshold.label));
       if(reciprocal){
         nodes.push({x:reciprocal.x, y:reciprocal.y, code:depCode, kind:'runway-rollout', runway:normalizeRunwayDesignator(reciprocal.label), heading:threshold.heading});
-        const radians = Number(threshold.heading) * Math.PI / 180;
-        nodes.push({x:reciprocal.x + Math.sin(radians) * 8, y:reciprocal.y - Math.cos(radians) * 8, code:depCode, kind:'runway-heading', runway:normalizeRunwayDesignator(threshold.label), heading:threshold.heading});
+        const custom=runwayLegGeometry('departure');
+        if(custom) nodes.push({x:custom.point.x,y:custom.point.y,code:`DEP +${custom.state.distanceNm.toFixed(1)} NM`,kind:'departure-custom',runway:normalizeRunwayDesignator(threshold.label),heading:threshold.heading,distanceNm:custom.state.distanceNm});
       }
     } else if(depAirportPos){
       nodes.push({x:depAirportPos.x, y:depAirportPos.y, code:depCode, kind:'departure'});
@@ -4653,6 +4756,8 @@
     const arrAirportPos = mapPoint(AIRPORTS[arrCode]);
     if(arrSelection.geometry){
       const threshold = arrSelection.geometry;
+      const custom=runwayLegGeometry('arrival');
+      if(custom) nodes.push({x:custom.point.x,y:custom.point.y,code:`ARR -${custom.state.distanceNm.toFixed(1)} NM`,kind:'arrival-custom',runway:normalizeRunwayDesignator(threshold.label),heading:threshold.heading,distanceNm:custom.state.distanceNm});
       nodes.push({x:threshold.x, y:threshold.y, code:arrCode, kind:'arrival-runway', runway:normalizeRunwayDesignator(threshold.label), heading:threshold.heading});
     } else if(arrAirportPos){
       nodes.push({x:arrAirportPos.x, y:arrAirportPos.y, code:arrCode, kind:'arrival'});
@@ -4908,6 +5013,65 @@
     hideRouteAddPopover();
   }
 
+  function refreshRunwayLegs(){
+    Object.keys(runwayLegControls).forEach(role=>{
+      const controls=runwayLegControls[role];
+      controls.distance.disabled=!controls.enabled.checked;
+    });
+    renderRouteMap();
+    scheduleAutosave();
+  }
+  Object.values(runwayLegControls).forEach(controls=>{
+    controls.enabled.addEventListener('change',refreshRunwayLegs);
+    controls.distance.addEventListener('input',refreshRunwayLegs);
+    controls.distance.addEventListener('blur',()=>setRunwayLeg(controls===runwayLegControls.departure?'departure':'arrival',{distanceNm:Number(controls.distance.value)||controls.defaultDistance}));
+  });
+  document.getElementById('resetDepartureRunwayLeg').addEventListener('click',()=>{setRunwayLeg('departure',{enabled:true,distanceNm:1});refreshRunwayLegs();});
+  document.getElementById('snapArrivalRunwayLeg').addEventListener('click',()=>{setRunwayLeg('arrival',{enabled:true,distanceNm:2});refreshRunwayLegs();});
+
+  function beginRunwayLegDrag(event){
+    const handle=event.target.closest?.('[data-runway-leg]');
+    if(!handle) return;
+    const role=handle.dataset.runwayLeg;
+    const geometry=runwayLegGeometry(role);
+    if(!geometry) return;
+    event.preventDefault();
+    event.stopPropagation();
+    routeMapSvg.setPointerCapture(event.pointerId);
+    runwayLegDrag={role,pointerId:event.pointerId,geometry};
+  }
+  function moveRunwayLegDrag(event){
+    if(!runwayLegDrag||runwayLegDrag.pointerId!==event.pointerId) return;
+    event.preventDefault();
+    const position=mapPanZoomControllers.routeMapSvg.screenToSvg(event.clientX,event.clientY);
+    const {origin,direction,role}=runwayLegDrag.geometry;
+    const projected=(position.x-origin.x)*direction.x+(position.y-origin.y)*direction.y;
+    const distanceNm=Math.max(0,Math.min(20,projected/MAP_UNITS_PER_NAUTICAL_MILE));
+    if(distanceNm<.15){
+      runwayLegControls[role].distance.value='0.0';
+    }else{
+      runwayLegControls[role].distance.value=(Math.round(distanceNm*10)/10).toFixed(1);
+    }
+    renderRouteMap();
+  }
+  function endRunwayLegDrag(event){
+    if(!runwayLegDrag||runwayLegDrag.pointerId!==event.pointerId) return;
+    const role=runwayLegDrag.role;
+    const distance=Number(runwayLegControls[role].distance.value)||0;
+    if(distance<.15){
+      setRunwayLeg(role,{enabled:false,distanceNm:runwayLegControls[role].defaultDistance});
+    }else{
+      setRunwayLeg(role,{enabled:true,distanceNm:distance});
+    }
+    runwayLegDrag=null;
+    renderRouteMap();
+    scheduleAutosave();
+  }
+  routeMapSvg.addEventListener('pointerdown',beginRunwayLegDrag);
+  routeMapSvg.addEventListener('pointermove',moveRunwayLegDrag);
+  routeMapSvg.addEventListener('pointerup',endRunwayLegDrag);
+  routeMapSvg.addEventListener('pointercancel',endRunwayLegDrag);
+
   routeMapSvg.addEventListener('click', event=>{
     const anchor = event.target.closest?.('[data-route-anchor]');
     if(anchor){
@@ -4922,6 +5086,14 @@
     if(chartFix){
       event.stopPropagation();
       showRouteAddPopover(chartFix.dataset.chartWaypoint, event.clientX, event.clientY);
+    }
+  });
+  routeMapSvg.addEventListener('keydown',event=>{
+    const fixNode=event.target.closest?.('[data-chart-waypoint]');
+    if(fixNode&&(event.key==='Enter'||event.key===' ')){
+      event.preventDefault();
+      const rect=fixNode.getBoundingClientRect();
+      showRouteAddPopover(fixNode.dataset.chartWaypoint,rect.left+rect.width/2,rect.top+rect.height/2);
     }
   });
   routeInsertBtn.addEventListener('click', ()=>insertChartWaypoint('anchor'));
@@ -5404,7 +5576,10 @@
   document.getElementById('resetBtn').addEventListener('click', ()=>{
     if(!confirm('Reset the entire flight brief? This clears all fields.')) return;
     manifestEl.querySelectorAll('input[type=text], input[type=number], input[type=time], textarea').forEach(el=>el.value='');
+    manifestEl.querySelectorAll('input[type=checkbox]').forEach(el=>el.checked=false);
     manifestEl.querySelectorAll('select').forEach(el=>el.value='');
+    setRunwayLeg('departure',{enabled:true,distanceNm:1});
+    setRunwayLeg('arrival',{enabled:true,distanceNm:2});
     document.getElementById('flightDate').value = new Date().toISOString().slice(0,10);
     crewBody.innerHTML=''; crewIdx=0; makeCrewRow('Pilot in Command'); makeCrewRow('First Officer');
     cargoBody.innerHTML=''; cargoIdx=0; for(let i=0;i<3;i++) makeCargoRow();
@@ -5488,7 +5663,7 @@
     document.getElementById('editBtn').style.display = 'inline-flex';
     document.getElementById('createPlanBtn').style.display = 'none';
     document.getElementById('reviewPage').scrollIntoView({behavior:'smooth', block:'start'});
-    // Filing creates the departure-customs link immediately for signed-in pilots.
+    // Filing saves any explicitly requested PDC or cargo-inspection workflows for signed-in pilots.
     if(currentUser) document.getElementById('savePlanBtn').click();
   });
 
@@ -5502,10 +5677,10 @@
   // Serialize / load the whole form, used for saving to an account
   // ===============================================================
   function serializeForm(){
-    const data = { performanceVersion:PERFORMANCE_VERSION, fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, pilotSignatureEnabled:includePilotSignature.checked, unit, routeType, waypointLayerVisible, waypointRouteLineVisible };
+    const data = { performanceVersion:PERFORMANCE_VERSION, fields:{}, waypoints:[], crew:[], cargo:[], sigs:{}, pilotSignatureEnabled:includePilotSignature.checked, unit, routeType, waypointLayerVisible, waypointRouteLineVisible, runwayLegs:{departure:runwayLegState('departure'),arrival:runwayLegState('arrival')} };
     manifestEl.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{
       if(el.readOnly && el.dataset.persist !== '1') return;
-      data.fields[el.id] = el.value;
+      data.fields[el.id] = el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value;
     });
     manifestEl.querySelectorAll('.remarks').forEach(el=>{ data.fields.__remarks = el.value; });
     waypointBody.querySelectorAll('tr').forEach(tr=>{
@@ -5557,11 +5732,18 @@
       const ins = tr.querySelectorAll('input');
       ins[0].value=c.desc||''; ins[1].value=c.shipper||''; ins[2].value=c.consignee||''; ins[3].value=c.pcs||''; ins[4].value=c.wt||'';
     });
+    ['requestPdc','requestDepartureCustoms','requestArrivalCustoms'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=false;});
     Object.entries(data.fields||{}).forEach(([id,val])=>{
       if(id === '__remarks'){ manifestEl.querySelector('.remarks').value = val; return; }
       const el = document.getElementById(id);
-      if(el) el.value = val;
+      if(el){
+        if(el.type === 'checkbox') el.checked = val === true || val === 1 || ['1','true','yes','on'].includes(String(val).toLowerCase());
+        else el.value = val;
+      }
     });
+    setRunwayLeg('departure',data.runwayLegs?.departure||{enabled:true,distanceNm:1});
+    setRunwayLeg('arrival',data.runwayLegs?.arrival||{enabled:true,distanceNm:2});
+    Object.values(runwayLegControls).forEach(controls=>{controls.distance.disabled=!controls.enabled.checked;});
     setUnit(data.unit || 'KG');
     setRouteType(data.routeType || 'waypoints');
     setWaypointLayerVisible(data.waypointLayerVisible !== false);
@@ -5628,17 +5810,36 @@
   function readableCustomsStatus(status){
     return String(status || 'not-requested').replaceAll('-', ' ');
   }
+  function checkedRequest(id,plan=currentPlanSnapshot){
+    const live=document.getElementById(id);
+    if(live) return Boolean(live.checked);
+    const raw=plan?.data?.fields?.[id];
+    return raw===true||raw===1||['1','true','yes','on'].includes(String(raw||'').toLowerCase());
+  }
+  function workflowRequests(plan=currentPlanSnapshot){
+    return {
+      pdc:checkedRequest('requestPdc',plan),
+      departure:checkedRequest('requestDepartureCustoms',plan),
+      arrival:checkedRequest('requestArrivalCustoms',plan),
+    };
+  }
+  function formatPdcAltitudeValue(altitude,prefix){
+    const feet=altitude?.[prefix];
+    if(feet===null||feet===undefined||feet===''||!Number.isFinite(Number(feet))) return '';
+    const unit=String(altitude?.[`${prefix}Unit`]||'FT').toUpperCase();
+    const display=String(altitude?.[`${prefix}Display`]||'').trim();
+    if(unit==='FL') return `FL${(display||String(Math.round(Number(feet)/100))).replace(/\D/g,'').padStart(3,'0')}`;
+    return `${Number(feet).toLocaleString()} ft`;
+  }
   function pdcAltitudeSummary(clearance=currentPdc?.clearance){
     const altitude=clearance?.altitude;
     if(!altitude) return '—';
-    const has=value=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value));
+    const initial=formatPdcAltitudeValue(altitude,'initial');
+    const cruise=formatPdcAltitudeValue(altitude,'cruise');
+    const delay=Number.isFinite(Number(altitude.delayMinutes))&&altitude.delayMinutes!==''?Number(altitude.delayMinutes):null;
     const parts=[];
-    if(has(altitude.initial)) parts.push(`Initial ${Number(altitude.initial).toLocaleString()} ft`);
-    if(has(altitude.delayed)){
-      const delay=has(altitude.delayMinutes) ? ` after ${Number(altitude.delayMinutes)} min` : '';
-      parts.push(`Climb ${Number(altitude.delayed).toLocaleString()} ft${delay}`);
-    }
-    if(has(altitude.cruise)) parts.push(`Cruise ${Number(altitude.cruise).toLocaleString()} ft`);
+    if(initial) parts.push(`Initial climb ${initial}`);
+    if(cruise) parts.push(`${delay===null?'After departure':`${delay} minute${delay===1?'':'s'} after departure`}, climb cruising ${cruise}`);
     return parts.join(' · ') || '—';
   }
 
@@ -5660,32 +5861,57 @@
   }
 
   function setPdcWorkflow(plan={}){
-    const path=plan.pdcUrl || (plan.pdcToken ? `/pdc.html?token=${encodeURIComponent(plan.pdcToken)}` : null);
+    const requests=workflowRequests(plan);
+    const issued=currentPdc?.status==='issued';
+    const active=requests.pdc||issued;
+    const path=active ? (plan.pdcUrl || (plan.pdcToken ? `/pdc.html?token=${encodeURIComponent(plan.pdcToken)}` : null)) : null;
     const url=absoluteSiteUrl(path);
     const input=document.getElementById('pdcUrl');
     input.value=url;
+    document.getElementById('pdcCard').hidden=!active;
     document.getElementById('pdcLinkBtn').style.display=url?'inline-flex':'none';
     document.getElementById('pdcCopy').disabled=!url;
+    document.getElementById('navPdcBtn').style.display=active?'':'none';
     document.getElementById('navPdcBtn').disabled=!url;
     const badge=document.getElementById('pdcStatus');
-    const issued=currentPdc?.status==='issued';
-    badge.textContent=url?(issued?'Issued':'Ready to share'):'Save required';
+    badge.textContent=url?(issued?'Issued':'Ready to share'):(active?'Save required':'Not requested');
     badge.className=`customs-status ${issued?'approved':''}`;
+    updateWorkflowVisibility(plan);
+  }
+
+  function updateWorkflowVisibility(plan=currentPlanSnapshot||{}){
+    const requests=workflowRequests(plan);
+    const pdcActive=requests.pdc||currentPdc?.status==='issued';
+    const depActive=requests.departure||(currentCustoms?.departure?.status&&currentCustoms.departure.status!=='not-requested');
+    const arrActive=requests.arrival||(currentCustoms?.arrival?.status&&currentCustoms.arrival.status!=='not-requested');
+    const any=pdcActive||depActive||arrActive;
+    document.getElementById('customsLinkBox').style.display=any?'grid':'none';
+    document.getElementById('navigationWorkflowCard').style.display=any?'':'none';
+    document.getElementById('navigationPdcCard').style.display=pdcActive?'':'none';
   }
 
   function setCustomsWorkflow(plan={}){
-    const depPath=plan.departureCustomsUrl || (plan.customsTokens?.departure || plan.customsToken ? `/customs.html?token=${encodeURIComponent(plan.customsTokens?.departure || plan.customsToken)}` : null);
-    const arrPath=plan.arrivalCustomsUrl || (plan.customsTokens?.arrival ? `/customs.html?token=${encodeURIComponent(plan.customsTokens.arrival)}` : null);
+    const requests=workflowRequests(plan);
+    const depExisting=currentCustoms?.departure?.status&&currentCustoms.departure.status!=='not-requested';
+    const arrExisting=currentCustoms?.arrival?.status&&currentCustoms.arrival.status!=='not-requested';
+    const depActive=requests.departure||depExisting;
+    const arrActive=requests.arrival||arrExisting;
+    const depPath=depActive ? (plan.departureCustomsUrl || (plan.customsTokens?.departure || plan.customsToken ? `/customs.html?token=${encodeURIComponent(plan.customsTokens?.departure || plan.customsToken)}` : null)) : null;
+    const arrPath=arrActive ? (plan.arrivalCustomsUrl || (plan.customsTokens?.arrival ? `/customs.html?token=${encodeURIComponent(plan.customsTokens.arrival)}` : null)) : null;
     const departureUrl=absoluteSiteUrl(depPath);
     const arrivalUrl=absoluteSiteUrl(arrPath);
     const depInput=document.getElementById('customsUrl');
     const arrInput=document.getElementById('arrivalCustomsUrl');
     depInput.value=departureUrl;
     arrInput.value=arrivalUrl;
+    document.getElementById('departureCustomsCard').hidden=!depActive;
+    document.getElementById('arrivalCustomsCard').hidden=!arrActive;
     document.getElementById('customsLinkBtn').style.display=departureUrl?'inline-flex':'none';
     document.getElementById('arrivalCustomsBtn').style.display=arrivalUrl?'inline-flex':'none';
     document.getElementById('departureCustomsCopy').disabled=!departureUrl;
     document.getElementById('arrivalCustomsCopy').disabled=!arrivalUrl;
+    document.getElementById('navDepartureCustomsBtn').style.display=depActive?'':'none';
+    document.getElementById('navArrivalCustomsBtn').style.display=arrActive?'':'none';
     document.getElementById('navDepartureCustomsBtn').disabled=!departureUrl;
     document.getElementById('navArrivalCustomsBtn').disabled=!arrivalUrl;
     document.getElementById('navArrivalCustomsBtn').textContent=arrivalUrl?'Copy arrival inspection link':'Arrival inspection locked';
@@ -5693,17 +5919,20 @@
     const depStatus=currentCustoms?.departure?.status || (departureUrl?'not-requested':'save-required');
     const arrStatus=currentCustoms?.arrival?.status || 'not-requested';
     const depBadge=document.getElementById('departureCustomsStatus');
-    depBadge.textContent=departureUrl?readableCustomsStatus(depStatus):'Save required';
+    depBadge.textContent=departureUrl?readableCustomsStatus(depStatus):(depActive?'Save required':'Not requested');
     depBadge.className=`customs-status ${departureUrl?depStatus:''}`;
     const arrBadge=document.getElementById('arrivalCustomsStatus');
-    arrBadge.textContent=arrivalUrl?readableCustomsStatus(arrStatus):'Locked';
+    arrBadge.textContent=arrivalUrl?readableCustomsStatus(arrStatus):(arrActive?'Locked':'Not requested');
     arrBadge.className=`customs-status ${arrivalUrl?arrStatus:''}`;
-    document.getElementById('arrivalCustomsCard').classList.toggle('locked',!arrivalUrl);
+    document.getElementById('arrivalCustomsCard').classList.toggle('locked',arrActive&&!arrivalUrl);
     document.getElementById('arrivalCustomsMessage').textContent=arrivalUrl
       ? 'The aircraft has landed in the destination area. Share this link with the arrival inspection agent.'
-      : 'Unlocks only after departure customs is approved and live tracking confirms the aircraft has landed near its destination.';
+      : requests.departure
+        ? 'Unlocks after departure cargo inspection is approved and live tracking confirms a landing near the destination.'
+        : 'Unlocks when live tracking confirms the aircraft has landed near the destination.';
     renderCustomsApproval('departure');
     renderCustomsApproval('arrival');
+    updateWorkflowVisibility(plan);
   }
 
   function markPlanLoaded(plan){
@@ -5834,12 +6063,23 @@
     reviewBriefHead.innerHTML = `<strong>${briefNo}</strong><span>${airportCode(depAirport.value) || '----'} → ${airportCode(arrAirport.value) || '----'}${routeNm === null ? '' : ` · ${routeNm.toFixed(1)} NM`}</span>`;
     const cards=[
       ['Flight Details',0,[['Callsign',value('fdCallsign')],['Pilot',value('fdPilotUsername')],['Aircraft',value('fdAircraft')],['Rules',value('flightRules')],['Date',value('flightDate')]]],
-      ['Route',1,[['Departure',value('depAirport')],['Departure runway',effectiveRunwaySummary('departure')],['Arrival',value('arrAirport')],['Arrival runway',effectiveRunwaySummary('arrival')],['Cruise',value('cruiseAlt')],['Distance',routeDistanceNm() === null ? '—' : `${routeDistanceNm().toFixed(1)} NM`],['Route',waypointText]]],
+      ['Route',1,[['Departure',value('depAirport')],['Departure runway',effectiveRunwaySummary('departure')],['Departure runway leg',runwayLegState('departure').enabled?`${runwayLegState('departure').distanceNm.toFixed(1)} NM`:'Removed'],['Arrival',value('arrAirport')],['Arrival runway',effectiveRunwaySummary('arrival')],['Arrival runway leg',runwayLegState('arrival').enabled?`${runwayLegState('arrival').distanceNm.toFixed(1)} NM`:'Removed'],['Cruise',value('cruiseAlt')],['Distance',routeDistanceNm() === null ? '—' : `${routeDistanceNm().toFixed(1)} NM`],['Route',waypointText]]],
       ['People',2,[['Crew',[...crewBody.querySelectorAll('tr')].map(r=>[...r.querySelectorAll('input')].map(x=>x.value).filter(Boolean).join(': ')).filter(Boolean).join(', ')||'—'],['Souls',value('soulsCount')],['Passenger weight',value('soulsWeightTotal')]]],
       ['Cargo',4,[['Items',cargoRows.join('; ')||'No cargo listed'],['Cargo weight',document.getElementById('loadCargo').value||'0 kg']]],
       ['Performance',5,[['Stall',value('perfVstall') === 'N/A' ? 'N/A' : value('perfVstall')+' kt'],['V1',value('outV1')],['Rotate',value('outVR')],['V2',value('outV2')],['Vref',value('outVref')],['Approach',value('outVapp')],['Cruise',value('outCruise')],['No-flaps landing',value('outNoFlaps')]]],
-      ['Remarks, PDC & Customs',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['PDC status',currentPdc?.status==='issued'?'Issued':'Not issued'],['PDC controller',currentPdc?.clearance?.controllerName||'—'],['PDC squawk',currentPdc?.clearance?.squawk||value('squawkCode')],['PDC assigned altitude',pdcAltitudeSummary()],['PDC departure frequency',currentPdc?.clearance?.departureFrequency||value('pdcDepartureFrequency')],['PDC radar vectors',currentPdc?.clearance?.radarVectorsUntil?`Until ${currentPdc.clearance.radarVectorsUntil}`:'—'],['PDC remarks',currentPdc?.clearance?.remarks||value('pdcRemarks')],['Departure customs',readableCustomsStatus(currentCustoms?.departure?.status||'Not requested')],['Departure agent',currentCustoms?.departure?.agentDiscordUsername||'—'],['Departure signature',currentCustoms?.departure?.signature||'—'],['Arrival customs',readableCustomsStatus(currentCustoms?.arrival?.status||'Not requested')],['Arrival agent',currentCustoms?.arrival?.agentDiscordUsername||'—'],['Arrival signature',currentCustoms?.arrival?.signature||'—'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—']]]
+      ['Remarks',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—']]]
     ];
+    const requests=workflowRequests(currentPlanSnapshot||{});
+    const showWorkflow=requests.pdc||requests.departure||requests.arrival||currentPdc?.status==='issued'||(currentCustoms?.departure?.status&&currentCustoms.departure.status!=='not-requested')||(currentCustoms?.arrival?.status&&currentCustoms.arrival.status!=='not-requested');
+    if(showWorkflow){
+      const workflowRows=[];
+      if(requests.pdc||currentPdc?.status==='issued') workflowRows.push(['PDC status',currentPdc?.status==='issued'?'Issued':'Requested'],['PDC controller',currentPdc?.clearance?.controllerName||'—'],['PDC squawk',currentPdc?.clearance?.squawk||'—'],['PDC assigned altitude',pdcAltitudeSummary()],['PDC departure frequency',currentPdc?.clearance?.departureFrequency||value('pdcDepartureFrequency')],['PDC radar vectors',currentPdc?.clearance?.radarVectorsUntil?`Until ${currentPdc.clearance.radarVectorsUntil}`:'—'],['PDC remarks',currentPdc?.clearance?.remarks||value('pdcRemarks')]);
+      if(requests.departure||(currentCustoms?.departure?.status&&currentCustoms.departure.status!=='not-requested')) workflowRows.push(['Departure inspection',readableCustomsStatus(currentCustoms?.departure?.status||'Requested')],['Departure agent',currentCustoms?.departure?.agentDiscordUsername||'—'],['Departure signature',currentCustoms?.departure?.signature||'—']);
+      if(requests.arrival||(currentCustoms?.arrival?.status&&currentCustoms.arrival.status!=='not-requested')) workflowRows.push(['Arrival inspection',readableCustomsStatus(currentCustoms?.arrival?.status||'Requested')],['Arrival agent',currentCustoms?.arrival?.agentDiscordUsername||'—'],['Arrival signature',currentCustoms?.arrival?.signature||'—']);
+      const inspectionRemarks=currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks;
+      if(inspectionRemarks) workflowRows.push(['Inspection remarks',inspectionRemarks]);
+      cards.push(['PDC & Cargo Inspections',6,workflowRows]);
+    }
     const grid=document.getElementById('reviewGrid'); grid.innerHTML='';
     cards.forEach(([title,step,rows], index)=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><div class="review-card-head"><span class="review-index">${String(index + 1).padStart(2,'0')}</span><h4>${title}</h4></div><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd${k.toLowerCase().includes('signature')&&String(v)!=='—'?' class="sig-script"':''}>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
     setPdcWorkflow(currentPlanSnapshot || {});
@@ -5852,6 +6092,7 @@
     autosaveTimer=setTimeout(()=>{ try{localStorage.setItem(AUTOSAVE_KEY,JSON.stringify(serializeForm())); document.getElementById('autosaveState').textContent='Draft autosaved'; updateDraftStatus();}catch(e){document.getElementById('autosaveState').textContent='Autosave failed';}},700);
   }
   manifestEl.addEventListener('input',scheduleAutosave);
+  ['requestPdc','requestDepartureCustoms','requestArrivalCustoms'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{setPdcWorkflow(currentPlanSnapshot||{});setCustomsWorkflow(currentPlanSnapshot||{});buildReview();scheduleAutosave();}));
   reviewPage.addEventListener('input',scheduleAutosave);
   includePilotSignature.addEventListener('change',scheduleAutosave);
   document.getElementById('homeContinueBtn').addEventListener('click',()=>{
@@ -6272,7 +6513,7 @@
     document.getElementById('navClearanceMode').textContent=data.route?.radarVectors?.active?`Vectors to ${data.route.radarVectors.targetCode}`:'Cleared route';
     const pdcClearance=data.plan?.pdc?.clearance||currentPdc?.clearance||null;
     document.getElementById('navPdcController').textContent=pdcClearance?.controllerName||'—';
-    document.getElementById('navPdcSquawk').textContent=pdcClearance?.squawk||data.plan?.fields?.squawkCode||'—';
+    document.getElementById('navPdcSquawk').textContent=pdcClearance?.squawk||'—';
     document.getElementById('navPdcFrequency').textContent=pdcClearance?.departureFrequency||data.plan?.fields?.pdcDepartureFrequency||'—';
     document.getElementById('navPdcAltitude').textContent=pdcAltitudeSummary(pdcClearance);
     document.getElementById('navPdcRemarks').textContent=pdcClearance?.remarks||data.plan?.fields?.pdcRemarks||'—';
