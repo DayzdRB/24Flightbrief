@@ -7,9 +7,22 @@ const { ensurePlanShape, loadPlans, savePlans } = require('../../lib/flight-plan
 const { redisGet, redisSet } = require('../../lib/redis');
 const { getSessionUser } = require('../../lib/session');
 
+function fieldEnabled(value) {
+  return value === true || value === 1 || ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase());
+}
+
+function inspectionActive(plan, phase) {
+  const field = phase === 'arrival' ? 'requestArrivalCustoms' : 'requestDepartureCustoms';
+  const status = plan.customs?.[phase]?.status;
+  return fieldEnabled(plan.data?.fields?.[field]) || Boolean(status && status !== 'not-requested');
+}
+
 function arrivalAccessError(plan) {
-  if (plan.customs?.departure?.status !== 'approved') {
-    return 'Arrival inspection is locked until departure customs is approved.';
+  if (!inspectionActive(plan, 'arrival')) {
+    return 'Arrival cargo inspection was not requested for this flight plan.';
+  }
+  if (inspectionActive(plan, 'departure') && plan.customs?.departure?.status !== 'approved') {
+    return 'Arrival inspection is locked until the requested departure cargo inspection is approved.';
   }
   if (!plan.tracking?.arrivalUnlockedAt) {
     return 'Arrival inspection is locked until live tracking confirms the aircraft has landed near the destination.';
@@ -45,6 +58,9 @@ module.exports = async (req, res) => {
     }
     if (changed) await savePlans(reference.ownerId, plans);
 
+    if (phase === 'departure' && !inspectionActive(plan, 'departure')) {
+      return res.status(403).json({ error: 'Departure cargo inspection was not requested for this flight plan.', phase });
+    }
     if (phase === 'arrival') {
       const accessError = arrivalAccessError(plan);
       if (accessError) {
