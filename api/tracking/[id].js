@@ -17,11 +17,13 @@ const {
 } = require('../../lib/map-data');
 const { getSessionUser } = require('../../lib/session');
 const { findRunway, normalizeRunwayDesignator, runwayMapPosition } = require('../../lib/runway-data');
+const { routeAirspaceAnalysis, sectorForMapPosition, sectorPublic } = require('../../lib/airspace');
 
 const DEPARTURE_AREA_RADIUS_STUDS = 7500;
 const ARRIVAL_LANDING_RADIUS_STUDS = 5000;
 const MIN_FLIGHT_TIME_BEFORE_ARRIVAL_MS = 60 * 1000;
 const TRAFFIC_PROJECTION_SECONDS = 90;
+const RADAR_VECTOR_CAPTURE_RADIUS_STUDS = STUDS_PER_NAUTICAL_MILE * 3;
 
 function normalizeCode(value) {
   const match = String(value || '').toUpperCase().match(/I[A-Z0-9]{3}/);
@@ -440,6 +442,7 @@ module.exports = async (req, res) => {
     let departureDistance = null;
     let arrivalDistance = null;
     let landedAtDestination = false;
+    let radarVectorsCleared = false;
     if (aircraft) {
       departureDistance = distance(aircraft.position, departureWorld);
       arrivalDistance = distance(aircraft.position, arrivalWorld);
@@ -497,6 +500,42 @@ module.exports = async (req, res) => {
       }
     }
 
+    const fullRouteNodes = routeNodes(plan);
+    let navigationNodes = fullRouteNodes;
+    let radarVectors = null;
+    const radarTargetCode = normalizeWaypoint(fields.radarVectorsUntil || plan.pdc?.clearance?.radarVectorsUntil);
+    if (aircraft && radarTargetCode) {
+      const targetIndex = fullRouteNodes.findIndex(node => node.code === radarTargetCode);
+      if (targetIndex >= 0) {
+        const target = fullRouteNodes[targetIndex];
+        const targetDistance = distance(aircraft.position, target.worldPosition);
+        const captured = targetDistance !== null && targetDistance <= RADAR_VECTOR_CAPTURE_RADIUS_STUDS;
+        radarVectors = {
+          active: !captured,
+          targetCode: radarTargetCode,
+          distanceNm: nm(targetDistance),
+          captureRadiusNm: nm(RADAR_VECTOR_CAPTURE_RADIUS_STUDS),
+        };
+        if (captured) {
+          fields.radarVectorsUntil = '';
+          if (plan.pdc?.clearance) plan.pdc.clearance.radarVectorsUntil = null;
+          plan.updatedAt = now;
+          radarVectorsCleared = true;
+          changed = true;
+        } else {
+          navigationNodes = [
+            {
+              code: 'RADAR VECTORS',
+              kind: 'vector-origin',
+              mapPosition: aircraft.mapPosition,
+              worldPosition: aircraft.position,
+            },
+            ...fullRouteNodes.slice(targetIndex),
+          ];
+        }
+      }
+    }
+
     if (changed) {
       const latestPlans = await loadPlans(user.id);
       const latestIndex = latestPlans.findIndex(item => item.id === id);
@@ -506,11 +545,21 @@ module.exports = async (req, res) => {
           ...latestPlan,
           customsToken: plan.customsToken,
           customsTokens: plan.customsTokens,
+          pdcToken: plan.pdcToken,
           customs: {
             departure: latestPlan.customs?.departure || plan.customs?.departure || { status: 'not-requested' },
             arrival: latestPlan.customs?.arrival || plan.customs?.arrival || { status: 'not-requested' },
           },
           tracking: plan.tracking,
+          pdc: radarVectorsCleared ? plan.pdc : (latestPlan.pdc || plan.pdc),
+          updatedAt: plan.updatedAt || latestPlan.updatedAt,
+          data: {
+            ...(latestPlan.data || {}),
+            fields: {
+              ...(latestPlan.data?.fields || {}),
+              radarVectorsUntil: fields.radarVectorsUntil || '',
+            },
+          },
         };
         await savePlans(user.id, latestPlans);
         plan.customs = latestPlans[latestIndex].customs;
@@ -538,8 +587,10 @@ module.exports = async (req, res) => {
           .slice(0, 8)
       : [];
 
-    const nodes = routeNodes(plan);
-    const route = calculateRouteProgress(nodes, aircraft);
+    const nodes = fullRouteNodes;
+    const route = calculateRouteProgress(navigationNodes, aircraft);
+    const routeAirspace = routeAirspaceAnalysis(plan.data);
+    const currentSector = aircraft ? sectorPublic(sectorForMapPosition(aircraft.mapPosition)) : routeAirspace.startingSector;
     const publicData = publicPlan(plan);
     return res.status(200).json({
       fetchedAt: feed.fetchedAt,
@@ -552,6 +603,9 @@ module.exports = async (req, res) => {
         routeType: plan.data?.routeType || 'waypoints',
         customs: plan.customs,
         tracking: plan.tracking,
+        pdc: plan.pdc,
+        pdcUrl: publicData.pdcUrl,
+        updatedAt: plan.updatedAt,
         departureCustomsUrl: publicData.departureCustomsUrl,
         arrivalCustomsUrl: publicData.arrivalCustomsUrl,
       },
@@ -562,7 +616,12 @@ module.exports = async (req, res) => {
       trafficAdvisories: advisories,
       route: {
         ...route,
+        radarVectors,
         nodes: nodes.map(node => ({ code: node.code, kind: node.kind, mapPosition: node.mapPosition })),
+      },
+      airspace: {
+        currentSector,
+        route: routeAirspace,
       },
       destination: {
         code: arrivalCode,

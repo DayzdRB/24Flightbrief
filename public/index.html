@@ -450,10 +450,11 @@
     aspect-ratio:1 / 1;
   }
   .route-map-wrap svg{display:block;width:100%;height:100%;}
-  .map-chart-base,.map-waypoint-layer,.map-airport-assets{pointer-events:none;}
+  .map-chart-base,.map-airport-assets{pointer-events:none;}
+  .map-waypoint-layer{pointer-events:auto;}
   .map-chart-base{opacity:.92}.map-airport-assets{opacity:.72}.map-airport-assets image{mix-blend-mode:multiply}
   .map-waypoint-layer{opacity:1;transition:opacity .16s ease;}
-  .map-waypoint-layer.is-hidden{opacity:0;}
+  .map-waypoint-layer.is-hidden{opacity:0;pointer-events:none;}
   .map-waypoint-dot{fill:#546762;}
   .map-waypoint-label{fill:#546762;font-family:'JetBrains Mono',monospace;font-weight:600;}
   .navigation-radar .map-waypoint-dot{fill:#7fe0c2;fill-opacity:.85;}
@@ -602,6 +603,23 @@
     font-size:10.5px;
     font-weight:700;
   }
+  #waypointBody tr{transition:background .14s ease,box-shadow .14s ease;cursor:pointer;}
+  #waypointBody tr.route-anchor-selected{background:rgba(27,127,114,.12);box-shadow:inset 4px 0 0 var(--teal);}
+  .map-waypoint-point,.map-route-marker[data-map-clickable],.map-airport-marker[data-map-clickable]{cursor:pointer;pointer-events:auto;}
+  .map-waypoint-point:hover .map-waypoint-dot{fill:#ffcf5c;}
+  .map-waypoint-point:hover .map-waypoint-label{fill:#182329;font-weight:800;}
+  .map-route-marker.route-anchor-selected .map-route-waypoint,.map-airport-marker.route-anchor-selected .map-airport-pin{stroke:#ffcf5c;stroke-width:8;fill:rgba(255,207,92,.3);}
+  .map-route-marker.route-anchor-selected .map-route-waypoint-label,.map-airport-marker.route-anchor-selected .map-airport-label{fill:#ffcf5c;}
+  .route-add-popover{
+    position:absolute;z-index:12;display:none;width:min(265px,calc(100% - 24px));padding:12px;
+    border:1.5px solid var(--ink);border-radius:7px;background:#fff;box-shadow:0 12px 28px rgba(14,31,38,.22);
+  }
+  .route-add-popover.visible{display:block;}
+  .route-add-popover strong{display:block;font:800 14px 'JetBrains Mono',monospace;color:var(--ink);}
+  .route-add-popover p{margin:4px 0 10px;font-size:11px;line-height:1.4;color:var(--ink-soft);}
+  .route-add-actions{display:flex;flex-wrap:wrap;gap:6px;}
+  .route-add-actions button{border:1px solid var(--ink);border-radius:5px;padding:7px 9px;background:#fff;color:var(--ink);font-size:10px;font-weight:800;cursor:pointer;}
+  .route-add-actions button.primary{background:var(--teal);border-color:var(--teal);color:#fff;}
   .field.vfr-route-error{
     background:rgba(165,56,44,.12);
     outline:2px solid var(--red);
@@ -1268,7 +1286,7 @@
   .navigation-attribution{padding:7px 12px;background:#0e181e;color:#8fa2a6;font-size:9px;text-align:right}.navigation-attribution a{color:#b8cfca}
   .navigation-side{display:grid;gap:14px}.navigation-side-card{background:var(--paper);color:var(--ink);padding:16px}
   .navigation-side-card h3{margin:0 0 12px;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
-  .navigation-telemetry{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.navigation-stat{border:1px solid var(--rule);background:#fff;padding:9px;min-height:65px}.navigation-stat span{display:block;font:700 8.5px 'JetBrains Mono',monospace;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px}.navigation-stat strong{font-size:14px;line-height:1.2}
+  .navigation-telemetry{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.navigation-stat{border:1px solid var(--rule);background:#fff;padding:9px;min-height:65px}.navigation-stat span{display:block;font:700 8.5px 'JetBrains Mono',monospace;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px}.navigation-stat strong{font-size:14px;line-height:1.2}.navigation-stat.wide{grid-column:1/-1}
   .traffic-advisories{display:grid;gap:8px}.traffic-advisory{border-left:4px solid #78909a;background:#fff;padding:9px 10px;border-radius:2px}.traffic-advisory.warning{border-color:#b2352b;background:#f8e5e2}.traffic-advisory.caution{border-color:#d69a27;background:#fff1d2}.traffic-advisory.advisory{border-color:#315f78;background:#e8f0f4}.traffic-advisory strong{display:flex;justify-content:space-between;text-transform:uppercase;font-size:10px}.traffic-advisory p{font-size:10px;margin:4px 0 0;color:var(--ink-soft)}
   .flight-milestones{display:grid;gap:7px}.flight-milestone{display:flex;gap:9px;align-items:flex-start;font-size:10.5px}.flight-milestone::before{content:'○';font:900 16px monospace;color:#879397;line-height:1}.flight-milestone.complete::before{content:'●';color:#27715a}.flight-milestone.active::before{content:'◉';color:#d99a2b}
   .navigation-customs-actions{display:grid;gap:8px}.navigation-customs-actions button{width:100%}
@@ -1359,6 +1377,7 @@
             <button class="btn-ghost" id="editBtn" style="display:none;">Edit</button>
             <button class="btn-primary" id="createPlanBtn">Create Flight Plan</button>
             <button class="btn-ghost hidden-until-filed" id="savePlanBtn">Save to my account</button>
+            <button class="btn-ghost hidden-until-filed" id="pdcLinkBtn" style="display:none;">Copy PDC link</button>
             <button class="btn-ghost hidden-until-filed" id="customsLinkBtn" style="display:none;">Copy departure customs link</button>
             <button class="btn-ghost hidden-until-filed" id="arrivalCustomsBtn" style="display:none;">Copy arrival inspection link</button>
             <button class="btn-amber hidden-until-filed" id="navigateFlightBtn">Navigate with Flight Plan</button>
@@ -1527,6 +1546,15 @@
             <g id="mapAirports"></g>
             <g id="mapDistanceLayer"></g>
           </svg>
+          <div class="route-add-popover no-export" id="routeAddPopover" role="dialog" aria-live="polite">
+            <strong id="routeAddTitle">Add waypoint</strong>
+            <p id="routeAddMessage"></p>
+            <div class="route-add-actions">
+              <button type="button" class="primary" id="routeInsertBtn">Insert</button>
+              <button type="button" id="routeAppendBtn">Add to end</button>
+              <button type="button" id="routeAddCancelBtn">Cancel</button>
+            </div>
+          </div>
         </div>
         <div class="perf-note">The map uses 24RC’s vector coast, boundaries, airport grounds, and runway SVGs. Named fixes are rendered from normalized coordinates above the route line. In Waypoints mode, the line starts hidden; use Route line to show the connecting track without hiding selected fixes or airports. The Waypoints control hides only chart fix symbols and names. <a class="airport-chart-link" href="EnrouteChart.png" target="_blank" rel="noopener">Open the full chart</a>.</div>
 
@@ -1686,6 +1714,12 @@
         </div>
 
         <div class="customs-workflow no-export" id="customsLinkBox">
+          <section class="customs-stage" id="pdcCard">
+            <div class="customs-stage-head"><h4>Pre-Departure Clearance</h4><span class="customs-status" id="pdcStatus">Save required</span></div>
+            <p>Share this optional link with a controller. All CRAFT amendments apply together only when the controller submits the PDC.</p>
+            <input id="pdcUrl" readonly aria-label="Pre-departure clearance link" title="Click to select the full link">
+            <button class="btn-ghost btn-small" type="button" id="pdcCopy">Copy PDC link</button>
+          </section>
           <section class="customs-stage" id="departureCustomsCard">
             <div class="customs-stage-head"><h4>Departure Customs</h4><span class="customs-status" id="departureCustomsStatus">Save required</span></div>
             <p>Available immediately after the signed-in pilot saves the filed flight plan.</p>
@@ -1778,14 +1812,24 @@
             <div class="navigation-stat"><span>Ground speed</span><strong id="navGroundSpeed">—</strong></div>
             <div class="navigation-stat"><span>Heading</span><strong id="navHeading">—</strong></div>
             <div class="navigation-stat"><span>Target heading</span><strong id="navTargetHeading">—</strong></div>
+            <div class="navigation-stat"><span>Current airspace</span><strong id="navAirspace">—</strong></div>
+            <div class="navigation-stat"><span>Sector frequency</span><strong id="navAirspaceFrequency">—</strong></div>
+            <div class="navigation-stat"><span>Clearance mode</span><strong id="navClearanceMode">Filed route</strong></div>
             <div class="navigation-stat"><span>Next waypoint</span><strong id="navNextWaypoint">—</strong></div>
             <div class="navigation-stat"><span>To next</span><strong id="navDistanceNext">—</strong></div>
             <div class="navigation-stat"><span>Remaining</span><strong id="navRemaining">—</strong></div>
             <div class="navigation-stat"><span>ETA</span><strong id="navEta">—</strong></div>
           </div></section>
+          <section class="navigation-side-card"><h3>PDC clearance</h3><div class="navigation-telemetry">
+            <div class="navigation-stat"><span>Controller</span><strong id="navPdcController">—</strong></div>
+            <div class="navigation-stat"><span>Squawk</span><strong id="navPdcSquawk">—</strong></div>
+            <div class="navigation-stat"><span>Departure frequency</span><strong id="navPdcFrequency">—</strong></div>
+            <div class="navigation-stat"><span>Assigned altitude</span><strong id="navPdcAltitude">—</strong></div>
+            <div class="navigation-stat wide"><span>PDC remarks</span><strong id="navPdcRemarks">—</strong></div>
+          </div></section>
           <section class="navigation-side-card"><h3>Traffic advisories</h3><div class="traffic-advisories" id="trafficAdvisories"><div class="section-note">No tracked aircraft selected.</div></div></section>
           <section class="navigation-side-card"><h3>Flight progression</h3><div class="flight-milestones" id="flightMilestones"></div></section>
-          <section class="navigation-side-card"><h3>Customs links</h3><div class="navigation-customs-actions"><button class="btn-ghost" id="navDepartureCustomsBtn" type="button">Copy departure customs link</button><button class="btn-primary" id="navArrivalCustomsBtn" type="button" disabled>Arrival inspection locked</button></div></section>
+          <section class="navigation-side-card"><h3>Clearance & customs links</h3><div class="navigation-customs-actions"><button class="btn-primary" id="navPdcBtn" type="button">Copy PDC link</button><button class="btn-ghost" id="navDepartureCustomsBtn" type="button">Copy departure customs link</button><button class="btn-primary" id="navArrivalCustomsBtn" type="button" disabled>Arrival inspection locked</button></div></section>
         </aside>
       </div>
     </section>
@@ -1837,6 +1881,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="/aircraft-data.js"></script>
+<script src="/map-data-browser.js"></script>
 <script>
 (function(){
 
@@ -3291,7 +3336,7 @@
   function waypointLayerMarkup(){
     return Object.entries(WAYPOINTS).map(([code,p])=>{
       const q = mapPoint(p);
-      return `<g class="map-waypoint-point" data-x="${q.x}" data-y="${q.y}" transform="translate(${q.x} ${q.y})"><circle class="map-waypoint-dot" cx="0" cy="0" r="3"/><text class="map-waypoint-label" x="5" y="-3.5" font-size="8.5">${code}</text></g>`;
+      return `<g class="map-waypoint-point" data-map-clickable="waypoint" data-chart-waypoint="${code}" data-x="${q.x}" data-y="${q.y}" transform="translate(${q.x} ${q.y})"><circle class="map-waypoint-dot" cx="0" cy="0" r="3"/><text class="map-waypoint-label" x="5" y="-3.5" font-size="8.5">${code}</text></g>`;
     }).join('');
   }
   mapWaypointLayer.innerHTML = waypointLayerMarkup();
@@ -3411,6 +3456,7 @@
     const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
     svg.addEventListener('pointerdown', (e)=>{
+      if(e.target.closest?.('[data-map-clickable]')) return;
       svg.setPointerCapture(e.pointerId);
       pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
       if(pointers.size === 1){
@@ -3568,10 +3614,11 @@
     const arr = airportCode(arrAirport.value);
 
     let airportsSvg = '';
-    [[dep, 'is-dep'], [arr, 'is-arr']].forEach(([code, state])=>{
+    [[dep, 'is-dep', 'departure'], [arr, 'is-arr', 'arrival']].forEach(([code, state, anchorType])=>{
       const pos = mapPoint(AIRPORTS[code]);
       if(!code || !pos) return;
-      airportsSvg += `<g class="map-airport-marker" data-x="${pos.x}" data-y="${pos.y}" transform="translate(${pos.x} ${pos.y})"><circle class="map-airport-pin ${state}" cx="0" cy="0" r="3.5"/><text class="map-airport-label ${state}" x="0" y="-26" text-anchor="middle">${code}</text></g>`;
+      const selected = selectedRouteAnchor?.type === anchorType ? ' route-anchor-selected' : '';
+      airportsSvg += `<g class="map-airport-marker${selected}" data-map-clickable="anchor" data-route-anchor="${anchorType}" data-code="${code}" data-x="${pos.x}" data-y="${pos.y}" transform="translate(${pos.x} ${pos.y})"><circle class="map-airport-pin ${state}" cx="0" cy="0" r="3.5"/><text class="map-airport-label ${state}" x="0" y="-26" text-anchor="middle">${code}</text></g>`;
     });
     mapAirportsG.innerHTML = airportsSvg;
 
@@ -3597,7 +3644,9 @@
       }
 
       nodes.filter(node=>node.kind === 'waypoint').forEach(fix=>{
-        routeMarkerSvg += `<g class="map-route-marker" data-x="${fix.x}" data-y="${fix.y}" transform="translate(${fix.x} ${fix.y})"><circle class="map-route-waypoint" cx="0" cy="0" r="14"/><text class="map-route-waypoint-label" x="0" y="-21" text-anchor="middle">${fix.code}</text></g>`;
+        const waypointIndex = fix.waypointIndex;
+        const selected = selectedRouteAnchor?.type === 'waypoint' && selectedRouteAnchor.index === waypointIndex ? ' route-anchor-selected' : '';
+        routeMarkerSvg += `<g class="map-route-marker${selected}" data-map-clickable="anchor" data-route-anchor="waypoint" data-waypoint-index="${waypointIndex}" data-code="${fix.code}" data-x="${fix.x}" data-y="${fix.y}" transform="translate(${fix.x} ${fix.y})"><circle class="map-route-waypoint" cx="0" cy="0" r="14"/><text class="map-route-waypoint-label" x="0" y="-21" text-anchor="middle">${fix.code}</text></g>`;
       });
 
       nodes.filter(node=>node.kind === 'departure-runway' || node.kind === 'arrival-runway').forEach(node=>{
@@ -3667,6 +3716,13 @@
   const callsignInput = document.getElementById('fdCallsign');
   const ingameCallsignInput = document.getElementById('fdIngameCallsign');
   const ingameCallsignMenu = document.getElementById('ingameCallsignMenu');
+  const routeMapSvg = document.getElementById('routeMapSvg');
+  const routeAddPopover = document.getElementById('routeAddPopover');
+  const routeAddTitle = document.getElementById('routeAddTitle');
+  const routeAddMessage = document.getElementById('routeAddMessage');
+  const routeInsertBtn = document.getElementById('routeInsertBtn');
+  let selectedRouteAnchor = null;
+  let pendingChartWaypoint = null;
 
   // 24RC draws aircraft at game position / 100 in a 1,200-unit square map.
   const STUDS_PER_NAUTICAL_MILE = 3307.14286;
@@ -3985,17 +4041,56 @@
       return {...area,...nearest};
     }).filter(area=>area.distance<=CENTER_CORRIDOR_CHART_PX).sort((a,b)=>a.order-b.order);
   }
+  const BOUNDARY_AIRSPACE_SECTORS = window.ATC24_MAP_DATA?.AIRSPACE_SECTORS || [];
+  function pointInsideSector(point, polygon){
+    let inside=false;
+    for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){
+      const xi=polygon[i][0], yi=polygon[i][1], xj=polygon[j][0], yj=polygon[j][1];
+      const intersects=((yi>point.y)!==(yj>point.y)) && point.x<((xj-xi)*(point.y-yi))/((yj-yi)||Number.EPSILON)+xi;
+      if(intersects) inside=!inside;
+    }
+    return inside;
+  }
+  function sectorAtRoutePoint(point){
+    return BOUNDARY_AIRSPACE_SECTORS.find(sector=>pointInsideSector(point,sector.polygon))||null;
+  }
+  function airspaceSectorsAlongRoute(){
+    const nodes=plannedRouteMapNodes();
+    if(nodes.length<1||!BOUNDARY_AIRSPACE_SECTORS.length) return [];
+    const result=[];
+    const push=sector=>{if(sector&&result.at(-1)?.id!==sector.id)result.push(sector)};
+    push(sectorAtRoutePoint(nodes[0]));
+    for(let i=1;i<nodes.length;i++){
+      const start=nodes[i-1],end=nodes[i];
+      for(let sample=1;sample<=180;sample++){
+        const t=sample/180;
+        push(sectorAtRoutePoint({x:start.x+(end.x-start.x)*t,y:start.y+(end.y-start.y)*t}));
+      }
+    }
+    return result;
+  }
+
   function relevantFrequencies(){
     const departure=airportCode(depAirport.value), arrival=airportCode(arrAirport.value);
     if(!departure && !arrival) return [];
     const local=(airport)=>FREQUENCIES.filter(item=>item.airport===airport && item.position!=='CTR')
       .sort((a,b)=>(a.position==='GND'?0:1)-(b.position==='GND'?0:1));
-    const centerCodes=[];
-    const addCenter=area=>{ if(area && !centerCodes.includes(area.airport)) centerCodes.push(area.airport); };
-    addCenter(centerForAirport(departure));
-    centersAlongRoute().forEach(addCenter);
-    addCenter(centerForAirport(arrival));
-    const centers=centerCodes.map(code=>FREQUENCIES.find(item=>item.airport===code && item.position==='CTR')).filter(Boolean);
+    const boundarySectors=airspaceSectorsAlongRoute();
+    let centers=boundarySectors.map(sector=>{
+      if(sector.centerCode) return FREQUENCIES.find(item=>item.airport===sector.centerCode && item.position==='CTR')
+        || {airport:sector.centerCode,position:'CTR',label:sector.centerCode,frequency:sector.frequency,region:sector.id};
+      if(sector.fallbackLabel) return FREQUENCIES.find(item=>item.label===sector.fallbackLabel)
+        || {airport:sector.fallbackLabel,position:'TWR',label:sector.fallbackLabel,frequency:sector.fallbackFrequency,region:sector.id};
+      return null;
+    }).filter(Boolean);
+    if(!centers.length){
+      const centerCodes=[];
+      const addCenter=area=>{ if(area && !centerCodes.includes(area.airport)) centerCodes.push(area.airport); };
+      addCenter(centerForAirport(departure));
+      centersAlongRoute().forEach(addCenter);
+      addCenter(centerForAirport(arrival));
+      centers=centerCodes.map(code=>FREQUENCIES.find(item=>item.airport===code && item.position==='CTR')).filter(Boolean);
+    }
     const rows=[...local(departure),...centers,...local(arrival)];
     return rows.filter((row,index)=>rows.findIndex(item=>item.label===row.label)===index);
   }
@@ -4547,10 +4642,10 @@
     }
 
     if(routeType === 'waypoints'){
-      waypointBody.querySelectorAll('.wp-input').forEach(input=>{
+      waypointBody.querySelectorAll('.wp-input').forEach((input, waypointIndex)=>{
         const code = waypointKey(input.value);
         const pos = mapPoint(WAYPOINTS[code]);
-        if(code && pos) nodes.push({code, ...pos, kind:'waypoint'});
+        if(code && pos) nodes.push({code, ...pos, kind:'waypoint', waypointIndex});
       });
     }
 
@@ -4688,7 +4783,7 @@
     focusWaypointInput(nextEmpty || makeWaypointRow());
   }
 
-  function makeWaypointRow(){
+  function makeWaypointRow(options={}){
     wpIdx++;
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -4697,32 +4792,146 @@
       <td><input type="text" placeholder="e.g. AT OR ABOVE FL030"></td>
       <td class="rm no-export"><button class="row-remove" title="Remove waypoint">&times;</button></td>
     `;
-    tr.querySelector('.row-remove').addEventListener('click', ()=>{
+    const waypointInput = tr.querySelector('.wp-input');
+    const noteInput = tr.querySelectorAll('input')[1];
+    waypointInput.value = options.wp || '';
+    noteInput.value = options.note || '';
+    tr.querySelector('.row-remove').addEventListener('click', event=>{
+      event.stopPropagation();
+      const removedIndex = [...waypointBody.children].indexOf(tr);
       tr.remove();
+      if(selectedRouteAnchor?.type === 'waypoint'){
+        if(selectedRouteAnchor.index === removedIndex) selectedRouteAnchor = null;
+        else if(selectedRouteAnchor.index > removedIndex) selectedRouteAnchor.index -= 1;
+      }
       renumberWaypoints();
       validateWaypointInputs();
       renderRouteDiagram();
       renderRouteMap();
+      scheduleAutosave();
     });
-    const waypointInput = tr.querySelector('.wp-input');
     waypointInput.addEventListener('input', ()=>{
       validateWaypointInputs();
       renderRouteDiagram();
       renderRouteMap();
     });
     waypointInput.addEventListener('keyup', event=>{
-      if(event.key === 'Enter' && !event.isComposing && !event.repeat){
-        advanceToNextWaypoint(waypointInput);
-      }
+      if(event.key === 'Enter' && !event.isComposing && !event.repeat) advanceToNextWaypoint(waypointInput);
     });
-    waypointBody.appendChild(tr);
+    tr.addEventListener('click', event=>{
+      if(event.target.closest('.row-remove')) return;
+      setSelectedRouteAnchor({type:'waypoint', index:[...waypointBody.children].indexOf(tr)});
+    });
+    if(options.before instanceof Element) waypointBody.insertBefore(tr, options.before);
+    else waypointBody.appendChild(tr);
+    renumberWaypoints();
+    if(options.focus) focusWaypointInput(waypointInput);
     return waypointInput;
   }
   function renumberWaypoints(){
     [...waypointBody.children].forEach((tr,i)=>{ tr.querySelector('.num').textContent = i+1; });
     wpIdx = waypointBody.children.length;
+    syncRouteAnchorSelection();
   }
-  document.getElementById('addWaypointBtn').addEventListener('click', makeWaypointRow);
+
+  function routeAnchorLabel(anchor=selectedRouteAnchor){
+    if(!anchor) return '';
+    if(anchor.type === 'departure') return airportCode(depAirport.value) || 'departure';
+    if(anchor.type === 'arrival') return airportCode(arrAirport.value) || 'arrival';
+    const row = waypointBody.children[anchor.index];
+    return row?.querySelector('.wp-input')?.value.trim().toUpperCase() || `waypoint ${anchor.index + 1}`;
+  }
+
+  function syncRouteAnchorSelection(){
+    [...waypointBody.children].forEach((row,index)=>row.classList.toggle('route-anchor-selected', selectedRouteAnchor?.type === 'waypoint' && selectedRouteAnchor.index === index));
+    routeMapSvg.querySelectorAll('[data-route-anchor]').forEach(node=>{
+      const selected = node.dataset.routeAnchor === selectedRouteAnchor?.type
+        && (node.dataset.routeAnchor !== 'waypoint' || Number(node.dataset.waypointIndex) === selectedRouteAnchor.index);
+      node.classList.toggle('route-anchor-selected', selected);
+    });
+  }
+
+  function setSelectedRouteAnchor(anchor){
+    selectedRouteAnchor = anchor;
+    syncRouteAnchorSelection();
+    renderRouteMap();
+  }
+
+  function hideRouteAddPopover(){
+    pendingChartWaypoint = null;
+    routeAddPopover.classList.remove('visible');
+  }
+
+  function showRouteAddPopover(code, clientX, clientY){
+    if(routeType !== 'waypoints') setRouteType('waypoints');
+    pendingChartWaypoint = code;
+    routeAddTitle.textContent = code;
+    if(selectedRouteAnchor?.type === 'arrival'){
+      routeInsertBtn.textContent = `Insert before ${routeAnchorLabel()}`;
+      routeAddMessage.textContent = 'The arrival airport stays as the final destination.';
+    } else if(selectedRouteAnchor){
+      routeInsertBtn.textContent = `Insert after ${routeAnchorLabel()}`;
+      routeAddMessage.textContent = 'Choose where this chart fix should be placed in the route.';
+    } else {
+      routeInsertBtn.textContent = 'Add to route';
+      routeAddMessage.textContent = 'No insertion point is selected, so this will add the fix to the end.';
+    }
+    const wrap = routeAddPopover.parentElement;
+    const rect = wrap.getBoundingClientRect();
+    routeAddPopover.classList.add('visible');
+    const width = routeAddPopover.offsetWidth || 265;
+    const height = routeAddPopover.offsetHeight || 120;
+    routeAddPopover.style.left = `${Math.max(8, Math.min(rect.width - width - 8, clientX - rect.left + 10))}px`;
+    routeAddPopover.style.top = `${Math.max(8, Math.min(rect.height - height - 8, clientY - rect.top + 10))}px`;
+  }
+
+  function insertChartWaypoint(mode='anchor'){
+    const code = pendingChartWaypoint;
+    if(!code || !WAYPOINTS[code]) return hideRouteAddPopover();
+    const existing = [...waypointBody.querySelectorAll('.wp-input')].some(input=>waypointKey(input.value) === code);
+    if(existing && !window.confirm(`${code} is already in this route. Add it again?`)) return;
+    const rows = [...waypointBody.children];
+    let before = null;
+    if(mode === 'anchor' && selectedRouteAnchor){
+      if(selectedRouteAnchor.type === 'departure') before = rows[0] || null;
+      else if(selectedRouteAnchor.type === 'waypoint') before = rows[selectedRouteAnchor.index + 1] || null;
+      else if(selectedRouteAnchor.type === 'arrival') before = null;
+    }
+    const input = makeWaypointRow({before, wp:code});
+    const insertedRow = input.closest('tr');
+    const insertedIndex = [...waypointBody.children].indexOf(insertedRow);
+    selectedRouteAnchor = {type:'waypoint', index:insertedIndex};
+    validateWaypointInputs();
+    renderRouteDiagram();
+    renderRouteMap();
+    scheduleAutosave();
+    hideRouteAddPopover();
+  }
+
+  routeMapSvg.addEventListener('click', event=>{
+    const anchor = event.target.closest?.('[data-route-anchor]');
+    if(anchor){
+      event.stopPropagation();
+      setSelectedRouteAnchor(anchor.dataset.routeAnchor === 'waypoint'
+        ? {type:'waypoint', index:Number(anchor.dataset.waypointIndex)}
+        : {type:anchor.dataset.routeAnchor});
+      hideRouteAddPopover();
+      return;
+    }
+    const chartFix = event.target.closest?.('[data-chart-waypoint]');
+    if(chartFix){
+      event.stopPropagation();
+      showRouteAddPopover(chartFix.dataset.chartWaypoint, event.clientX, event.clientY);
+    }
+  });
+  routeInsertBtn.addEventListener('click', ()=>insertChartWaypoint('anchor'));
+  document.getElementById('routeAppendBtn').addEventListener('click', ()=>insertChartWaypoint('end'));
+  document.getElementById('routeAddCancelBtn').addEventListener('click', hideRouteAddPopover);
+  document.addEventListener('click', event=>{
+    if(routeAddPopover.classList.contains('visible') && !routeAddPopover.contains(event.target) && !event.target.closest?.('[data-chart-waypoint]')) hideRouteAddPopover();
+  });
+
+  document.getElementById('addWaypointBtn').addEventListener('click', ()=>makeWaypointRow({focus:true}));
   depAirport.addEventListener('input', ()=>{ refreshAirportField(depAirport, depAirportResolved); refreshRunwayControls(); scheduleNetworkRefresh(); });
   arrAirport.addEventListener('input', ()=>{ refreshAirportField(arrAirport, arrAirportResolved); refreshRunwayControls(); scheduleNetworkRefresh(); });
   depAirport.addEventListener('change', ()=>{ refreshAirportField(depAirport, depAirportResolved, true); refreshRunwayControls(); scheduleNetworkRefresh(); });
@@ -5199,7 +5408,7 @@
     document.getElementById('flightDate').value = new Date().toISOString().slice(0,10);
     crewBody.innerHTML=''; crewIdx=0; makeCrewRow('Pilot in Command'); makeCrewRow('First Officer');
     cargoBody.innerHTML=''; cargoIdx=0; for(let i=0;i<3;i++) makeCargoRow();
-    waypointBody.innerHTML=''; wpIdx=0; makeWaypointRow(); makeWaypointRow();
+    waypointBody.innerHTML=''; wpIdx=0; selectedRouteAnchor=null; hideRouteAddPopover(); makeWaypointRow(); makeWaypointRow();
     setRouteType('waypoints');
     setWaypointLayerVisible(true);
     setWaypointRouteLineVisible(false);
@@ -5328,7 +5537,7 @@
   function loadFormData(data){
     const savedDepRunway = data.fields?.depRunway || 'AUTO';
     const savedArrRunway = data.fields?.arrRunway || 'AUTO';
-    waypointBody.innerHTML=''; wpIdx=0;
+    waypointBody.innerHTML=''; wpIdx=0; selectedRouteAnchor=null; hideRouteAddPopover();
     crewBody.innerHTML=''; crewIdx=0;
     cargoBody.innerHTML=''; cargoIdx=0;
     (data.waypoints||[]).forEach(w=>{
@@ -5407,6 +5616,7 @@
   // ===============================================================
   let currentUser = null;
   let currentCustoms = null;
+  let currentPdc = null;
   let currentPlanId = null;
   let currentCustomsTokens = {departure:null,arrival:null};
   let currentTracking = null;
@@ -5417,6 +5627,19 @@
 
   function readableCustomsStatus(status){
     return String(status || 'not-requested').replaceAll('-', ' ');
+  }
+  function pdcAltitudeSummary(clearance=currentPdc?.clearance){
+    const altitude=clearance?.altitude;
+    if(!altitude) return '—';
+    const has=value=>value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value));
+    const parts=[];
+    if(has(altitude.initial)) parts.push(`Initial ${Number(altitude.initial).toLocaleString()} ft`);
+    if(has(altitude.delayed)){
+      const delay=has(altitude.delayMinutes) ? ` after ${Number(altitude.delayMinutes)} min` : '';
+      parts.push(`Climb ${Number(altitude.delayed).toLocaleString()} ft${delay}`);
+    }
+    if(has(altitude.cruise)) parts.push(`Cruise ${Number(altitude.cruise).toLocaleString()} ft`);
+    return parts.join(' · ') || '—';
   }
 
   function absoluteSiteUrl(path){
@@ -5434,6 +5657,20 @@
     document.getElementById(`${phase}ApprovalAgent`).textContent=`Agent: ${inspection.agentDiscordUsername || 'Discord customs agent'}`;
     document.getElementById(`${phase}ApprovalTime`).textContent=inspection.signedAt ? `Approved: ${new Date(inspection.signedAt).toLocaleString()}` : '';
     document.getElementById(`${phase}ApprovalRemarks`).textContent=inspection.remarks ? `Remarks: ${inspection.remarks}` : 'Remarks: None';
+  }
+
+  function setPdcWorkflow(plan={}){
+    const path=plan.pdcUrl || (plan.pdcToken ? `/pdc.html?token=${encodeURIComponent(plan.pdcToken)}` : null);
+    const url=absoluteSiteUrl(path);
+    const input=document.getElementById('pdcUrl');
+    input.value=url;
+    document.getElementById('pdcLinkBtn').style.display=url?'inline-flex':'none';
+    document.getElementById('pdcCopy').disabled=!url;
+    document.getElementById('navPdcBtn').disabled=!url;
+    const badge=document.getElementById('pdcStatus');
+    const issued=currentPdc?.status==='issued';
+    badge.textContent=url?(issued?'Issued':'Ready to share'):'Save required';
+    badge.className=`customs-status ${issued?'approved':''}`;
   }
 
   function setCustomsWorkflow(plan={}){
@@ -5473,8 +5710,10 @@
     currentPlanId = plan?.id || null;
     currentPlanSnapshot = plan || null;
     currentCustoms = plan?.customs || null;
+    currentPdc = plan?.pdc || null;
     currentTracking = plan?.tracking || null;
     currentCustomsTokens = plan?.customsTokens || {departure:plan?.customsToken || null,arrival:null};
+    setPdcWorkflow(plan || {});
     setCustomsWorkflow(plan || {});
     document.getElementById('savePlanBtn').textContent = currentPlanId
       ? 'Update saved plan'
@@ -5599,10 +5838,11 @@
       ['People',2,[['Crew',[...crewBody.querySelectorAll('tr')].map(r=>[...r.querySelectorAll('input')].map(x=>x.value).filter(Boolean).join(': ')).filter(Boolean).join(', ')||'—'],['Souls',value('soulsCount')],['Passenger weight',value('soulsWeightTotal')]]],
       ['Cargo',4,[['Items',cargoRows.join('; ')||'No cargo listed'],['Cargo weight',document.getElementById('loadCargo').value||'0 kg']]],
       ['Performance',5,[['Stall',value('perfVstall') === 'N/A' ? 'N/A' : value('perfVstall')+' kt'],['V1',value('outV1')],['Rotate',value('outVR')],['V2',value('outV2')],['Vref',value('outVref')],['Approach',value('outVapp')],['Cruise',value('outCruise')],['No-flaps landing',value('outNoFlaps')]]],
-      ['Remarks & Customs',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['Departure customs',readableCustomsStatus(currentCustoms?.departure?.status||'Not requested')],['Departure agent',currentCustoms?.departure?.agentDiscordUsername||'—'],['Departure signature',currentCustoms?.departure?.signature||'—'],['Arrival customs',readableCustomsStatus(currentCustoms?.arrival?.status||'Not requested')],['Arrival agent',currentCustoms?.arrival?.agentDiscordUsername||'—'],['Arrival signature',currentCustoms?.arrival?.signature||'—'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—']]]
+      ['Remarks, PDC & Customs',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['PDC status',currentPdc?.status==='issued'?'Issued':'Not issued'],['PDC controller',currentPdc?.clearance?.controllerName||'—'],['PDC squawk',currentPdc?.clearance?.squawk||value('squawkCode')],['PDC assigned altitude',pdcAltitudeSummary()],['PDC departure frequency',currentPdc?.clearance?.departureFrequency||value('pdcDepartureFrequency')],['PDC radar vectors',currentPdc?.clearance?.radarVectorsUntil?`Until ${currentPdc.clearance.radarVectorsUntil}`:'—'],['PDC remarks',currentPdc?.clearance?.remarks||value('pdcRemarks')],['Departure customs',readableCustomsStatus(currentCustoms?.departure?.status||'Not requested')],['Departure agent',currentCustoms?.departure?.agentDiscordUsername||'—'],['Departure signature',currentCustoms?.departure?.signature||'—'],['Arrival customs',readableCustomsStatus(currentCustoms?.arrival?.status||'Not requested')],['Arrival agent',currentCustoms?.arrival?.agentDiscordUsername||'—'],['Arrival signature',currentCustoms?.arrival?.signature||'—'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—']]]
     ];
     const grid=document.getElementById('reviewGrid'); grid.innerHTML='';
     cards.forEach(([title,step,rows], index)=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><div class="review-card-head"><span class="review-index">${String(index + 1).padStart(2,'0')}</span><h4>${title}</h4></div><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd${k.toLowerCase().includes('signature')&&String(v)!=='—'?' class="sig-script"':''}>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
+    setPdcWorkflow(currentPlanSnapshot || {});
     setCustomsWorkflow(currentPlanSnapshot || {});
   }
   let autosaveTimer;
@@ -5636,13 +5876,16 @@
     input.focus(); input.select(); input.setSelectionRange(0,input.value.length);
     flashBtn(buttonId,'Selected — press Ctrl/Cmd+C');
   }
+  document.getElementById('pdcLinkBtn').addEventListener('click',()=>copyCustomsUrl('pdcUrl','pdcLinkBtn'));
+  document.getElementById('pdcCopy').addEventListener('click',()=>copyCustomsUrl('pdcUrl','pdcCopy'));
+  document.getElementById('navPdcBtn').addEventListener('click',()=>copyCustomsUrl('pdcUrl','navPdcBtn'));
   document.getElementById('customsLinkBtn').addEventListener('click',()=>copyCustomsUrl('customsUrl','customsLinkBtn'));
   document.getElementById('departureCustomsCopy').addEventListener('click',()=>copyCustomsUrl('customsUrl','departureCustomsCopy'));
   document.getElementById('navDepartureCustomsBtn').addEventListener('click',()=>copyCustomsUrl('customsUrl','navDepartureCustomsBtn'));
   document.getElementById('arrivalCustomsBtn').addEventListener('click',()=>copyCustomsUrl('arrivalCustomsUrl','arrivalCustomsBtn'));
   document.getElementById('arrivalCustomsCopy').addEventListener('click',()=>copyCustomsUrl('arrivalCustomsUrl','arrivalCustomsCopy'));
   document.getElementById('navArrivalCustomsBtn').addEventListener('click',()=>copyCustomsUrl('arrivalCustomsUrl','navArrivalCustomsBtn'));
-  ['customsUrl','arrivalCustomsUrl'].forEach(id=>document.getElementById(id).addEventListener('click',event=>{
+  ['pdcUrl','customsUrl','arrivalCustomsUrl'].forEach(id=>document.getElementById(id).addEventListener('click',event=>{
     event.currentTarget.select(); event.currentTarget.setSelectionRange(0,event.currentTarget.value.length);
   }));
   showWizardStep(0);
@@ -5743,6 +5986,16 @@
       navigateTo('navigation');
     });
     actions.appendChild(navigateBtn);
+    const pdcBtn=document.createElement('button');
+    pdcBtn.className='btn-ghost btn-small';
+    pdcBtn.type='button';
+    pdcBtn.textContent=plan.pdc?.status==='issued'?'PDC issued':'Copy PDC';
+    pdcBtn.addEventListener('click',async()=>{
+      const url=absoluteSiteUrl(plan.pdcUrl || (plan.pdcToken?`/pdc.html?token=${encodeURIComponent(plan.pdcToken)}`:''));
+      if(!url) return flashBtn(pdcBtn.id,'Save first');
+      if(await copyText(url)){ const old=pdcBtn.textContent;pdcBtn.textContent='Copied!';setTimeout(()=>pdcBtn.textContent=old,1200); }
+    });
+    actions.appendChild(pdcBtn);
     if(!compact){
       const delBtn=document.createElement('button');
       delBtn.className='btn-ghost btn-small plan-delete';
@@ -5957,7 +6210,7 @@
       document.getElementById('navFrequencyStatus').textContent='No filed departure or arrival airport with published frequencies.';
       return;
     }
-    document.getElementById('navFrequencyStatus').textContent='Ground + Tower for the filed airports and Centers along the route. Green is online.';
+    document.getElementById('navFrequencyStatus').textContent='Ground + Tower for the filed airports and boundary-defined sectors crossed by the route. Green is online.';
     list.innerHTML=rows.map(item=>{
       const online=latestOnlinePositions.has(`${item.airport}_${item.position}`);
       return `<div class="frequency-row"><span class="frequency-dot ${online?'online':''}" title="${online?'Online':'Offline'}"></span><span class="frequency-name">${item.label}</span><span class="frequency-value">${item.frequency}</span></div>`;
@@ -5972,24 +6225,57 @@
   }
 
   function applyTrackingData(data){
+    const previousPdcIssuedAt=currentPdc?.clearance?.issuedAt||null;
     currentCustoms=data.plan?.customs||currentCustoms;
+    currentPdc=data.plan?.pdc||currentPdc;
     currentTracking=data.plan?.tracking||currentTracking;
-    currentPlanSnapshot={...(currentPlanSnapshot||{}),...data.plan,customs:currentCustoms,tracking:currentTracking};
+    const mergedPlanData={
+      ...(currentPlanSnapshot?.data||{}),
+      fields:data.plan?.fields||currentPlanSnapshot?.data?.fields||{},
+      waypoints:data.plan?.waypoints||currentPlanSnapshot?.data?.waypoints||[],
+      routeType:data.plan?.routeType||currentPlanSnapshot?.data?.routeType||'waypoints',
+    };
+    currentPlanSnapshot={...(currentPlanSnapshot||{}),...data.plan,data:mergedPlanData,customs:currentCustoms,pdc:currentPdc,tracking:currentTracking};
+    setPdcWorkflow(data.plan||{});
     setCustomsWorkflow(data.plan||{});
+    const newPdcIssuedAt=currentPdc?.clearance?.issuedAt||null;
+    if(newPdcIssuedAt&&newPdcIssuedAt!==previousPdcIssuedAt&&data.plan?.fields){
+      const wasFiled=document.body.classList.contains('filed');
+      const currentForm=serializeForm();
+      const mergedForm={...currentForm,fields:{...currentForm.fields,...data.plan.fields},waypoints:data.plan.waypoints||[],routeType:data.plan.routeType||'waypoints'};
+      loadFormData(mergedForm);
+      if(wasFiled){
+        buildReview();
+        document.body.classList.add('filed');
+        document.getElementById('editBtn').style.display='inline-flex';
+        document.getElementById('createPlanBtn').style.display='none';
+      }
+    }
     if(document.body.classList.contains('filed')) buildReview();
     document.getElementById('navigationEmpty').style.display='none';
     document.getElementById('navigationTitle').textContent=data.plan?.name||data.requestedCallsign||'Live flight';
     document.getElementById('navigationSubtitle').textContent=`${data.plan?.fields?.depAirport||'----'} → ${data.plan?.fields?.arrAirport||'----'} · tracking ${data.plan?.fields?.fdCallsign||data.requestedCallsign||'filed callsign'}`;
     document.getElementById('navigationFeedSource').textContent=data.feedSource==='websocket'?'WebSocket relay':'Server cache';
     const ownDisplayCallsign=data.aircraft?(data.aircraft.displayCallsign||data.aircraft.callsign):null;
+    const vectorText=data.route?.radarVectors?.active?` · radar vectors to ${data.route.radarVectors.targetCode}`:'';
     document.getElementById('navigationStatus').textContent=data.aircraft
-      ? `${ownDisplayCallsign} · ${data.aircraft.flightLevel} · ${Math.round(data.aircraft.groundSpeed)} KT · ${formatNm(data.route?.remainingNm)} remaining${data.route?.nextWaypoint?.code?` · next ${data.route.nextWaypoint.code}`:''}`
+      ? `${ownDisplayCallsign} · ${data.aircraft.flightLevel} · ${Math.round(data.aircraft.groundSpeed)} KT · ${formatNm(data.route?.remainingNm)} remaining${data.route?.nextWaypoint?.code?` · next ${data.route.nextWaypoint.code}`:''}${vectorText}`
       : `${data.requestedCallsign||'Filed aircraft'} is not currently visible. Other traffic remains displayed.`;
     document.getElementById('navAircraft').textContent=data.aircraft?`${ownDisplayCallsign} · ${data.aircraft.aircraftType||'Unknown type'}`:'Not found';
     document.getElementById('navAltitude').textContent=data.aircraft?`${data.aircraft.flightLevel} · ${Math.round(data.aircraft.altitude).toLocaleString()} ft`:'—';
     document.getElementById('navGroundSpeed').textContent=data.aircraft?`${Math.round(data.aircraft.groundSpeed)} kt`:'—';
     document.getElementById('navHeading').textContent=data.aircraft?`${Math.round(data.aircraft.heading)}°`:'—';
     document.getElementById('navTargetHeading').textContent=formatTargetHeading(data);
+    const currentSector=data.airspace?.currentSector;
+    document.getElementById('navAirspace').textContent=currentSector?.label||'—';
+    document.getElementById('navAirspaceFrequency').textContent=currentSector?(currentSector.frequency||currentSector.fallbackFrequency||'Unpublished'):'—';
+    document.getElementById('navClearanceMode').textContent=data.route?.radarVectors?.active?`Vectors to ${data.route.radarVectors.targetCode}`:'Cleared route';
+    const pdcClearance=data.plan?.pdc?.clearance||currentPdc?.clearance||null;
+    document.getElementById('navPdcController').textContent=pdcClearance?.controllerName||'—';
+    document.getElementById('navPdcSquawk').textContent=pdcClearance?.squawk||data.plan?.fields?.squawkCode||'—';
+    document.getElementById('navPdcFrequency').textContent=pdcClearance?.departureFrequency||data.plan?.fields?.pdcDepartureFrequency||'—';
+    document.getElementById('navPdcAltitude').textContent=pdcAltitudeSummary(pdcClearance);
+    document.getElementById('navPdcRemarks').textContent=pdcClearance?.remarks||data.plan?.fields?.pdcRemarks||'—';
     document.getElementById('navNextWaypoint').textContent=data.route?.nextWaypoint?.code||'—';
     document.getElementById('navDistanceNext').textContent=formatNm(data.route?.distanceToNextNm);
     document.getElementById('navRemaining').textContent=formatNm(data.route?.remainingNm);
@@ -6057,15 +6343,26 @@
       const plans=await res.json();
       const active=plans.find(plan=>plan.id===currentPlanId);
       if(!active) return;
+      const previousIssuedAt=currentPdc?.clearance?.issuedAt||null;
+      const wasFiled=document.body.classList.contains('filed');
       markPlanLoaded(active);
-      if(document.body.classList.contains('filed')) buildReview();
+      const changedPdc=active.pdc?.clearance?.issuedAt&&active.pdc.clearance.issuedAt!==previousIssuedAt;
+      if(changedPdc&&active.data){
+        loadFormData(active.data);
+        if(wasFiled){
+          buildReview();
+          document.body.classList.add('filed');
+          document.getElementById('editBtn').style.display='inline-flex';
+          document.getElementById('createPlanBtn').style.display='none';
+        }
+      } else if(wasFiled) buildReview();
     }catch(error){}
   }
 
   document.getElementById('navigateFlightBtn').addEventListener('click',openNavigation);
   document.getElementById('navigationBackBtn').addEventListener('click',()=>navigateTo('planner'));
   document.getElementById('navigationRefreshBtn').addEventListener('click',refreshNavigationData);
-  setInterval(refreshCurrentPlanRecord,15000);
+  setInterval(refreshCurrentPlanRecord,5000);
 
   applyLocalSettings(false);
   updateDraftStatus();

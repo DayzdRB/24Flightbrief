@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const { methodNotAllowed, readJsonBody, sendHandlerError, setNoStore } = require('../../lib/http');
 const {
   defaultCustoms,
+  defaultPdc,
   defaultTracking,
   ensurePlanShape,
   loadPlans,
@@ -42,6 +43,7 @@ module.exports = async (req, res) => {
     const now = Date.now();
     const departureToken = newToken();
     const arrivalToken = newToken();
+    const pdcToken = newToken();
     const plan = {
       id: crypto.randomUUID(),
       name: String(name || 'Untitled plan').trim().slice(0, 100) || 'Untitled plan',
@@ -52,6 +54,8 @@ module.exports = async (req, res) => {
       customsTokens: { departure: departureToken, arrival: arrivalToken },
       customsToken: departureToken,
       tracking: defaultTracking(),
+      pdc: defaultPdc(),
+      pdcToken,
     };
 
     plans.unshift(plan);
@@ -59,6 +63,10 @@ module.exports = async (req, res) => {
     await redisSet(
       `customs-token:${departureToken}`,
       JSON.stringify({ ownerId: user.id, planId: plan.id, phase: 'departure' })
+    );
+    await redisSet(
+      `pdc-token:${pdcToken}`,
+      JSON.stringify({ ownerId: user.id, planId: plan.id })
     );
     await redisSet(
       `customs-token:${arrivalToken}`,

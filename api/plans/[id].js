@@ -32,6 +32,7 @@ module.exports = async (req, res) => {
         deletedPlan.customsTokens?.arrival,
       ].filter(Boolean));
       await Promise.all([...tokens].map(token => redisDel(`customs-token:${token}`)));
+      if (deletedPlan.pdcToken) await redisDel(`pdc-token:${deletedPlan.pdcToken}`);
       return res.status(200).json({ ok: true });
     }
 
