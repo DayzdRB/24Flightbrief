@@ -354,6 +354,11 @@ module.exports = async (req, res) => {
     const matchingCallsign = Object.keys(feed.data)
       .find(callsign => callsign.toUpperCase() === requestedCallsign.toUpperCase()) || null;
     const aircraft = matchingCallsign ? compactAircraft(matchingCallsign, feed.data[matchingCallsign], flightPlanIndex) : null;
+    // For the tracked aircraft the saved plan's own Callsign field is the most
+    // reliable source (it works even when the WebSocket relay is offline), so
+    // it wins over the 24data flight-plan lookup and the in-game callsign.
+    const filedCallsign = String(fields.fdCallsign || '').trim();
+    if (aircraft && filedCallsign) aircraft.displayCallsign = filedCallsign;
     const now = Date.now();
 
     let departureDistance = null;
