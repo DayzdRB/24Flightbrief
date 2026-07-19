@@ -6,6 +6,9 @@ Flight planning, cargo/customs inspection, and live navigation for the ATC24 PTF
 
 - Eight-step flight-plan workflow with saved plans and PDF/image exports.
 - Separate departure and arrival cargo/customs inspection links.
+- Interactive chart route editing: select the departure, arrival, or an existing route fix, click a chart waypoint, then insert it at that location or add it to the end. Duplicate fixes require confirmation.
+- Shareable Pre-Departure Clearance (PDC) workflow using CRAFT, optional controller identification, route amendments, radar vectors, altitude restrictions, departure frequency, octal squawk validation, runway assignments, and remarks.
+- Boundary-defined airspace classification based on the visible `boundaries.svg`; route legs and live aircraft positions determine sector/frequency changes without hiding any airport or ground SVG layers.
 - Departure inspection is available after a flight plan is saved.
 - Arrival inspection remains locked until:
   1. departure customs is approved;
@@ -71,6 +74,17 @@ wss://24data.ptfs.app/wss
 It writes live aircraft and controller snapshots into the same Redis instance used by Vercel. Vercel then serves those cached snapshots to every browser. Do not scale the relay above one instance unless the upstream connection limit is deliberately coordinated.
 
 See `relay/README.md` for deployment details.
+
+## PDC workflow
+
+1. Save/file a flight plan while signed in.
+2. Copy the PDC link from the planner summary, saved-plan card, or navigation workspace.
+3. The controller may enter an optional name/callsign and accept or amend the CRAFT fields.
+4. Route amendments are restricted before the first filed waypoint in the next airspace; the protected filed suffix stays unchanged. Radar vectors may continue to an eligible cleared waypoint.
+5. Nothing changes on the pilot's active plan until **Submit complete PDC** is pressed. The route, altitude, frequency, squawk, runway, and remarks are then saved together.
+6. Navigation automatically resumes the cleared route when the aircraft reaches the radar-vector target.
+
+The public PDC token endpoint returns only clearance-relevant route and flight fields. It does not expose unrelated crew, cargo, or full filed-plan data.
 
 ## Customs workflow
 
