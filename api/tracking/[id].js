@@ -16,6 +16,7 @@ const {
   REAL_KNOTS_PER_GAME_KNOT,
 } = require('../../lib/map-data');
 const { getSessionUser } = require('../../lib/session');
+const { findRunway, normalizeRunwayDesignator, runwayMapPosition } = require('../../lib/runway-data');
 
 const DEPARTURE_AREA_RADIUS_STUDS = 7500;
 const ARRIVAL_LANDING_RADIUS_STUDS = 5000;
@@ -121,15 +122,85 @@ function compactAircraft(callsign, aircraft, flightPlanIndex) {
   };
 }
 
+function selectedRunway(fields, role) {
+  const effective = normalizeRunwayDesignator(fields?.[`${role}RunwayEffective`]);
+  if (effective) return effective;
+  const selected = String(fields?.[`${role}Runway`] || '').trim().toUpperCase();
+  return selected && selected !== 'AUTO' ? normalizeRunwayDesignator(selected) : '';
+}
+
+function reciprocalRunwayDesignator(value) {
+  const normalized = normalizeRunwayDesignator(value);
+  if (!normalized) return '';
+  const number = Number(normalized.slice(0, 2));
+  const reciprocal = ((number + 17) % 36) + 1;
+  const side = normalized.slice(2);
+  const reciprocalSide = side === 'L' ? 'R' : side === 'R' ? 'L' : side;
+  return String(reciprocal).padStart(2, '0') + reciprocalSide;
+}
+
+function departureRunwayNodes(airport, designator) {
+  const threshold = findRunway(airport, designator);
+  if (!threshold) return [];
+  const thresholdMap = runwayMapPosition(threshold);
+  const result = [{
+    code: `${airport} ${normalizeRunwayDesignator(threshold.label)}`,
+    kind: 'departure-runway',
+    runway: normalizeRunwayDesignator(threshold.label),
+    heading: threshold.heading,
+    mapPosition: thresholdMap,
+  }];
+  const reciprocal = findRunway(airport, reciprocalRunwayDesignator(threshold.label));
+  if (!reciprocal) return result;
+  const reciprocalMap = runwayMapPosition(reciprocal);
+  result.push({
+    code: `RWY ${normalizeRunwayDesignator(reciprocal.label)}`,
+    kind: 'runway-rollout',
+    runway: normalizeRunwayDesignator(reciprocal.label),
+    heading: threshold.heading,
+    mapPosition: reciprocalMap,
+  });
+  const radians = Number(threshold.heading) * Math.PI / 180;
+  const extension = 8 / 1200;
+  result.push({
+    code: 'RWY HDG',
+    kind: 'runway-heading',
+    runway: normalizeRunwayDesignator(threshold.label),
+    heading: threshold.heading,
+    mapPosition: {
+      x: reciprocalMap.x + Math.sin(radians) * extension,
+      y: reciprocalMap.y - Math.cos(radians) * extension,
+    },
+  });
+  return result;
+}
+
+function arrivalRunwayNode(airport, designator) {
+  const threshold = findRunway(airport, designator);
+  if (!threshold) return null;
+  return {
+    code: `${airport} ${normalizeRunwayDesignator(threshold.label)}`,
+    kind: 'arrival-runway',
+    runway: normalizeRunwayDesignator(threshold.label),
+    heading: threshold.heading,
+    mapPosition: runwayMapPosition(threshold),
+  };
+}
+
 function routeNodes(plan) {
   const fields = plan.data?.fields || {};
   const departureCode = normalizeCode(fields.depAirport);
   const arrivalCode = normalizeCode(fields.arrAirport);
   const nodes = [];
 
-  if (AIRPORTS[departureCode]) {
+  const departureRunway = selectedRunway(fields, 'dep');
+  const departureNodes = departureRunwayNodes(departureCode, departureRunway);
+  if (departureNodes.length) {
+    nodes.push(...departureNodes);
+  } else if (AIRPORTS[departureCode]) {
     nodes.push({ code: departureCode, kind: 'departure', mapPosition: AIRPORTS[departureCode] });
   }
+
   if ((plan.data?.routeType || 'waypoints') === 'waypoints') {
     for (const item of plan.data?.waypoints || []) {
       const code = normalizeWaypoint(item?.wp);
@@ -138,7 +209,12 @@ function routeNodes(plan) {
       }
     }
   }
-  if (AIRPORTS[arrivalCode]) {
+
+  const arrivalRunway = selectedRunway(fields, 'arr');
+  const arrivalNode = arrivalRunwayNode(arrivalCode, arrivalRunway);
+  if (arrivalNode) {
+    nodes.push(arrivalNode);
+  } else if (AIRPORTS[arrivalCode]) {
     nodes.push({ code: arrivalCode, kind: 'arrival', mapPosition: AIRPORTS[arrivalCode] });
   }
   return nodes.map(node => ({ ...node, worldPosition: chartToWorld(node.mapPosition) }));
@@ -354,6 +430,11 @@ module.exports = async (req, res) => {
     const matchingCallsign = Object.keys(feed.data)
       .find(callsign => callsign.toUpperCase() === requestedCallsign.toUpperCase()) || null;
     const aircraft = matchingCallsign ? compactAircraft(matchingCallsign, feed.data[matchingCallsign], flightPlanIndex) : null;
+    // For the tracked aircraft the saved plan's own Callsign field is the most
+    // reliable source (it works even when the WebSocket relay is offline), so
+    // it wins over the 24data flight-plan lookup and the in-game callsign.
+    const filedCallsign = String(fields.fdCallsign || '').trim();
+    if (aircraft && filedCallsign) aircraft.displayCallsign = filedCallsign;
     const now = Date.now();
 
     let departureDistance = null;
