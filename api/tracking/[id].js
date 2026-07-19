@@ -549,6 +549,7 @@ module.exports = async (req, res) => {
     const fullRouteNodes = routeNodes(plan);
     let navigationNodes = fullRouteNodes;
     let radarVectors = null;
+    let directTo = null;
     const radarTargetCode = normalizeWaypoint(fields.radarVectorsUntil || plan.pdc?.clearance?.radarVectorsUntil);
     if (aircraft && radarTargetCode) {
       const targetIndex = fullRouteNodes.findIndex(node => node.code === radarTargetCode);
@@ -582,6 +583,41 @@ module.exports = async (req, res) => {
       }
     }
 
+    const directToCode = normalizeWaypoint(plan.navigation?.directTo?.code);
+    if (directToCode && WAYPOINTS[directToCode]) {
+      const targetMapPosition = WAYPOINTS[directToCode];
+      const targetWorldPosition = chartToWorld(targetMapPosition);
+      directTo = {
+        active: true,
+        code: directToCode,
+        setAt: plan.navigation?.directTo?.setAt || null,
+        distanceNm: aircraft ? nm(distance(aircraft.position, targetWorldPosition)) : null,
+      };
+      if (aircraft) {
+        const targetIndex = fullRouteNodes.findIndex(node => node.code === directToCode);
+        const arrivalStartIndex = fullRouteNodes.findIndex(node => ['arrival-custom', 'arrival-runway', 'arrival'].includes(node.kind));
+        const suffix = targetIndex >= 0
+          ? fullRouteNodes.slice(targetIndex + 1)
+          : (arrivalStartIndex >= 0 ? fullRouteNodes.slice(arrivalStartIndex) : []);
+        const targetNode = {
+          code: directToCode,
+          kind: 'direct-to',
+          mapPosition: targetMapPosition,
+          worldPosition: targetWorldPosition,
+        };
+        navigationNodes = [
+          {
+            code: 'PRESENT POSITION',
+            kind: 'direct-origin',
+            mapPosition: aircraft.mapPosition,
+            worldPosition: aircraft.position,
+          },
+          targetNode,
+          ...suffix.filter(node => node.code !== directToCode),
+        ];
+      }
+    }
+
     if (changed) {
       const latestPlans = await loadPlans(user.id);
       const latestIndex = latestPlans.findIndex(item => item.id === id);
@@ -597,6 +633,10 @@ module.exports = async (req, res) => {
             arrival: latestPlan.customs?.arrival || plan.customs?.arrival || { status: 'not-requested' },
           },
           tracking: plan.tracking,
+          // Tracking never owns pilot navigation overrides. Preserve the most
+          // recently saved Direct-To / arrival-runway metadata if another
+          // request updated it while this poll was running.
+          navigation: latestPlan.navigation || plan.navigation,
           pdc: radarVectorsCleared ? plan.pdc : (latestPlan.pdc || plan.pdc),
           updatedAt: plan.updatedAt || latestPlan.updatedAt,
           data: {
@@ -609,6 +649,8 @@ module.exports = async (req, res) => {
         };
         await savePlans(user.id, latestPlans);
         plan.customs = latestPlans[latestIndex].customs;
+        plan.navigation = latestPlans[latestIndex].navigation || plan.navigation;
+        plan.data = latestPlans[latestIndex].data || plan.data;
       }
     }
 
@@ -650,6 +692,7 @@ module.exports = async (req, res) => {
         runwayLegs: plan.data?.runwayLegs || null,
         customs: plan.customs,
         tracking: plan.tracking,
+        navigation: plan.navigation,
         pdc: plan.pdc,
         pdcUrl: publicData.pdcUrl,
         updatedAt: plan.updatedAt,
@@ -664,7 +707,9 @@ module.exports = async (req, res) => {
       route: {
         ...route,
         radarVectors,
-        nodes: nodes.map(node => ({ code: node.code, kind: node.kind, mapPosition: node.mapPosition })),
+        directTo,
+        nodes: navigationNodes.map(node => ({ code: node.code, kind: node.kind, mapPosition: node.mapPosition })),
+        filedNodes: nodes.map(node => ({ code: node.code, kind: node.kind, mapPosition: node.mapPosition })),
       },
       airspace: {
         currentSector,
