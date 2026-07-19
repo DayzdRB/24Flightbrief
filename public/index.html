@@ -447,9 +447,11 @@
   .map-waypoint-layer{opacity:1;transition:opacity .16s ease;}
   .map-waypoint-layer.is-hidden{opacity:0;}
   .map-waypoint-dot{fill:#546762;}
-  .map-waypoint-label{fill:#546762;font-family:'JetBrains Mono',monospace;}
+  .map-waypoint-label{fill:#546762;font-family:'JetBrains Mono',monospace;font-weight:600;}
   .navigation-radar .map-waypoint-dot{fill:#7fe0c2;fill-opacity:.85;}
   .navigation-radar .map-waypoint-label{fill:#7fe0c2;fill-opacity:.85;}
+  .map-runway-label{fill:#3d5058;font:700 6.5px 'JetBrains Mono',monospace;paint-order:stroke;stroke:rgba(255,255,255,.78);stroke-width:2px;stroke-linejoin:round;}
+  .navigation-map-assets .map-runway-label{fill:#a8dcc9;stroke:#0b1418;stroke-width:2.4px;}
   .map-pannable{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-moz-user-select:none;-webkit-touch-callout:none;}
   .map-pannable *{user-select:none;-webkit-user-select:none;-moz-user-select:none;}
   .map-pannable.is-panning{cursor:grabbing;}
@@ -1214,6 +1216,10 @@
   .customs-approval.arrival::after{color:rgba(49,95,120,.18)}
   .customs-approval h4{margin:0 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
   .customs-approval strong{font-size:18px;display:block;margin-bottom:5px}.customs-approval p{margin:2px 0;font-size:10px}
+  .approval-signature,.sig-script{font-family:'Segoe Script','Bradley Hand','Brush Script MT','Comic Sans MS',cursive!important;font-style:italic;font-weight:600;letter-spacing:.02em}
+  .customs-approval .approval-signature{font-size:21px;color:#1d3f34}
+  .customs-approval.arrival .approval-signature{color:#274a5e}
+  .review-card dd.sig-script{font-size:14px}
   .navigation-layout{display:grid;grid-template-columns:minmax(225px,.55fr) minmax(0,1.75fr) minmax(310px,.75fr);gap:18px;align-items:start}
   .map-runway-layer-hidden .map-runway-asset{display:none;}
   .navigation-map-card,.navigation-side-card{border:1px solid var(--rule-strong);background:#111d24;box-shadow:var(--shadow);border-radius:5px;overflow:hidden}
@@ -1668,11 +1674,11 @@
         </div>
         <div class="customs-approvals">
           <section class="customs-approval" id="departureCustomsApproval">
-            <h4>Departure Customs Approved</h4><strong id="departureApprovalSignature">—</strong>
+            <h4>Departure Customs Approved</h4><strong class="approval-signature" id="departureApprovalSignature">—</strong>
             <p id="departureApprovalAgent"></p><p id="departureApprovalTime"></p><p id="departureApprovalRemarks"></p>
           </section>
           <section class="customs-approval arrival" id="arrivalCustomsApproval">
-            <h4>Arrival Inspection Approved</h4><strong id="arrivalApprovalSignature">—</strong>
+            <h4>Arrival Inspection Approved</h4><strong class="approval-signature" id="arrivalApprovalSignature">—</strong>
             <p id="arrivalApprovalAgent"></p><p id="arrivalApprovalTime"></p><p id="arrivalApprovalRemarks"></p>
           </section>
         </div>
@@ -2854,13 +2860,51 @@
   const waypointLayerToggle = document.getElementById('waypointLayerToggle');
   const navigationWaypointToggle = document.getElementById('navigationWaypointToggle');
   const routeLineToggle = document.getElementById('routeLineToggle');
-  document.getElementById('mapAirportAssets').innerHTML = mapAssetMarkup();
-  document.getElementById('navigationMapAssets').innerHTML = mapAssetMarkup();
+  // Runway designators derived from the RWY_*.svg centerline geometry: the
+  // number comes from the approach course (heading/10), and L/C/R from each
+  // parallel centerline's lateral offset as seen on approach. Coordinates are
+  // in the shared -600..600 map space, anchored at each threshold.
+  const RUNWAY_LABELS = {
+    IBLT: [{x:-112.5,y:175.13,hdg:193.9,label:'19'},{x:-112.5,y:175.13,hdg:13.9,label:'01'}],
+    IBRD: [{x:-14.47,y:-389.11,hdg:260.0,label:'26'},{x:-14.47,y:-389.11,hdg:80.0,label:'08'}],
+    IBTH: [{x:57.56,y:-45.01,hdg:270.0,label:'27'},{x:57.56,y:-45.01,hdg:90.0,label:'09'}],
+    IDCS: [{x:-35.26,y:-453.99,hdg:252.9,label:'25'},{x:-62.93,y:-445.47,hdg:72.9,label:'07'}],
+    IGAR: [{x:-149.87,y:222.21,hdg:222.1,label:'22'},{x:-176.94,y:252.13,hdg:42.1,label:'04'}],
+    IHEN: [{x:171.13,y:411.92,hdg:172.0,label:'17'},{x:171.13,y:411.92,hdg:352.0,label:'35'}],
+    IIAB: [{x:256.12,y:408.64,hdg:275.0,label:'27L'},{x:256.37,y:405.75,hdg:275.0,label:'27R'},{x:207.94,y:404.43,hdg:95.0,label:'09R'},{x:208.19,y:401.53,hdg:95.0,label:'09L'}],
+    IJAF: [{x:479.16,y:-3.7,hdg:250.9,label:'25'},{x:443.89,y:8.53,hdg:70.9,label:'07'}],
+    IKFL: [{x:-437.43,y:-35.66,hdg:157.0,label:'16'},{x:-452.98,y:-7.66,hdg:67.0,label:'07'},{x:-412.75,y:-24.74,hdg:247.0,label:'25'},{x:-420.36,y:4.57,hdg:337.0,label:'34'}],
+    ILAR: [{x:232.67,y:314.34,hdg:243.9,label:'24'},{x:192.51,y:334.04,hdg:63.9,label:'06'}],
+    ILKL: [{x:225.9,y:-165.15,hdg:268.9,label:'27'},{x:225.9,y:-165.15,hdg:88.9,label:'09'}],
+    IMLR: [{x:-175.33,y:139.63,hdg:246.0,label:'25'},{x:-213.67,y:156.7,hdg:66.0,label:'07'}],
+    IPAP: [{x:314.96,y:321.56,hdg:174.1,label:'17'},{x:319.47,y:364.68,hdg:354.1,label:'35'}],
+    IPPH: [{x:170.05,y:-225.82,hdg:151.0,label:'15'},{x:162.32,y:-212.14,hdg:111.0,label:'11'},{x:208.22,y:-194.49,hdg:291.0,label:'29'},{x:192.23,y:-185.8,hdg:331.0,label:'33'}],
+    IRFD: [{x:-8.82,y:195.93,hdg:247.0,label:'25L'},{x:-1.37,y:188.69,hdg:247.0,label:'25C'},{x:-13.94,y:190.81,hdg:247.0,label:'25R'},{x:-51.52,y:214.09,hdg:67.0,label:'07R'},{x:-42.7,y:206.27,hdg:67.0,label:'07C'},{x:-54.5,y:208.06,hdg:67.0,label:'07L'}],
+    ISAU: [{x:-441.9,y:273.97,hdg:266.2,label:'27'},{x:-480.24,y:276.49,hdg:86.2,label:'09'}],
+    ISCM: [{x:360.79,y:-50.09,hdg:126.2,label:'13'},{x:360.79,y:-50.09,hdg:306.2,label:'31'}],
+    ISKP: [{x:265.43,y:122.69,hdg:231.1,label:'23'},{x:243.45,y:140.45,hdg:51.1,label:'05'}],
+    ITEY: [{x:-426.81,y:-103.15,hdg:133.0,label:'13'},{x:-404.42,y:-82.27,hdg:313.0,label:'31'}],
+    ITKO: [{x:-104.5,y:-345.02,hdg:128.1,label:'13'},{x:-58.7,y:-337.97,hdg:200.1,label:'20'},{x:-64.18,y:-313.39,hdg:308.1,label:'31'}],
+    ITRC: [{x:-21.33,y:303.55,hdg:180.3,label:'18'},{x:-21.33,y:303.55,hdg:0.3,label:'36'}],
+    IZOL: [{x:423.03,y:25.76,hdg:106.0,label:'11'},{x:472.12,y:39.85,hdg:286.0,label:'29'}]
+  };
+  function runwayLabelMarkup(){
+    return Object.values(RUNWAY_LABELS).flat().map(item=>{
+      const radians=item.hdg*Math.PI/180;
+      // Nudge the label from the threshold back along the approach path so it
+      // sits on the centerline start rather than on the runway markings.
+      const x=item.x-Math.sin(radians)*7;
+      const y=item.y+Math.cos(radians)*7;
+      return `<g class="map-runway-asset map-runway-point" data-x="${x.toFixed(2)}" data-y="${y.toFixed(2)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)})"><text class="map-runway-label" x="0" y="2" text-anchor="middle">${item.label}</text></g>`;
+    }).join('');
+  }
+  document.getElementById('mapAirportAssets').innerHTML = mapAssetMarkup() + runwayLabelMarkup();
+  document.getElementById('navigationMapAssets').innerHTML = mapAssetMarkup() + runwayLabelMarkup();
 
   function waypointLayerMarkup(){
     return Object.entries(WAYPOINTS).map(([code,p])=>{
       const q = mapPoint(p);
-      return `<g class="map-waypoint-point" data-x="${q.x}" data-y="${q.y}" transform="translate(${q.x} ${q.y})"><circle class="map-waypoint-dot" cx="0" cy="0" r="2.4"/><text class="map-waypoint-label" x="4" y="-3" font-size="7">${code}</text></g>`;
+      return `<g class="map-waypoint-point" data-x="${q.x}" data-y="${q.y}" transform="translate(${q.x} ${q.y})"><circle class="map-waypoint-dot" cx="0" cy="0" r="3"/><text class="map-waypoint-label" x="5" y="-3.5" font-size="8.5">${code}</text></g>`;
     }).join('');
   }
   mapWaypointLayer.innerHTML = waypointLayerMarkup();
@@ -3064,7 +3108,7 @@
     const markerScale = Math.pow(scale, 1.12);
     const chartWaypointScale = Math.pow(scale, .80);
     setAnchoredScale(svg, '.map-route-marker, .map-airport-marker', markerScale);
-    setAnchoredScale(svg, '.map-waypoint-point', chartWaypointScale);
+    setAnchoredScale(svg, '.map-waypoint-point, .map-runway-point', chartWaypointScale);
     svg.querySelectorAll('.map-route-casing').forEach(node=>node.style.strokeWidth = `${9 * lineScale}px`);
     svg.querySelectorAll('.map-route-line').forEach(node=>node.style.strokeWidth = `${5 * lineScale}px`);
     svg.querySelectorAll('[data-base-dash]').forEach(node=>{
@@ -3084,7 +3128,7 @@
     const chartWaypointScale = Math.pow(scale, .80);
     const aircraftScale = Math.pow(scale, .82);
     setAnchoredScale(svg, '.navigation-route-marker', markerScale);
-    setAnchoredScale(svg, '.map-waypoint-point', chartWaypointScale);
+    setAnchoredScale(svg, '.map-waypoint-point, .map-runway-point', chartWaypointScale);
     svg.querySelectorAll('.navigation-route-casing').forEach(node=>node.style.strokeWidth = `${15 * lineScale}px`);
     svg.querySelectorAll('.navigation-route-line').forEach(node=>{
       node.style.strokeWidth = `${7 * lineScale}px`;
@@ -4999,7 +5043,7 @@
       ['Remarks & Customs',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—'],['Departure customs',readableCustomsStatus(currentCustoms?.departure?.status||'Not requested')],['Departure agent',currentCustoms?.departure?.agentDiscordUsername||'—'],['Departure signature',currentCustoms?.departure?.signature||'—'],['Arrival customs',readableCustomsStatus(currentCustoms?.arrival?.status||'Not requested')],['Arrival agent',currentCustoms?.arrival?.agentDiscordUsername||'—'],['Arrival signature',currentCustoms?.arrival?.signature||'—'],['Customs remarks',currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks||'—']]]
     ];
     const grid=document.getElementById('reviewGrid'); grid.innerHTML='';
-    cards.forEach(([title,step,rows], index)=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><div class="review-card-head"><span class="review-index">${String(index + 1).padStart(2,'0')}</span><h4>${title}</h4></div><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
+    cards.forEach(([title,step,rows], index)=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><div class="review-card-head"><span class="review-index">${String(index + 1).padStart(2,'0')}</span><h4>${title}</h4></div><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd${k.toLowerCase().includes('signature')&&String(v)!=='—'?' class="sig-script"':''}>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
     setCustomsWorkflow(currentPlanSnapshot || {});
   }
   let autosaveTimer;
@@ -5376,7 +5420,7 @@
     if(document.body.classList.contains('filed')) buildReview();
     document.getElementById('navigationEmpty').style.display='none';
     document.getElementById('navigationTitle').textContent=data.plan?.name||data.requestedCallsign||'Live flight';
-    document.getElementById('navigationSubtitle').textContent=`${data.plan?.fields?.depAirport||'----'} → ${data.plan?.fields?.arrAirport||'----'} · tracking ${data.requestedCallsign||'filed callsign'}`;
+    document.getElementById('navigationSubtitle').textContent=`${data.plan?.fields?.depAirport||'----'} → ${data.plan?.fields?.arrAirport||'----'} · tracking ${data.plan?.fields?.fdCallsign||data.requestedCallsign||'filed callsign'}`;
     document.getElementById('navigationFeedSource').textContent=data.feedSource==='websocket'?'WebSocket relay':'Server cache';
     const ownDisplayCallsign=data.aircraft?(data.aircraft.displayCallsign||data.aircraft.callsign):null;
     document.getElementById('navigationStatus').textContent=data.aircraft
