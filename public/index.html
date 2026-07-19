@@ -944,6 +944,7 @@
   .review-card h4{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
   .review-card dl{margin:0;display:grid;grid-template-columns:130px 1fr;gap:6px 10px;font-size:11px}
   .review-card dt{font-weight:700;color:var(--ink-soft);text-transform:uppercase;font-size:9.5px;letter-spacing:.04em} .review-card dd{margin:0;word-break:break-word;font-weight:600}
+  .review-card.pdc-craft-card{grid-column:1/-1;border-top-color:#c68529;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,247,225,.78))}.pdc-summary-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding:9px 11px;border:1px solid var(--rule-strong);border-radius:5px;background:#fff}.pdc-summary-status strong{font:900 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em}.pdc-summary-status span{font-size:10px;color:var(--ink-soft);text-align:right}.pdc-summary-status.issued{border-color:#73a98e;background:#e8f5ee}.pdc-summary-status.awaiting{border-color:#d3ae62;background:#fff3d6}.pdc-craft-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.pdc-craft-item{min-width:0;padding:10px;border:1px solid var(--rule);border-radius:5px;background:rgba(255,255,255,.8)}.pdc-craft-item .craft-letter{display:inline-grid;width:25px;height:25px;place-items:center;margin-bottom:7px;border-radius:4px;background:var(--ink);color:#fff;font:900 14px 'JetBrains Mono',monospace}.pdc-craft-item strong{display:block;margin-bottom:4px;font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft)}.pdc-craft-item p{margin:0;font-size:11px;font-weight:700;line-height:1.45;word-break:break-word}.pdc-summary-remarks{margin-top:9px;padding:10px;border:1px dashed var(--rule-strong);border-radius:5px;background:rgba(255,255,255,.6);font-size:11px;line-height:1.5}.pdc-summary-remarks strong{display:block;margin-bottom:3px;font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft)}@media(max-width:980px){.pdc-craft-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pdc-craft-item:last-child{grid-column:1/-1}}@media(max-width:560px){.pdc-craft-grid{grid-template-columns:1fr}.pdc-craft-item:last-child{grid-column:auto}}
   .review-edit{position:absolute;right:10px;top:9px;border:0;background:transparent;text-decoration:underline;cursor:pointer;color:var(--ink-soft);font-size:10px;z-index:1}
   .autosave-state{font-size:10px;color:#b8c8c4;margin-left:auto}
   .customs-link-box{margin:12px 0;padding:12px;border:1px dashed var(--rule-strong);background:rgba(255,255,255,.28);font-size:11px;display:none}
@@ -1304,6 +1305,10 @@
   .navigation-label-meta.own{fill:#bdf3da}
   .navigation-label-meta.warning{fill:#ffc2ba}
   .navigation-attribution{padding:7px 12px;background:#0e181e;color:#8fa2a6;font-size:9px;text-align:right}.navigation-attribution a{color:#b8cfca}
+  .navigation-direct-popover{position:absolute;z-index:12;display:none;width:min(285px,calc(100% - 24px));padding:12px;border:1px solid #7be1ba;border-radius:7px;background:#16262e;color:#edf6f3;box-shadow:0 14px 32px rgba(0,0,0,.4)}
+  .navigation-direct-popover.visible{display:block}.navigation-direct-popover strong{display:block;font:900 15px 'JetBrains Mono',monospace;color:#ffd06f}.navigation-direct-popover p{margin:5px 0 10px;font-size:11px;line-height:1.4;color:#b8cbca}.navigation-direct-actions{display:flex;flex-wrap:wrap;gap:7px}.navigation-direct-actions button{border:1px solid #8ba4a5;border-radius:5px;padding:7px 9px;background:#20343d;color:#edf6f3;font-size:10px;font-weight:900;cursor:pointer}.navigation-direct-actions button.primary{background:#197d70;border-color:#7be1ba}.navigation-direct-actions button.danger{background:#6d302a;border-color:#d48f85}
+  .heading-guidance{padding:13px 16px 16px;background:#101b22;border-top:1px solid rgba(255,255,255,.12);color:#eaf2f0}.heading-guidance-head{display:flex;justify-content:space-between;gap:10px;margin-bottom:9px;font:800 9px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.08em;color:#9eb3b5}.heading-guidance-track{position:relative;height:58px;border:1px solid #354950;border-radius:999px;background:linear-gradient(90deg,rgba(197,71,58,.18),rgba(213,168,74,.12) 28%,rgba(82,176,134,.16) 50%,rgba(213,168,74,.12) 72%,rgba(197,71,58,.18));overflow:hidden}.heading-guidance-track::before{content:'';position:absolute;left:50%;top:5px;bottom:5px;width:2px;background:rgba(255,255,255,.4)}.heading-guidance-track::after{content:'ALIGNED';position:absolute;left:50%;bottom:3px;transform:translateX(-50%);font:700 7px 'JetBrains Mono',monospace;color:#78918e}.heading-guidance-orb{position:absolute;top:50%;left:50%;width:48px;height:48px;border-radius:50%;transform:translate(-50%,-50%);display:grid;place-items:center;border:3px solid #c5d5d1;background:#536762;color:#fff;font:900 12px 'JetBrains Mono',monospace;box-shadow:0 4px 13px rgba(0,0,0,.35);transition:left .25s ease,background .25s ease,border-color .25s ease}.heading-guidance-orb.aligned{background:#287b5d;border-color:#80d6a8}.heading-guidance-orb.caution{background:#ad7c20;border-color:#ffd06f}.heading-guidance-orb.warning{background:#a5382c;border-color:#ff8b7d}.heading-guidance-message{text-align:center;margin-top:7px;font:800 10px 'JetBrains Mono',monospace;color:#c8d7d4}
+  .navigation-runway-control{display:grid;gap:9px}.navigation-runway-control select{width:100%;padding:9px;border:1px solid var(--rule-strong);border-radius:5px;background:#fff;color:var(--ink);font-weight:800}.navigation-runway-control .btn-row{display:grid;grid-template-columns:1fr}.navigation-control-status{min-height:17px;font-size:10px;color:var(--ink-soft);font-weight:700}.navigation-control-status.error{color:var(--red)}.navigation-control-status.ok{color:var(--teal-dark)}
   .navigation-side{display:grid;gap:14px}.navigation-side-card{background:var(--paper);color:var(--ink);padding:16px}
   .navigation-side-card h3{margin:0 0 12px;text-transform:uppercase;letter-spacing:.08em;font-size:11px}
   .navigation-telemetry{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.navigation-stat{border:1px solid var(--rule);background:#fff;padding:9px;min-height:65px}.navigation-stat span{display:block;font:700 8.5px 'JetBrains Mono',monospace;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px}.navigation-stat strong{font-size:14px;line-height:1.2}.navigation-stat.wide{grid-column:1/-1}
@@ -1841,9 +1846,11 @@
               <g id="navigationDestinationLayer"></g><g id="navigationRouteLayer"></g><g id="navigationAircraftLayer"></g>
               <g id="navigationDistanceLayer"></g>
             </svg>
+            <div class="navigation-direct-popover" id="navigationDirectPopover"><strong id="navigationDirectCode">—</strong><p id="navigationDirectMessage">Fly directly to this waypoint without rewriting the filed route.</p><div class="navigation-direct-actions"><button class="primary" id="navigationDirectConfirm" type="button">Direct-To</button><button id="navigationDirectCancel" type="button">Cancel</button><button class="danger" id="navigationDirectClear" type="button">Resume cleared route</button></div></div>
             <div class="navigation-empty" id="navigationEmpty"><strong>No live data yet</strong>Save a flight plan, then select Navigate with Flight Plan.</div>
           </div>
-          <div class="navigation-attribution">Aircraft icons by <a href="https://adsb-radar.com/" target="_blank" rel="noopener noreferrer">ADS-B Radar for macOS</a>.</div>
+          <div class="heading-guidance" id="headingGuidance"><div class="heading-guidance-head"><span>Heading alignment</span><span id="headingGuidanceDelta">No target</span></div><div class="heading-guidance-track"><div class="heading-guidance-orb" id="headingGuidanceOrb">—</div></div><div class="heading-guidance-message" id="headingGuidanceMessage">Live target heading will appear when the aircraft is visible.</div></div>
+          <div class="navigation-attribution">Click any visible waypoint for Direct-To. Aircraft icons by <a href="https://adsb-radar.com/" target="_blank" rel="noopener noreferrer">ADS-B Radar for macOS</a>.</div>
         </section>
         <aside class="navigation-side">
           <section class="navigation-side-card"><h3>Flight telemetry</h3><div class="navigation-telemetry">
@@ -1854,7 +1861,7 @@
             <div class="navigation-stat"><span>Target heading</span><strong id="navTargetHeading">—</strong></div>
             <div class="navigation-stat"><span>Current airspace</span><strong id="navAirspace">—</strong></div>
             <div class="navigation-stat"><span>Sector frequency</span><strong id="navAirspaceFrequency">—</strong></div>
-            <div class="navigation-stat"><span>Clearance mode</span><strong id="navClearanceMode">Filed route</strong></div>
+            <div class="navigation-stat"><span>Clearance mode</span><strong id="navClearanceMode">Filed route</strong></div><div class="navigation-stat"><span>Pilot Direct-To</span><strong id="navDirectTo">—</strong></div>
             <div class="navigation-stat"><span>Next waypoint</span><strong id="navNextWaypoint">—</strong></div>
             <div class="navigation-stat"><span>To next</span><strong id="navDistanceNext">—</strong></div>
             <div class="navigation-stat"><span>Remaining</span><strong id="navRemaining">—</strong></div>
@@ -1867,6 +1874,7 @@
             <div class="navigation-stat"><span>Assigned altitude</span><strong id="navPdcAltitude">—</strong></div>
             <div class="navigation-stat wide"><span>PDC remarks</span><strong id="navPdcRemarks">—</strong></div>
           </div></section>
+          <section class="navigation-side-card"><h3>Active arrival runway</h3><div class="navigation-runway-control"><select id="navArrivalRunwaySelect" aria-label="Active arrival runway"><option value="">Choose arrival runway</option></select><div class="btn-row"><button class="btn-primary" id="navArrivalRunwayApply" type="button">Update arrival runway</button></div><div class="navigation-control-status" id="navArrivalRunwayStatus">Uses the runway currently saved in the flight plan.</div></div></section>
           <section class="navigation-side-card"><h3>Traffic advisories</h3><div class="traffic-advisories" id="trafficAdvisories"><div class="section-note">No tracked aircraft selected.</div></div></section>
           <section class="navigation-side-card"><h3>Flight progression</h3><div class="flight-milestones" id="flightMilestones"></div></section>
           <section class="navigation-side-card" id="navigationWorkflowCard"><h3>Clearance & cargo-inspection links</h3><div class="navigation-customs-actions"><button class="btn-primary" id="navPdcBtn" type="button">Copy PDC link</button><button class="btn-ghost" id="navDepartureCustomsBtn" type="button">Copy departure customs link</button><button class="btn-primary" id="navArrivalCustomsBtn" type="button" disabled>Arrival inspection locked</button></div></section>
@@ -3377,7 +3385,7 @@
     return Object.entries(WAYPOINTS).map(([code,p])=>{
       const q = mapPoint(p);
       const labelWidth=Math.max(44,code.length*7+24);
-      return `<g class="map-waypoint-point" tabindex="0" role="button" aria-label="Add ${code} to route" data-map-clickable="waypoint" data-chart-waypoint="${code}" data-x="${q.x}" data-y="${q.y}" transform="translate(${q.x} ${q.y})"><circle class="map-waypoint-hit" cx="0" cy="0" r="17"/><rect class="map-waypoint-hit" x="-10" y="-23" width="${labelWidth}" height="32" rx="8"/><circle class="map-waypoint-dot" cx="0" cy="0" r="3"/><text class="map-waypoint-label" x="5" y="-3.5" font-size="8.5">${code}</text></g>`;
+      return `<g class="map-waypoint-point" tabindex="0" role="button" aria-label="Select ${code}" data-map-clickable="waypoint" data-chart-waypoint="${code}" data-x="${q.x}" data-y="${q.y}" transform="translate(${q.x} ${q.y})"><circle class="map-waypoint-hit" cx="0" cy="0" r="17"/><rect class="map-waypoint-hit" x="-10" y="-23" width="${labelWidth}" height="32" rx="8"/><circle class="map-waypoint-dot" cx="0" cy="0" r="3"/><text class="map-waypoint-label" x="5" y="-3.5" font-size="8.5">${code}</text></g>`;
     }).join('');
   }
   mapWaypointLayer.innerHTML = waypointLayerMarkup();
@@ -5806,6 +5814,9 @@
   let navigationTimer = null;
   let navigationNetworkTimer = null;
   let navigationBusy = false;
+  let latestNavigationData = null;
+  let navigationDirectPending = null;
+  let navigationRunwayUpdating = false;
 
   function readableCustomsStatus(status){
     return String(status || 'not-requested').replaceAll('-', ' ');
@@ -5841,6 +5852,35 @@
     if(initial) parts.push(`Initial climb ${initial}`);
     if(cruise) parts.push(`${delay===null?'After departure':`${delay} minute${delay===1?'':'s'} after departure`}, climb cruising ${cruise}`);
     return parts.join(' · ') || '—';
+  }
+
+  function htmlText(value){
+    return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+  }
+  function pdcRouteSummary(clearance=currentPdc?.clearance){
+    if(!clearance)return 'Awaiting controller route clearance.';
+    const fixes=(clearance.waypoints||[]).map(item=>String(item?.wp||'').trim()).filter(Boolean);
+    const routeText=fixes.length?fixes.join(' → '):'Direct / filed route';
+    return clearance.radarVectorsUntil?`Radar vectors to ${clearance.radarVectorsUntil}, then ${routeText}.`:routeText;
+  }
+  function pdcSummaryCardHtml(index){
+    const requests=workflowRequests(currentPlanSnapshot||{});
+    const clearance=currentPdc?.clearance||null;
+    const issued=currentPdc?.status==='issued'&&clearance;
+    const callsign=value('fdCallsign')==='—'?'Aircraft':value('fdCallsign');
+    const issuedTime=issued&&clearance.issuedAt?new Date(clearance.issuedAt).toLocaleString():'';
+    const statusText=issued?'PDC issued':'PDC requested · awaiting controller submission';
+    const statusMeta=issued?`${clearance.controllerName?`Controller ${htmlText(clearance.controllerName)} · `:''}${htmlText(issuedTime)}`:'The filed flight plan remains active until the controller submits all CRAFT fields together.';
+    const clearanceText=issued?`${callsign} cleared to ${clearance.clearanceLimit||value('arrAirport')}.`:`${callsign} awaiting clearance to ${value('arrAirport')}.`;
+    const activeArrivalRunway=normalizeRunwayDesignator(currentPlanSnapshot?.data?.fields?.arrRunwayEffective||currentPlanSnapshot?.data?.fields?.arrRunway||arrRunwayEffective.value||arrRunway.value||'');
+    const issuedArrivalRunway=normalizeRunwayDesignator(clearance?.arrRunway||'');
+    const runwayNote=activeArrivalRunway?` Arrival runway RWY ${activeArrivalRunway}${issuedArrivalRunway&&issuedArrivalRunway!==activeArrivalRunway?` (updated in flight from RWY ${issuedArrivalRunway})`:''}.`:'';
+    const routeText=issued?`${pdcRouteSummary(clearance)}${runwayNote}`:'Awaiting route clearance.';
+    const altitudeText=issued?pdcAltitudeSummary(clearance):'Awaiting assigned altitude.';
+    const frequencyText=issued?(clearance.departureFrequency||'Not assigned'):'Awaiting departure frequency.';
+    const squawkText=issued?(clearance.squawk||'Not assigned'):'Awaiting squawk assignment.';
+    const remarks=issued?(clearance.remarks||'No controller remarks.'):'No issued remarks yet.';
+    return `<button class="review-edit no-export" type="button">Amend</button><div class="review-card-head"><span class="review-index">${String(index).padStart(2,'0')}</span><h4>Pre-Departure Clearance · CRAFT</h4></div><div class="pdc-summary-status ${issued?'issued':'awaiting'}"><strong>${htmlText(statusText)}</strong><span>${statusMeta}</span></div><div class="pdc-craft-grid"><div class="pdc-craft-item"><span class="craft-letter">C</span><strong>Clearance</strong><p>${htmlText(clearanceText)}</p></div><div class="pdc-craft-item"><span class="craft-letter">R</span><strong>Route</strong><p>${htmlText(routeText)}</p></div><div class="pdc-craft-item"><span class="craft-letter">A</span><strong>Altitude</strong><p>${htmlText(altitudeText)}</p></div><div class="pdc-craft-item"><span class="craft-letter">F</span><strong>Frequency</strong><p>${htmlText(frequencyText)}</p></div><div class="pdc-craft-item"><span class="craft-letter">T</span><strong>Transponder</strong><p>${htmlText(squawkText)}</p></div></div><div class="pdc-summary-remarks"><strong>Remarks</strong>${htmlText(remarks)}</div>`;
   }
 
   function absoluteSiteUrl(path){
@@ -6070,18 +6110,19 @@
       ['Remarks',6,[['Remarks',manifestEl.querySelector('.remarks')?.value.trim()||'—']]]
     ];
     const requests=workflowRequests(currentPlanSnapshot||{});
-    const showWorkflow=requests.pdc||requests.departure||requests.arrival||currentPdc?.status==='issued'||(currentCustoms?.departure?.status&&currentCustoms.departure.status!=='not-requested')||(currentCustoms?.arrival?.status&&currentCustoms.arrival.status!=='not-requested');
-    if(showWorkflow){
+    const pdcVisible=requests.pdc||currentPdc?.status==='issued';
+    if(pdcVisible) cards.push(['__PDC_CRAFT__',6,[]]);
+    const customsVisible=requests.departure||requests.arrival||(currentCustoms?.departure?.status&&currentCustoms.departure.status!=='not-requested')||(currentCustoms?.arrival?.status&&currentCustoms.arrival.status!=='not-requested');
+    if(customsVisible){
       const workflowRows=[];
-      if(requests.pdc||currentPdc?.status==='issued') workflowRows.push(['PDC status',currentPdc?.status==='issued'?'Issued':'Requested'],['PDC controller',currentPdc?.clearance?.controllerName||'—'],['PDC squawk',currentPdc?.clearance?.squawk||'—'],['PDC assigned altitude',pdcAltitudeSummary()],['PDC departure frequency',currentPdc?.clearance?.departureFrequency||value('pdcDepartureFrequency')],['PDC radar vectors',currentPdc?.clearance?.radarVectorsUntil?`Until ${currentPdc.clearance.radarVectorsUntil}`:'—'],['PDC remarks',currentPdc?.clearance?.remarks||value('pdcRemarks')]);
       if(requests.departure||(currentCustoms?.departure?.status&&currentCustoms.departure.status!=='not-requested')) workflowRows.push(['Departure inspection',readableCustomsStatus(currentCustoms?.departure?.status||'Requested')],['Departure agent',currentCustoms?.departure?.agentDiscordUsername||'—'],['Departure signature',currentCustoms?.departure?.signature||'—']);
       if(requests.arrival||(currentCustoms?.arrival?.status&&currentCustoms.arrival.status!=='not-requested')) workflowRows.push(['Arrival inspection',readableCustomsStatus(currentCustoms?.arrival?.status||'Requested')],['Arrival agent',currentCustoms?.arrival?.agentDiscordUsername||'—'],['Arrival signature',currentCustoms?.arrival?.signature||'—']);
       const inspectionRemarks=currentCustoms?.departure?.remarks||currentCustoms?.arrival?.remarks;
       if(inspectionRemarks) workflowRows.push(['Inspection remarks',inspectionRemarks]);
-      cards.push(['PDC & Cargo Inspections',6,workflowRows]);
+      cards.push(['Cargo Inspections',6,workflowRows]);
     }
     const grid=document.getElementById('reviewGrid'); grid.innerHTML='';
-    cards.forEach(([title,step,rows], index)=>{ const card=document.createElement('section'); card.className='review-card'; card.innerHTML=`<button class="review-edit no-export" type="button">Amend</button><div class="review-card-head"><span class="review-index">${String(index + 1).padStart(2,'0')}</span><h4>${title}</h4></div><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd${k.toLowerCase().includes('signature')&&String(v)!=='—'?' class="sig-script"':''}>${String(v).replace(/</g,'&lt;')}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
+    cards.forEach(([title,step,rows], index)=>{ const card=document.createElement('section'); card.className=title==='__PDC_CRAFT__'?'review-card pdc-craft-card':'review-card'; card.innerHTML=title==='__PDC_CRAFT__'?pdcSummaryCardHtml(index+1):`<button class="review-edit no-export" type="button">Amend</button><div class="review-card-head"><span class="review-index">${String(index + 1).padStart(2,'0')}</span><h4>${title}</h4></div><dl>${rows.map(([k,v])=>`<dt>${k}</dt><dd${k.toLowerCase().includes('signature')&&String(v)!=='—'?' class="sig-script"':''}>${htmlText(v)}</dd>`).join('')}</dl>`; card.querySelector('button').addEventListener('click',()=>{document.body.classList.remove('filed');document.getElementById('editBtn').style.display='none';document.getElementById('createPlanBtn').style.display='inline-flex';showWizardStep(step)}); grid.appendChild(card); });
     setPdcWorkflow(currentPlanSnapshot || {});
     setCustomsWorkflow(currentPlanSnapshot || {});
   }
@@ -6320,6 +6361,144 @@
     return '/aircraft-icons/c0.svg';
   }
 
+  function hideNavigationDirectPopover(){
+    navigationDirectPending=null;
+    document.getElementById('navigationDirectPopover').classList.remove('visible');
+  }
+
+  function showNavigationDirectPopover(code,clientX,clientY){
+    if(!WAYPOINTS[code]) return;
+    navigationDirectPending=code;
+    document.getElementById('navigationDirectCode').textContent=code;
+    const current=latestNavigationData?.route?.directTo?.code||latestNavigationData?.plan?.navigation?.directTo?.code||'';
+    document.getElementById('navigationDirectMessage').textContent=current===code
+      ? `${code} is already the active pilot Direct-To waypoint.`
+      : `Fly directly to ${code}, then continue toward the remaining cleared route and arrival.`;
+    document.getElementById('navigationDirectConfirm').disabled=current===code;
+    document.getElementById('navigationDirectClear').style.display=current?'':'none';
+    const pop=document.getElementById('navigationDirectPopover');
+    const wrap=pop.parentElement;
+    const rect=wrap.getBoundingClientRect();
+    pop.classList.add('visible');
+    const width=pop.offsetWidth||285,height=pop.offsetHeight||130;
+    pop.style.left=`${Math.max(8,Math.min(rect.width-width-8,clientX-rect.left+10))}px`;
+    pop.style.top=`${Math.max(8,Math.min(rect.height-height-8,clientY-rect.top+10))}px`;
+  }
+
+  async function updateNavigationOverrides(patch,statusElement=null){
+    if(!currentPlanId) throw new Error('Open a saved flight plan first.');
+    const response=await fetch(`/api/navigation/${encodeURIComponent(currentPlanId)}`,{
+      method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(patch)
+    });
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(result.error||'Could not update navigation.');
+    if(result.plan){
+      currentPlanSnapshot=result.plan;
+      currentPdc=result.plan.pdc||currentPdc;
+      currentCustoms=result.plan.customs||currentCustoms;
+    }
+    if(statusElement){statusElement.classList.remove('error');statusElement.classList.add('ok');}
+    await refreshNavigationData();
+    return result;
+  }
+
+  document.getElementById('navigationRadarSvg').addEventListener('click',event=>{
+    const waypoint=event.target.closest?.('[data-chart-waypoint]');
+    if(!waypoint)return;
+    event.preventDefault();event.stopPropagation();
+    showNavigationDirectPopover(waypoint.dataset.chartWaypoint,event.clientX,event.clientY);
+  });
+  document.getElementById('navigationRadarSvg').addEventListener('keydown',event=>{
+    if(event.key!=='Enter'&&event.key!==' ')return;
+    const waypoint=event.target.closest?.('[data-chart-waypoint]');
+    if(!waypoint)return;
+    event.preventDefault();
+    const rect=waypoint.getBoundingClientRect();
+    showNavigationDirectPopover(waypoint.dataset.chartWaypoint,rect.left+rect.width/2,rect.top+rect.height/2);
+  });
+  document.getElementById('navigationDirectCancel').addEventListener('click',hideNavigationDirectPopover);
+  document.getElementById('navigationDirectConfirm').addEventListener('click',async()=>{
+    const code=navigationDirectPending;
+    if(!code)return;
+    const button=document.getElementById('navigationDirectConfirm');
+    button.disabled=true;button.textContent='Setting…';
+    try{
+      await updateNavigationOverrides({directTo:code});
+      hideNavigationDirectPopover();
+    }catch(error){document.getElementById('navigationDirectMessage').textContent=error.message;}
+    finally{button.disabled=false;button.textContent='Direct-To';}
+  });
+  document.getElementById('navigationDirectClear').addEventListener('click',async()=>{
+    const button=document.getElementById('navigationDirectClear');button.disabled=true;
+    try{await updateNavigationOverrides({directTo:null});hideNavigationDirectPopover();}
+    catch(error){document.getElementById('navigationDirectMessage').textContent=error.message;}
+    finally{button.disabled=false;}
+  });
+
+  function renderHeadingGuidance(data){
+    const orb=document.getElementById('headingGuidanceOrb');
+    const message=document.getElementById('headingGuidanceMessage');
+    const deltaLabel=document.getElementById('headingGuidanceDelta');
+    const target=Number(data.route?.bearingToNextDeg);
+    const heading=Number(data.aircraft?.heading);
+    orb.classList.remove('aligned','caution','warning');
+    if(!Number.isFinite(target)||!Number.isFinite(heading)){
+      orb.style.left='50%';orb.textContent='—';
+      deltaLabel.textContent='No target';
+      message.textContent='Live target heading will appear when the aircraft is visible.';
+      return;
+    }
+    const normalized=((Math.round(target)+359)%360)+1;
+    const delta=((target-heading+540)%360)-180;
+    const abs=Math.abs(delta);
+    const offset=Math.max(-42,Math.min(42,(delta/90)*42));
+    orb.style.left=`${50+offset}%`;
+    orb.textContent=`${String(normalized).padStart(3,'0')}°`;
+    const state=abs<=5?'aligned':abs<=40?'caution':'warning';
+    orb.classList.add(state);
+    deltaLabel.textContent=abs<=5?'Aligned':`${delta<0?'Left':'Right'} ${Math.round(abs)}°`;
+    message.textContent=abs<=5
+      ? `On target heading ${String(normalized).padStart(3,'0')}°.`
+      : `${state==='caution'?'Normal course correction':'Large heading correction'}: turn ${delta<0?'left':'right'} ${Math.round(abs)}° toward ${String(normalized).padStart(3,'0')}°.`;
+  }
+
+  function renderNavigationArrivalRunway(data){
+    const select=document.getElementById('navArrivalRunwaySelect');
+    const status=document.getElementById('navArrivalRunwayStatus');
+    const airport=airportCode(data.plan?.fields?.arrAirport||'');
+    const runways=RUNWAY_DATA[airport]||[];
+    const current=normalizeRunwayDesignator(data.plan?.fields?.arrRunwayEffective||data.plan?.fields?.arrRunway||'');
+    const optionSignature=`${airport}:${runways.map(item=>normalizeRunwayDesignator(item.label)).join(',')}`;
+    if(select.dataset.signature!==optionSignature){
+      select.innerHTML='<option value="">Choose arrival runway</option>'+runways.map(item=>{const value=normalizeRunwayDesignator(item.label);return `<option value="${value}">Runway ${value}</option>`;}).join('');
+      select.dataset.signature=optionSignature;
+    }
+    if(document.activeElement!==select&&current&&[...select.options].some(option=>option.value===current))select.value=current;
+    status.classList.remove('error','ok');
+    status.textContent=current?`Active arrival runway: ${airport} RWY ${current}.`:`Choose a mapped runway for ${airport||'the arrival airport'}.`;
+    document.getElementById('navArrivalRunwayApply').disabled=!runways.length||navigationRunwayUpdating;
+  }
+
+  document.getElementById('navArrivalRunwayApply').addEventListener('click',async()=>{
+    const select=document.getElementById('navArrivalRunwaySelect');
+    const status=document.getElementById('navArrivalRunwayStatus');
+    const runway=normalizeRunwayDesignator(select.value);
+    const airport=airportCode(latestNavigationData?.plan?.fields?.arrAirport||'');
+    if(!runway){status.className='navigation-control-status error';status.textContent='Choose an arrival runway first.';return;}
+    if(!confirm(`Update the active arrival runway to ${airport} RWY ${runway}?`))return;
+    navigationRunwayUpdating=true;
+    const button=document.getElementById('navArrivalRunwayApply');button.disabled=true;button.textContent='Updating…';
+    try{
+      await updateNavigationOverrides({arrivalRunway:runway},status);
+      if([...arrRunway.options].some(option=>option.value===runway))arrRunway.value=runway;
+      arrRunwayEffective.value=runway;
+      refreshRunwayControls();
+      if(document.body.classList.contains('filed'))buildReview();
+      status.textContent=`Arrival runway updated to ${airport} RWY ${runway}. Route guidance and the arrival alignment leg were recalculated.`;
+    }catch(error){status.className='navigation-control-status error';status.textContent=error.message;}
+    finally{navigationRunwayUpdating=false;button.disabled=false;button.textContent='Update arrival runway';}
+  });
+
   function renderNavigationMap(data){
     const routeLayer=document.getElementById('navigationRouteLayer');
     const destinationLayer=document.getElementById('navigationDestinationLayer');
@@ -6332,6 +6511,7 @@
       routeSvg+=`<polyline class="navigation-route-casing" points="${points}"/><polyline class="navigation-route-line" points="${points}"/>`;
     }
     nodes.forEach(node=>{
+      if(node.kind==='direct-origin')return;
       const isNext=node.code===nextCode;
       const x=node.mapPosition.x, y=node.mapPosition.y;
       routeSvg+=`<g class="navigation-route-marker" data-x="${x}" data-y="${y}" transform="translate(${x} ${y})"><circle class="navigation-route-node${isNext?' next':''}" cx="0" cy="0" r="${isNext?17:12}"/><text class="navigation-route-label" x="0" y="-23" text-anchor="middle">${escapeSvgText(node.code)}</text></g>`;
@@ -6394,14 +6574,22 @@
   function renderFlightMilestones(data){
     const tracking=data.plan?.tracking||{};
     const customs=data.plan?.customs||{};
-    const rows=[
-      ['Flight plan filed',Boolean(currentPlanId),'Saved to your account'],
-      ['Departure customs approved',customs.departure?.status==='approved',readableCustomsStatus(customs.departure?.status)],
+    const requests=workflowRequests({data:{fields:data.plan?.fields||{}},pdc:data.plan?.pdc,customs});
+    const rows=[['Flight plan filed',Boolean(currentPlanId),'Saved to your account']];
+    if(requests.pdc||data.plan?.pdc?.status==='issued'){
+      rows.push(['PDC clearance',data.plan?.pdc?.status==='issued',data.plan?.pdc?.status==='issued'?'Issued by controller':'Requested · awaiting controller']);
+    }
+    if(requests.departure||(customs.departure?.status&&customs.departure.status!=='not-requested')){
+      rows.push(['Departure cargo inspection',customs.departure?.status==='approved',readableCustomsStatus(customs.departure?.status)]);
+    }
+    rows.push(
       ['Aircraft observed at departure',Boolean(tracking.departureObservedAt),tracking.departureObservedAt?new Date(tracking.departureObservedAt).toLocaleTimeString():'Waiting'],
       ['Aircraft departed',Boolean(tracking.actualDepartureAt),tracking.actualDepartureAt?new Date(tracking.actualDepartureAt).toLocaleTimeString():'Waiting'],
-      ['Aircraft landed at destination',Boolean(tracking.actualArrivalAt),tracking.actualArrivalAt?new Date(tracking.actualArrivalAt).toLocaleTimeString():'Waiting'],
-      ['Arrival inspection approved',customs.arrival?.status==='approved',readableCustomsStatus(customs.arrival?.status)],
-    ];
+      ['Aircraft landed at destination',Boolean(tracking.actualArrivalAt),tracking.actualArrivalAt?new Date(tracking.actualArrivalAt).toLocaleTimeString():'Waiting']
+    );
+    if(requests.arrival||(customs.arrival?.status&&customs.arrival.status!=='not-requested')){
+      rows.push(['Arrival cargo inspection',customs.arrival?.status==='approved',readableCustomsStatus(customs.arrival?.status)]);
+    }
     const firstIncomplete=rows.findIndex(row=>!row[1]);
     document.getElementById('flightMilestones').innerHTML=rows.map((row,index)=>`<div class="flight-milestone ${row[1]?'complete':index===firstIncomplete?'active':''}"><div><strong>${escapeSvgText(row[0])}</strong><br><span>${escapeSvgText(row[2]||'')}</span></div></div>`).join('');
   }
@@ -6466,6 +6654,7 @@
   }
 
   function applyTrackingData(data){
+    latestNavigationData=data;
     const previousPdcIssuedAt=currentPdc?.clearance?.issuedAt||null;
     currentCustoms=data.plan?.customs||currentCustoms;
     currentPdc=data.plan?.pdc||currentPdc;
@@ -6477,6 +6666,11 @@
       routeType:data.plan?.routeType||currentPlanSnapshot?.data?.routeType||'waypoints',
     };
     currentPlanSnapshot={...(currentPlanSnapshot||{}),...data.plan,data:mergedPlanData,customs:currentCustoms,pdc:currentPdc,tracking:currentTracking};
+    const trackedArrivalRunway=normalizeRunwayDesignator(data.plan?.fields?.arrRunwayEffective||data.plan?.fields?.arrRunway||'');
+    if(trackedArrivalRunway){
+      arrRunwayEffective.value=trackedArrivalRunway;
+      if([...arrRunway.options].some(option=>option.value===trackedArrivalRunway))arrRunway.value=trackedArrivalRunway;
+    }
     setPdcWorkflow(data.plan||{});
     setCustomsWorkflow(data.plan||{});
     const newPdcIssuedAt=currentPdc?.clearance?.issuedAt||null;
@@ -6498,9 +6692,10 @@
     document.getElementById('navigationSubtitle').textContent=`${data.plan?.fields?.depAirport||'----'} → ${data.plan?.fields?.arrAirport||'----'} · tracking ${data.plan?.fields?.fdCallsign||data.requestedCallsign||'filed callsign'}`;
     document.getElementById('navigationFeedSource').textContent=data.feedSource==='websocket'?'WebSocket relay':'Server cache';
     const ownDisplayCallsign=data.aircraft?(data.aircraft.displayCallsign||data.aircraft.callsign):null;
-    const vectorText=data.route?.radarVectors?.active?` · radar vectors to ${data.route.radarVectors.targetCode}`:'';
+    const directText=data.route?.directTo?.active?` · direct ${data.route.directTo.code}`:'';
+    const vectorText=!directText&&data.route?.radarVectors?.active?` · radar vectors to ${data.route.radarVectors.targetCode}`:'';
     document.getElementById('navigationStatus').textContent=data.aircraft
-      ? `${ownDisplayCallsign} · ${data.aircraft.flightLevel} · ${Math.round(data.aircraft.groundSpeed)} KT · ${formatNm(data.route?.remainingNm)} remaining${data.route?.nextWaypoint?.code?` · next ${data.route.nextWaypoint.code}`:''}${vectorText}`
+      ? `${ownDisplayCallsign} · ${data.aircraft.flightLevel} · ${Math.round(data.aircraft.groundSpeed)} KT · ${formatNm(data.route?.remainingNm)} remaining${data.route?.nextWaypoint?.code?` · next ${data.route.nextWaypoint.code}`:''}${directText}${vectorText}`
       : `${data.requestedCallsign||'Filed aircraft'} is not currently visible. Other traffic remains displayed.`;
     document.getElementById('navAircraft').textContent=data.aircraft?`${ownDisplayCallsign} · ${data.aircraft.aircraftType||'Unknown type'}`:'Not found';
     document.getElementById('navAltitude').textContent=data.aircraft?`${data.aircraft.flightLevel} · ${Math.round(data.aircraft.altitude).toLocaleString()} ft`:'—';
@@ -6510,7 +6705,8 @@
     const currentSector=data.airspace?.currentSector;
     document.getElementById('navAirspace').textContent=currentSector?.label||'—';
     document.getElementById('navAirspaceFrequency').textContent=currentSector?(currentSector.frequency||currentSector.fallbackFrequency||'Unpublished'):'—';
-    document.getElementById('navClearanceMode').textContent=data.route?.radarVectors?.active?`Vectors to ${data.route.radarVectors.targetCode}`:'Cleared route';
+    document.getElementById('navClearanceMode').textContent=data.route?.directTo?.active?`Pilot Direct-To ${data.route.directTo.code}`:data.route?.radarVectors?.active?`Vectors to ${data.route.radarVectors.targetCode}`:'Cleared route';
+    document.getElementById('navDirectTo').textContent=data.route?.directTo?.active?data.route.directTo.code:'—';
     const pdcClearance=data.plan?.pdc?.clearance||currentPdc?.clearance||null;
     document.getElementById('navPdcController').textContent=pdcClearance?.controllerName||'—';
     document.getElementById('navPdcSquawk').textContent=pdcClearance?.squawk||'—';
@@ -6523,6 +6719,8 @@
     document.getElementById('navEta').textContent=formatEta(data.route?.etaMinutes);
     renderNavigationSidePanels(data);
     renderNavigationMap(data);
+    renderHeadingGuidance(data);
+    renderNavigationArrivalRunway(data);
     renderTrafficAdvisories(data);
     renderFlightMilestones(data);
   }

@@ -6,6 +6,7 @@ const { methodNotAllowed, readJsonBody, sendHandlerError, setNoStore } = require
 const {
   defaultCustoms,
   defaultPdc,
+  defaultNavigation,
   defaultTracking,
   ensurePlanShape,
   loadPlans,
@@ -54,6 +55,7 @@ module.exports = async (req, res) => {
       customsTokens: { departure: departureToken, arrival: arrivalToken },
       customsToken: departureToken,
       tracking: defaultTracking(),
+      navigation: defaultNavigation(),
       pdc: defaultPdc(),
       pdcToken,
     };

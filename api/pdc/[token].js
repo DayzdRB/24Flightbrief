@@ -105,7 +105,8 @@ function validateFrequency(value) {
 }
 
 function validateSquawk(value) {
-  const squawk = cleanText(value, 4);
+  const raw = String(value || '').trim();
+  const squawk = raw.replace(/\s+/g, '');
   if (!/^[0-7]{4}$/.test(squawk)) {
     const error = new Error('Squawk must contain exactly four digits from 0 through 7.');
     error.statusCode = 400;
@@ -248,6 +249,10 @@ module.exports = async (req, res) => {
       airspace: {
         startingSector: routeValidation.analysis.startingSector,
         nextSector: routeValidation.analysis.nextSector,
+        entryWaypointNode: routeValidation.analysis.entryWaypointNode,
+        entryWaypointIndex: routeValidation.analysis.entryWaypointIndex,
+        protectedWaypointNode: routeValidation.analysis.protectedWaypointNode,
+        protectedWaypointIndex: routeValidation.analysis.protectedWaypointIndex,
         amendmentLimitNode: routeValidation.analysis.amendmentLimitNode,
         amendmentLimitWaypointIndex: routeValidation.analysis.amendmentLimitWaypointIndex,
       },
