@@ -105,6 +105,17 @@ textarea{min-height:125px;resize:vertical}
 .action-button.changes{background:var(--amber);color:#2d210c}
 .action-button.reject{background:#fff;color:var(--red);border-color:#d7a29d}
 .action-button:hover{filter:brightness(.96)}
+.primary-card{border:2px solid var(--amber);box-shadow:0 6px 24px rgba(217,154,43,.14)}
+.step-badge{display:inline-grid;place-items:center;width:22px;height:22px;margin-right:8px;border-radius:50%;background:var(--amber);color:#2d210c;font-size:12px;font-weight:900;vertical-align:-3px}
+.collapse-card summary{list-style:none;cursor:pointer;padding:14px 18px;display:block;position:relative;user-select:none}
+.collapse-card summary::-webkit-details-marker{display:none}
+.collapse-card summary::after{content:"▸";position:absolute;right:18px;top:15px;color:var(--muted);font-size:13px;transition:transform .16s ease}
+.collapse-card[open] summary::after{transform:rotate(90deg)}
+.collapse-card[open] summary{border-bottom:1px solid var(--line)}
+.collapse-card summary h3{font-size:14px;margin:0;display:inline}
+.collapse-card summary p{font-size:11.5px;color:var(--muted);margin:3px 0 0}
+.collapse-card summary:hover{background:#f6f3ea}
+.signature-input{font-family:"Segoe Script","Bradley Hand","Brush Script MT","Comic Sans MS",cursive;font-size:17px;font-style:italic}
 .save-status{margin:14px 0 0;padding:11px 12px;border-radius:9px;background:#eeece5;color:#566166;font-size:12px;font-weight:800}
 .save-status.success{background:var(--green-soft);color:#18513c}
 .save-status.error{background:var(--red-soft);color:#702823}
@@ -154,10 +165,20 @@ textarea{min-height:125px;resize:vertical}
     <div id="app" class="hidden">
       <div class="content-grid">
         <div class="main-column">
-          <section class="card">
-            <div class="card-header">
-              <div><h3>Flight summary</h3><p>Identity fields are read-only. Route fields may be amended when required.</p></div>
+          <section class="card primary-card">
+            <div class="card-header"><div><h3><span class="step-badge">1</span>Cargo manifest</h3><p>Record one decision for every declared item, then sign and submit in step 2.</p></div></div>
+            <div class="cargo-toolbar">
+              <span id="decisionProgress" class="progress">0 of 0 reviewed</span>
+              <div class="bulk-actions">
+                <button id="acceptAllBtn" class="small-button" type="button">Accept all</button>
+                <button id="rejectAllBtn" class="small-button" type="button">Reject all</button>
+              </div>
             </div>
+            <div id="cargoList" class="cargo-list"></div>
+          </section>
+
+          <details class="card collapse-card">
+            <summary><h3>Flight summary</h3><p>Callsign, pilot, aircraft, and route. Route fields may be amended when required.</p></summary>
             <div class="card-body">
               <div class="field-grid">
                 <div class="field"><label for="callsign">Callsign</label><input id="callsign" readonly></div>
@@ -168,10 +189,10 @@ textarea{min-height:125px;resize:vertical}
                 <div class="field"><label for="cruiseAlt">Cruising altitude</label><input id="cruiseAlt"></div>
               </div>
             </div>
-          </section>
+          </details>
 
-          <section class="card">
-            <div class="card-header"><div><h3>Performance amendments</h3><p>Only change these values when an inspection requires a correction.</p></div></div>
+          <details class="card collapse-card">
+            <summary><h3>Performance amendments</h3><p>Only open this when an inspection requires a correction to the filed speeds.</p></summary>
             <div class="card-body">
               <div class="amendment-note"><strong>Note:</strong><span>Cargo weight does not alter ATC24 speeds. These fields are for correcting an inaccurate submitted plan, not inventing new performance numbers for sport.</span></div>
               <div class="field-grid">
@@ -185,34 +206,22 @@ textarea{min-height:125px;resize:vertical}
                 <div class="field"><label for="outNoFlaps">No-flaps landing</label><input id="outNoFlaps"></div>
               </div>
             </div>
-          </section>
+          </details>
 
-          <section class="card">
-            <div class="card-header"><div><h3>Inspection reference</h3><p>Use this as a quick guide; apply your organization’s actual rules where they differ.</p></div></div>
+          <details class="card collapse-card">
+            <summary><h3>Inspection reference</h3><p>Quick guide to what is generally allowed and what to reject.</p></summary>
             <div class="card-body">
               <div class="policy-grid">
                 <div class="policy-box allowed"><h4>Generally allowed</h4><ul><li>General merchandise, mail, and documents</li><li>Food, catering, medical, and humanitarian supplies</li><li>Machinery, electronics, vehicle parts, and luggage</li></ul></div>
                 <div class="policy-box restricted"><h4>Reject or request changes</h4><ul><li>Undeclared weapons, explosives, or illegal substances</li><li>Stolen goods, contraband, or unauthorized hazardous material</li><li>Improperly documented animals or hidden passengers</li></ul></div>
               </div>
             </div>
-          </section>
-
-          <section class="card">
-            <div class="card-header"><div><h3>Cargo manifest</h3><p>Record one decision for every declared item before approval or rejection.</p></div></div>
-            <div class="cargo-toolbar">
-              <span id="decisionProgress" class="progress">0 of 0 reviewed</span>
-              <div class="bulk-actions">
-                <button id="acceptAllBtn" class="small-button" type="button">Accept all</button>
-                <button id="rejectAllBtn" class="small-button" type="button">Reject all</button>
-              </div>
-            </div>
-            <div id="cargoList" class="cargo-list"></div>
-          </section>
+          </details>
         </div>
 
         <aside class="side-column">
-          <section class="card">
-            <div class="card-header"><div><h3>Submit inspection</h3><p id="agentLabel">Authenticated customs agent</p></div></div>
+          <section class="card primary-card">
+            <div class="card-header"><div><h3><span class="step-badge">2</span>Sign &amp; submit</h3><p id="agentLabel">Authenticated customs agent</p></div></div>
             <div class="card-body">
               <div class="phase-row field">
                 <label>Inspection phase</label>
@@ -221,7 +230,7 @@ textarea{min-height:125px;resize:vertical}
               <div class="current-state"><span>Current result</span><strong id="currentResult">Not requested</strong></div>
               <div class="form-stack">
                 <div class="field"><label for="remarks">Remarks or requested changes</label><textarea id="remarks" placeholder="Explain rejected cargo, corrections, or conditions for approval."></textarea></div>
-                <div class="field"><label for="signature">Signature</label><input id="signature" autocomplete="off" placeholder="Roblox username"><div class="privacy">Use your Roblox username, not your real name.</div></div>
+                <div class="field"><label for="signature">Signature</label><input id="signature" class="signature-input" autocomplete="off" placeholder="Roblox username"><div class="privacy">Use your Roblox username, not your real name.</div></div>
               </div>
               <div class="action-stack">
                 <button id="approveBtn" class="action-button approve" type="button">Approve inspection</button>
