@@ -1246,7 +1246,7 @@
   .customs-approval.arrival .approval-signature{color:#274a5e}
   .review-card dd.sig-script{font-size:14px}
   .navigation-layout{display:grid;grid-template-columns:minmax(225px,.55fr) minmax(0,1.75fr) minmax(310px,.75fr);gap:18px;align-items:start}
-  .map-runway-layer-hidden .map-runway-asset{display:none;}
+  .map-runway-layer-hidden .map-runway-indicator{display:none;}
   .navigation-map-card,.navigation-side-card{border:1px solid var(--rule-strong);background:#111d24;box-shadow:var(--shadow);border-radius:5px;overflow:hidden}
   .navigation-map-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 16px;color:#eaf2f0;border-bottom:1px solid rgba(255,255,255,.13);background:#16262e}
   .navigation-map-head h2{margin:0;font-size:17px}.navigation-map-head p{margin:3px 0 0;color:#aebfc2;font-size:11px}
@@ -2857,7 +2857,7 @@
   function mapAssetMarkup(cssClass=''){
     // Runway centreline SVGs are tagged so the "Runways" layer toggles can
     // hide them without touching the airport ground layouts.
-    return Object.entries(AIRPORT_SVG_ASSETS).flatMap(([airport,files])=>files.map(file=>`<image class="${cssClass} ${file.startsWith('RWY')?'map-runway-asset':'map-ground-asset'}" href="maps/${airport}/${file}" x="${MAP_VIEWBOX_MIN_X}" y="${MAP_VIEWBOX_MIN_Y}" width="${MAP_VIEWBOX_WIDTH}" height="${MAP_VIEWBOX_HEIGHT}" preserveAspectRatio="none"/>`)).join('');
+    return Object.entries(AIRPORT_SVG_ASSETS).flatMap(([airport,files])=>files.map(file=>`<image class="${cssClass} ${file.startsWith('RWY')?'map-runway-asset map-runway-indicator':'map-ground-asset'}" href="maps/${airport}/${file}" x="${MAP_VIEWBOX_MIN_X}" y="${MAP_VIEWBOX_MIN_Y}" width="${MAP_VIEWBOX_WIDTH}" height="${MAP_VIEWBOX_HEIGHT}" preserveAspectRatio="none"/>`)).join('');
   }
 
   const VFR_AIRSPACE_GROUPS = [
@@ -3280,9 +3280,9 @@
     return Object.values(RUNWAY_DATA).flat().map(item=>{
       const radians=item.heading*Math.PI/180;
       // Place the designator just inside the threshold, aligned with the runway.
-      const x=item.x+Math.sin(radians)*2.2;
-      const y=item.y-Math.cos(radians)*2.2;
-      return `<g class="map-runway-asset map-runway-point" data-x="${x.toFixed(2)}" data-y="${y.toFixed(2)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${item.heading.toFixed(1)})"><text class="map-runway-label" x="0" y="2" text-anchor="middle">${item.label}</text></g>`;
+      const x=item.x+Math.sin(radians)*0.65;
+      const y=item.y-Math.cos(radians)*0.65;
+      return `<g class="map-runway-label-asset map-runway-point" data-x="${x.toFixed(2)}" data-y="${y.toFixed(2)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${item.heading.toFixed(1)})"><text class="map-runway-label" x="0" y="2" text-anchor="middle">${item.label}</text></g>`;
     }).join('');
   }
   document.getElementById('mapAirportAssets').innerHTML = mapAssetMarkup() + runwayLabelMarkup();
@@ -3347,7 +3347,7 @@
   // ===== Map pan & zoom =====
   // The basemap still uses a normal SVG viewBox, while overlay listeners resize
   // route graphics, labels, rulers, and aircraft whenever the view changes.
-  function attachMapPanZoom(svg, {minZoom = 1, maxZoom = 32} = {}){
+  function attachMapPanZoom(svg, {minZoom = 1, maxZoom = 64} = {}){
     const base = {x: MAP_VIEWBOX_MIN_X, y: MAP_VIEWBOX_MIN_Y, w: MAP_VIEWBOX_WIDTH, h: MAP_VIEWBOX_HEIGHT};
     const view = {...base};
     const changeListeners = new Set();
