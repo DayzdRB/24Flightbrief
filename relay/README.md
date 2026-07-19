@@ -2,6 +2,8 @@
 
 Vercel offers WebSocket support, but autoscaled Function instances are not a dependable singleton for an upstream service capped at three connections. Run `atc24-websocket.js` as **one instance** on a persistent Node service such as Railway, Render, Fly.io, or a VPS.
 
+The relay also captures `FLIGHT_PLAN` events (24data streams these over the WebSocket only — there is no REST route). That is what lets the navigation page label aircraft with the pilot's selected/filed callsign instead of the raw in-game callsign. Without the relay the site still works from the REST cache, but callsign labels fall back to in-game callsigns. Captured plans are pruned after 6 hours, in line with the 24data terms.
+
 Use the same Redis database as the Vercel site. Configure either variable pair:
 
 ```text
