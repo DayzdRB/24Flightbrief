@@ -460,6 +460,10 @@
   .navigation-radar .map-waypoint-label{fill:#7fe0c2;fill-opacity:.85;}
   .map-runway-label{fill:#3d5058;font:700 6.5px 'JetBrains Mono',monospace;paint-order:stroke;stroke:rgba(255,255,255,.78);stroke-width:2px;stroke-linejoin:round;}
   .navigation-map-assets .map-runway-label{fill:#a8dcc9;stroke:#0b1418;stroke-width:2.4px;}
+  .map-taxi-label{font-family:'JetBrains Mono',monospace;font-weight:700;fill:#4c5f66;}
+  .map-gate-label{font-family:'JetBrains Mono',monospace;font-weight:700;fill:#69787e;}
+  .navigation-map-assets .map-taxi-label{fill:#d3c06b;}
+  .navigation-map-assets .map-gate-label{fill:#93a8a3;}
   .map-pannable{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;-moz-user-select:none;-webkit-touch-callout:none;}
   .map-pannable *{user-select:none;-webkit-user-select:none;-moz-user-select:none;}
   .map-pannable.is-panning{cursor:grabbing;}
@@ -3285,8 +3289,96 @@
       return `<g class="map-runway-asset map-runway-point" data-x="${x.toFixed(2)}" data-y="${y.toFixed(2)}" transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${item.heading.toFixed(1)})"><text class="map-runway-label" x="0" y="2" text-anchor="middle">${item.label}</text></g>`;
     }).join('');
   }
-  document.getElementById('mapAirportAssets').innerHTML = mapAssetMarkup() + runwayLabelMarkup();
-  document.getElementById('navigationMapAssets').innerHTML = mapAssetMarkup() + runwayLabelMarkup();
+  // Taxiway letters, apron names, and stand/gate numbers placed against the
+  // official ATC24 ground charts. Coordinates are in map space and the text
+  // scales with the map, so labels become readable as you zoom into a field
+  // (24scope-style). Entry format: [x, y, text, fontSize?, 'g' for gate].
+  // Gate positions are chart-derived estimates; nudge x/y here to fine-tune.
+  const TAXI_LABELS = {
+    IRFD: [
+      [-37.6,204.6,'B'],[-33.1,203.2,'E'],[-27.5,201.2,'G'],[-33,207.6,'A'],
+      [-30.0,211.0,'J'],[-26.3,212.3,'K'],[-13.1,194.9,'M'],
+      [-20.7,215.8,'CARGO',0.9],[-24.6,208.1,'GA',0.9],
+      [-36.7,210.7,'1',,'g'],[-35.9,210.2,'2',,'g'],[-35.1,209.7,'3',,'g'],
+      [-30.9,210.1,'4',,'g'],[-30.3,210.7,'5',,'g'],[-29.7,211.3,'6',,'g'],
+      [-32.3,211.0,'7',,'g'],[-31.7,211.6,'8',,'g'],[-31.1,212.2,'9',,'g'],
+      [-30.9,216.6,'10',,'g'],[-30.1,217.2,'11',,'g'],[-29.3,217.8,'12',,'g'],
+      [-28.9,213.4,'13',,'g'],[-28.1,214.1,'14',,'g'],[-27.3,214.8,'15',,'g'],
+      [-22.9,214.0,'16',,'g'],[-22.9,214.8,'17',,'g'],[-22.9,215.6,'18',,'g'],
+      [-22.9,216.4,'19',,'g'],[-22.9,217.2,'20',,'g']
+    ],
+    ITKO: [
+      [-88,-326.9,'A'],[-88,-330.2,'B'],[-69.0,-313.0,'C'],[-71.2,-311.0,'D'],
+      [-71.5,-289.5,'CARGO',0.9],
+      [-92.2,-329.8,'16',,'g'],[-91.1,-329.1,'15',,'g'],[-90.0,-328.3,'14',,'g'],
+      [-88.9,-327.6,'13',,'g'],[-87.8,-326.8,'12',,'g'],[-86.7,-326.1,'11',,'g'],
+      [-85.6,-325.3,'10',,'g'],[-84.5,-324.6,'9',,'g'],[-83.4,-323.8,'8',,'g'],
+      [-82.3,-323.1,'7',,'g'],[-81.2,-322.3,'6',,'g'],[-80.1,-321.6,'5',,'g'],
+      [-78.4,-317.9,'1',,'g'],[-77.6,-317.3,'2',,'g'],[-79.2,-315.9,'3',,'g'],[-78.4,-315.3,'4',,'g'],
+      [-76.3,-300.8,'18',,'g'],[-75.1,-299.9,'19',,'g'],[-73.9,-299.1,'20',,'g'],
+      [-72.7,-298.2,'21',,'g'],[-71.5,-297.4,'22',,'g']
+    ],
+    IPPH: [
+      [186,-200.9,'A'],[176.6,-211.5,'B'],[190,-203.2,'C'],[174.6,-200.2,'D'],
+      [179,-203.2,'E'],[167,-204.5,'F'],[191.5,-208.8,'CARGO',0.9]
+    ],
+    ILAR: [
+      [219.8,326.8,'A'],[212.8,328.2,'B'],[214.5,325.2,'C'],[208.5,327.4,'D'],
+      [206.2,331.0,'E'],[212.8,331.6,'CARGO',0.9]
+    ],
+    IZOL: [
+      [451.5,40.8,'A'],[445.4,39.5,'B'],[441.1,37.5,'C'],[446,35.2,'D'],
+      [444.5,33.5,'E'],[436.6,40.2,'CARGO',0.9]
+    ],
+    IIAB: [
+      [218.2,398.4,'A'],[217.7,399.2,'B'],[217.2,400.0,'C'],[220.6,400.6,'D'],
+      [221.2,402.1,'D1',0.8],[221.6,405.0,'D2',0.8],[232,400.6,'H'],[242.6,400.9,'K']
+    ],
+    IPAP: [
+      [320.6,341.0,'A'],[319.4,345.0,'B'],[315.7,344.0,'C'],[313.0,344.0,'D'],[312.3,335.5,'E']
+    ],
+    ISAU: [[-462,276.6,'A'],[-455.9,275.9,'A1',0.8],[-462.5,276.1,'A2',0.8]],
+    IJAF: [[458.2,3.6,'A']],
+    IGAR: [
+      [-161.4,236.1,'A'],[-158.6,232.6,'B1',0.8],[-162.6,237.6,'C1',0.8],
+      [-159.0,237.6,'YANKEE',0.75]
+    ],
+    IBTH: [[54.0,-46.0,'A'],[55.9,-45.9,'B'],[57.9,-46.1,'C'],[53.8,-43.7,'D'],[56.8,-44.8,'E']],
+    IKFL: [
+      [-439.5,-20.8,'A'],[-428.5,-25.0,'B'],[-426.5,-15.5,'C'],[-435.0,-15.5,'D'],
+      [-428.6,-12.0,'E'],[-438.5,-9.0,'F'],[-440.8,-10.6,'F1',0.8],[-439.6,-9.8,'F2',0.8],
+      [-433.8,-11.2,'G'],[-441.5,-7.2,'H'],[-442.3,-4.3,'J'],[-434.5,-6.8,'K'],
+      [-423.5,-19.5,'N'],[-416.5,-12.0,'P'],
+      [-420.5,-13.5,'EAST APRON',0.75],[-434,-5.0,'HOT CARGO',0.7],[-449.3,-19.0,'CARGO',0.7],
+      [-444.3,-26.2,'1',,'g'],[-443.7,-25.7,'2',,'g'],[-443.1,-25.2,'3',,'g'],
+      [-442.5,-24.7,'4',,'g'],[-441.9,-24.2,'5',,'g'],[-441.3,-23.6,'6',,'g'],
+      [-445.5,-24.0,'7',,'g'],[-444.9,-23.5,'8',,'g'],[-444.3,-23.0,'9',,'g'],
+      [-443.7,-22.5,'10',,'g'],[-443.1,-22.0,'11',,'g'],
+      [-445.6,-28.2,'40',,'g'],[-444.8,-28.0,'41',,'g'],[-444.0,-27.9,'42',,'g'],
+      [-443.2,-27.7,'43',,'g'],[-442.4,-27.6,'44',,'g'],[-441.6,-27.4,'45',,'g'],
+      [-449.8,-20.6,'20',,'g'],[-449.0,-20.0,'21',,'g'],[-448.2,-19.4,'22',,'g'],
+      [-450.4,-17.8,'30',,'g'],[-449.6,-17.3,'31',,'g'],[-448.8,-16.8,'32',,'g']
+    ],
+    ITEY: [[-414.7,-92.3,'A',0.9]],
+    ILKL: [[224.8,-164.5,'B']],
+    IHEN: [[172.0,415.4,'A']],
+    ITRC: [[-20.8,300.3,'A'],[-19.9,302.7,'1',,'g']],
+    ISCM: [
+      [362.3,-53.6,'A'],[363.8,-50.5,'B'],[358.9,-46.5,'C'],[357.8,-50.6,'E'],
+      [356.9,-47.6,'G'],[357.4,-52.3,'F',0.8],
+      [359.8,-53.8,'SPAWN',0.75],[360.9,-47.9,'ALPHA',0.75],
+      [356.9,-45.6,'BRAVO',0.75],[358.1,-51.6,'CHARLIE',0.75]
+    ]
+  };
+  function taxiLabelMarkup(){
+    return Object.values(TAXI_LABELS).flat().map(entry=>{
+      const [x,y,text,size,kind]=entry;
+      const gate=kind==='g';
+      return `<text class="map-ground-asset ${gate?'map-gate-label':'map-taxi-label'}" x="${x}" y="${y}" font-size="${size||(gate?0.75:1.3)}" text-anchor="middle">${text}</text>`;
+    }).join('');
+  }
+  document.getElementById('mapAirportAssets').innerHTML = mapAssetMarkup() + runwayLabelMarkup() + taxiLabelMarkup();
+  document.getElementById('navigationMapAssets').innerHTML = mapAssetMarkup() + runwayLabelMarkup() + taxiLabelMarkup();
 
   function waypointLayerMarkup(){
     return Object.entries(WAYPOINTS).map(([code,p])=>{
